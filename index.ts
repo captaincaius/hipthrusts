@@ -188,6 +188,7 @@ function hipExpressHandlerFactory<
 }
 
 // @fixme: delete me :)
+/*
 // @todo: parameter order?
 export function withUserFromReq<
   TSuper extends Constructor,
@@ -203,6 +204,7 @@ export function withUserFromReq<
   }
   return WithUser;
 }
+*/
 
 interface SyncProjector<TNext, TSource> {
   (source: TSource): TNext;
@@ -222,6 +224,23 @@ interface OptionallyHasDataAttacher {
   attachData?(): Promise<any>;
 }
 
+interface IsFinalAuth<TPrincipal> {
+  (principal: TPrincipal): Promise<boolean>;
+}
+
+interface OptionallyHasFinalAuth {
+  finalAuthorize?(): Promise<boolean>;
+}
+
+interface IsPreAuth<TPrincipal> {
+  (principal: TPrincipal): boolean;
+}
+
+interface OptionallyHasPreAuth {
+  preAuthorize?(): boolean;
+}
+
+/*
 // @tswtf: why did I need to explicitly add "| any" to TSuper' instance type?
 export function AttachDataWith<TWhereToStore extends string, TWhereToLook extends string & keyof InstanceType<TSuper>, TWhatYoullFind, TSuper extends Constructor<Record<TWhereToLook,TWhatYoullFind> & (OptionallyHasDataAttacher)>, TNext>(Super: TSuper, whereToLook: TWhereToLook, projector: AsyncProjector<TNext, TWhatYoullFind>, whereToStore: TWhereToStore): TSuper & Constructor<{[k in TWhereToStore]: TNext} & HasDataAttacher>;
 export function AttachDataWith<TWhereToStore extends string, TWhereToLook extends string & keyof InstanceType<TSuper>, TWhatYoullFind, TSuper extends Constructor<Record<TWhereToLook,TWhatYoullFind> & (OptionallyHasDataAttacher)>, TNext>(Super: TSuper, whereToLook: TWhereToLook, projector: AsyncProjector<TNext, TWhatYoullFind>, whereToStore: TWhereToStore) {
@@ -241,14 +260,6 @@ export function AttachDataWith<TWhereToStore extends string, TWhereToLook extend
       (<any>this)[whereToStore] = await projector((<any>this)[whereToLook]);
     }
   };
-}
-
-interface IsFinalAuth<TPrincipal> {
-  (principal: TPrincipal): Promise<boolean>;
-}
-
-interface OptionallyHasFinalAuth {
-  finalAuthorize?(): Promise<boolean>;
 }
 
 export function FinalAuthorizeWith<TPrincipalKey extends string & keyof InstanceType<TSuper>, TPrincipal extends InstanceType<TSuper>[TPrincipalKey], TAuthKey extends string, TSuper extends Constructor<Record<TAuthKey,IsFinalAuth<TPrincipal>> & (OptionallyHasFinalAuth)>>(Super: TSuper, principalKey: TPrincipalKey, authorizerKey: TAuthKey) {
@@ -272,14 +283,6 @@ export function FinalAuthorizeWith<TPrincipalKey extends string & keyof Instance
   };
 }
 
-interface IsPreAuth<TPrincipal> {
-  (principal: TPrincipal): boolean;
-}
-
-interface OptionallyHasPreAuth {
-  preAuthorize?(): boolean;
-}
-
 export function PreAuthorizeWith<TPrincipalKey extends string & keyof InstanceType<TSuper>, TPrincipal extends InstanceType<TSuper>[TPrincipalKey], TAuthKey extends string, TSuper extends Constructor<Record<TAuthKey,IsFinalAuth<TPrincipal>> & (OptionallyHasPreAuth)>>(Super: TSuper, principalKey: TPrincipalKey, authorizer: IsPreAuth<TPrincipal>) {
   // @ts-ignore
   return class WithFinalAuthorize extends Super {
@@ -300,6 +303,7 @@ export function PreAuthorizeWith<TPrincipalKey extends string & keyof InstanceTy
     }
   };
 }
+*/
 
 interface FunctionTaking<TIn> {
   (param: TIn): any;
@@ -322,6 +326,7 @@ interface HasToObject<T> {
   toObject(): T
 }
 
+/*
 function SanitizeParamsWith<TSuper extends Constructor, TSafeParam extends ReturnType<TInstance['toObject']>, TModel extends Constructor<HasValidateSync & HasToObject<any>>, TInstance extends InstanceType<TModel>>(Super: TSuper, Model: TModel) {
   return class WithSanitizedParams extends Super {
     constructor(...args: any[]) {
@@ -340,7 +345,7 @@ function SanitizeParamsWith<TSuper extends Constructor, TSafeParam extends Retur
 }
 
 function SanitizeBodyWith<TSuper extends Constructor, TSafeBody extends ReturnType<TInstance['toObject']>, TModel extends Constructor<HasValidateSync & HasToObject<any>>, TInstance extends InstanceType<TModel>>(Super: TSuper, Model: TModel) {
-  return class WithSanitizedParams extends Super {
+  return class WithSanitizedBody extends Super {
     constructor(...args: any[]) {
       super(...args);
     }
@@ -357,7 +362,7 @@ function SanitizeBodyWith<TSuper extends Constructor, TSafeBody extends ReturnTy
 }
 
 function SanitizeResponseWith<TSuper extends Constructor, TSafeResponse extends ReturnType<TInstance['toObject']>, TModel extends Constructor<HasToObject<any>>, TInstance extends InstanceType<TModel>>(Super: TSuper, Model: TModel) {
-  return class WithSanitizedParams extends Super {
+  return class WithSanitizedResponse extends Super {
     constructor(...args: any[]) {
       super(...args);
     }
@@ -368,6 +373,7 @@ function SanitizeResponseWith<TSuper extends Constructor, TSafeResponse extends 
     }
   }
 }
+*/
 
 interface ModelWithFindById<TInstance = any> {
   findById(id: string): {exec(): Promise<TInstance>}
@@ -385,6 +391,7 @@ function findByIdAndRequire(Model: ModelWithFindById) {
   }
 }
 
+/*
 // @todo: make helpers for:
 // - generating a principal ID accessor (configure your user model's ID)
 // - generating an assigned ID accessor (configure your other model's owner/assigned/etc ID)
@@ -395,12 +402,41 @@ interface ResolvesPrincipalId<Tprincipal> {
 interface ResolvesAssignedId<Tdoc> {
   (principal: Tdoc): string;
 }
+*/
+
+function assigneeCheckersOnIdKey<TPrincipalIdKey extends string>(principalIdKey: TPrincipalIdKey) {
+  return {
+    idOnKeyIs<TIdKey extends string, TObj extends Record<TIdKey, string>>(obj: TObj, idKey: TIdKey) {
+      return function<TPrincipal extends Record<TPrincipalIdKey, string>>(principal: TPrincipal) {
+        return (
+          principal &&
+          obj &&
+          principal[principalIdKey] &&
+          obj[idKey] &&
+          principal[principalIdKey].toString()==obj[idKey].toString()
+        );
+      }
+    }
+  }
+}
 
 function roleCheckersOnRoleKey<TRoleKey extends string>(roleKey: TRoleKey) {
   return {
-    roleIsWithin(roles: string[]) {
-      return function roleIsWithinThese(principal: Record<TRoleKey, string>) {
+    roleIsOneOf(roles: string[]) {
+      return function checker(principal: Record<TRoleKey, string>) {
         return roles && roles.length && principal && principal[roleKey] && roles.includes(principal[roleKey]);
+      }
+    },
+    oneOfRolesIsOneOf(roles: string[]) {
+      return function checker(principal: Record<TRoleKey, string[]>) {
+        if(roles && roles.length && principal && principal[roleKey] && principal[roleKey].length) {
+          for(let roleIdx in roles) {
+            if(principal[roleKey].includes(roles[roleIdx])) {
+              return true;
+            }
+          }
+        }
+        return false;
       }
     }
   };
@@ -431,7 +467,7 @@ export function AddPreAuth<TPrincipalKey extends string, TPrincipal>(principalKe
       constructor(...args: any[]) {
         super(...args);
       }
-      async preAuthorize() {
+      preAuthorize() {
         // @todo: MAKE SURE THIS WORKS PROPERLY IF THERE'S GAPS IN THE PROTOTYPE CHAIN
         // i.e. chain doesn't break or double-call!!
         if(super.preAuthorize) {
@@ -491,6 +527,87 @@ export function AddFinalAuth<TPrincipalKey extends string, TAuthKey extends stri
   };
 }
 
+export function AddInitDataTo<TWhereToStore extends string, TWhereToLook extends string, TWhatYoullFind, TSuper extends Constructor, TNext>(Super: TSuper, whereToLook: TWhereToLook, projector: AnySyncProjector, whereToStore: TWhereToStore) {
+  return AddInitData(whereToLook, projector, whereToStore)(Super);
+}
+
+export function AddPreAuthTo<TPrincipalKey extends string & keyof InstanceType<TSuper>, TPrincipal extends InstanceType<TSuper>[TPrincipalKey], TAuthKey extends string, TSuper extends Constructor<Record<TPrincipalKey,any> & Record<TAuthKey,IsFinalAuth<TPrincipal>> & (OptionallyHasPreAuth)>>(Super: TSuper, principalKey: TPrincipalKey, authorizer: IsPreAuth<TPrincipal>) {
+  return AddPreAuth(principalKey, authorizer)(Super);
+}
+
+export function AddAttachDataTo<TWhereToStore extends string, TWhereToLook extends string & keyof InstanceType<TSuper>, TWhatYoullFind, TSuper extends Constructor<Record<TWhereToLook,TWhatYoullFind> & (OptionallyHasDataAttacher)>, TNext>(Super: TSuper, whereToLook: TWhereToLook, projector: AsyncProjector<TNext, TWhatYoullFind>, whereToStore: TWhereToStore): TSuper & Constructor<{[k in TWhereToStore]: TNext} & HasDataAttacher>;
+export function AddAttachDataTo<TWhereToStore extends string, TWhereToLook extends string & keyof InstanceType<TSuper>, TWhatYoullFind, TSuper extends Constructor<Record<TWhereToLook,TWhatYoullFind> & (OptionallyHasDataAttacher)>, TNext>(Super: TSuper, whereToLook: TWhereToLook, projector: AsyncProjector<TNext, TWhatYoullFind>, whereToStore: TWhereToStore) {
+  return AddAttachData(whereToLook,projector,whereToStore)(Super);
+}
+
+function AddFinalAuthTo<TPrincipalKey extends string & keyof InstanceType<TSuper>, TPrincipal extends InstanceType<TSuper>[TPrincipalKey], TAuthKey extends string, TSuper extends Constructor<Record<TPrincipalKey,any> & Record<TAuthKey,IsFinalAuth<TPrincipal>> & (OptionallyHasFinalAuth)>>(Super: TSuper, principalKey: TPrincipalKey, authorizerKey: TAuthKey) {
+  return AddFinalAuth(principalKey, authorizerKey)(Super);
+}
+
+function AddSanitizeParams<TSafeParam extends ReturnType<TInstance['toObject']>, TModel extends Constructor<HasValidateSync & HasToObject<any>>, TInstance extends InstanceType<TModel>>(Model: TModel) {
+  return function<TSuper extends Constructor>(Super: TSuper) {
+    return class WithSanitizedParams extends Super {
+      constructor(...args: any[]) {
+        super(...args);
+      }
+      sanitizeParams(unsafeParams: any) {
+        const doc = new Model(unsafeParams);
+        const validateErrors = doc.validateSync();
+        if(validateErrors.errors && Array.isArray(validateErrors.errors) && validateErrors.errors.length) {
+          throw Boom.badRequest('Params not valid');
+        }
+        //@tswtf: why do I need to force this?!
+        return <TSafeParam>doc.toObject();
+      }
+    };
+  };
+}
+
+function AddSanitizeBody<TSafeBody extends ReturnType<TInstance['toObject']>, TModel extends Constructor<HasValidateSync & HasToObject<any>>, TInstance extends InstanceType<TModel>>(Model: TModel) {
+  return function<TSuper extends Constructor>(Super: TSuper) {
+    return class WithSanitizedBody extends Super {
+      constructor(...args: any[]) {
+        super(...args);
+      }
+      sanitizeBody(unsafeBody: any) {
+        const doc = new Model(unsafeBody);
+        const validateErrors = doc.validateSync();
+        if(validateErrors.errors && Array.isArray(validateErrors.errors) && validateErrors.errors.length) {
+          throw Boom.badRequest('Body not valid');
+        }
+        //@tswtf: why do I need to force this?!
+        return <TSafeBody>doc.toObject();
+      }
+    }
+  }
+}
+
+function AddSanitizeResponse<TSafeResponse extends ReturnType<TInstance['toObject']>, TModel extends Constructor<HasToObject<any>>, TInstance extends InstanceType<TModel>>(Model: TModel) {
+  return function<TSuper extends Constructor>(Super: TSuper) {
+    return class WithSanitizedResponse extends Super {
+      constructor(...args: any[]) {
+        super(...args);
+      }
+      sanitizeResponse(unsafeResponse: any) {
+        const doc = new Model(unsafeResponse);
+        //@tswtf: why do I need to force this?!
+        return <TSafeResponse>doc.toObject();
+      }
+    }
+  }
+}
+
+function AddSanitizeParamsTo<TSuper extends Constructor, TSafeParam extends ReturnType<TInstance['toObject']>, TModel extends Constructor<HasValidateSync & HasToObject<any>>, TInstance extends InstanceType<TModel>>(Super: TSuper, Model: TModel) {
+  AddSanitizeParams(Model)(Super);
+}
+
+function AddSanitizeBodyTo<TSuper extends Constructor, TSafeBody extends ReturnType<TInstance['toObject']>, TModel extends Constructor<HasValidateSync & HasToObject<any>>, TInstance extends InstanceType<TModel>>(Super: TSuper, Model: TModel) {
+  AddSanitizeBody(Model)(Super);
+}
+function AddSanitizeResponseTo<TSuper extends Constructor, TSafeResponse extends ReturnType<TInstance['toObject']>, TModel extends Constructor<HasToObject<any>>, TInstance extends InstanceType<TModel>>(Super: TSuper, Model: TModel) {
+  AddSanitizeResponse(Model)(Super);
+}
+
 interface ClassExtender<TClassIn, TClassOut> {
   (ClassIn: TClassIn): TClassOut;
 }
@@ -525,8 +642,14 @@ export const htCore = {
 
 export const htDeclarative = {
   AddInitData,
+  AddPreAuth,
   AddAttachData,
   AddFinalAuth,
+  AddInitDataTo,
+  AddPreAuthTo,
+  AddAttachDataTo,
+  AddFinalAuthTo,
+  composeExtenders,
 }
 
 export const htExpress = {
@@ -535,11 +658,15 @@ export const htExpress = {
 
 export const htMongoose = {
   findByIdAndRequire,
-  SanitizeBodyWith,
-  SanitizeParamsWith,
-  SanitizeResponseWith,
+  AddSanitizeParams,
+  AddSanitizeBody,
+  AddSanitizeResponse,
+  AddSanitizeParamsTo,
+  AddSanitizeBodyTo,
+  AddSanitizeResponseTo,
 }
 
 export const htUsers = {
-  roleCheckersOnRoleKey,
+   roleCheckersOnRoleKey,
+   assigneeCheckersOnIdKey,
 }
