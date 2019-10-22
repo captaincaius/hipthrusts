@@ -187,7 +187,7 @@ function hipExpressHandlerFactory<
   };
 }
 
-// @fixme: generalize this to a general initializeWith similar to attachDataWith
+// @fixme: delete me :)
 // @todo: parameter order?
 export function withUserFromReq<
   TSuper extends Constructor,
@@ -204,9 +204,15 @@ export function withUserFromReq<
   return WithUser;
 }
 
-interface RelativeGetter<TNext, TSource> {
+interface SyncProjector<TNext, TSource> {
+  (source: TSource): TNext;
+}
+type AnySyncProjector = SyncProjector<any, any>;
+
+interface AsyncProjector<TNext, TSource> {
   (source: TSource): Promise<TNext>;
 }
+type AnyAsyncProjector = AsyncProjector<any, any>;
 
 interface HasDataAttacher {
   attachData(): Promise<any>;
@@ -217,8 +223,8 @@ interface OptionallyHasDataAttacher {
 }
 
 // @tswtf: why did I need to explicitly add "| any" to TSuper' instance type?
-export function AttachDataWith<TWhereToStore extends string, TWhereToLook extends string & keyof InstanceType<TSuper>, TWhatYoullFind, TSuper extends Constructor<Record<TWhereToLook,TWhatYoullFind> & (OptionallyHasDataAttacher)>, TNext>(Super: TSuper, whereToLook: TWhereToLook, getter: RelativeGetter<TNext, TWhatYoullFind>, whereToStore: TWhereToStore): TSuper & Constructor<{[k in TWhereToStore]: TNext} & HasDataAttacher>;
-export function AttachDataWith<TWhereToStore extends string, TWhereToLook extends string & keyof InstanceType<TSuper>, TWhatYoullFind, TSuper extends Constructor<Record<TWhereToLook,TWhatYoullFind> & (OptionallyHasDataAttacher)>, TNext>(Super: TSuper, whereToLook: TWhereToLook, getter: RelativeGetter<TNext, TWhatYoullFind>, whereToStore: TWhereToStore) {
+export function AttachDataWith<TWhereToStore extends string, TWhereToLook extends string & keyof InstanceType<TSuper>, TWhatYoullFind, TSuper extends Constructor<Record<TWhereToLook,TWhatYoullFind> & (OptionallyHasDataAttacher)>, TNext>(Super: TSuper, whereToLook: TWhereToLook, projector: AsyncProjector<TNext, TWhatYoullFind>, whereToStore: TWhereToStore): TSuper & Constructor<{[k in TWhereToStore]: TNext} & HasDataAttacher>;
+export function AttachDataWith<TWhereToStore extends string, TWhereToLook extends string & keyof InstanceType<TSuper>, TWhatYoullFind, TSuper extends Constructor<Record<TWhereToLook,TWhatYoullFind> & (OptionallyHasDataAttacher)>, TNext>(Super: TSuper, whereToLook: TWhereToLook, projector: AsyncProjector<TNext, TWhatYoullFind>, whereToStore: TWhereToStore) {
   // @ts-ignore
   return class WithRelative extends Super {
     // do-not-at-ts-ignore
@@ -232,7 +238,7 @@ export function AttachDataWith<TWhereToStore extends string, TWhereToLook extend
       if(super.attachData) {
         await super.attachData();
       }
-      (<any>this)[whereToStore] = await getter((<any>this)[whereToLook]);
+      (<any>this)[whereToStore] = await projector((<any>this)[whereToLook]);
     }
   };
 }
@@ -383,10 +389,10 @@ function findByIdAndRequire(Model: ModelWithFindById) {
 // - generating a principal ID accessor (configure your user model's ID)
 // - generating an assigned ID accessor (configure your other model's owner/assigned/etc ID)
 // - helper using the two to generate an instance method that can be attached to a model (e.g. generate isOwner())
-export interface ResolvesPrincipalId<Tprincipal> {
+interface ResolvesPrincipalId<Tprincipal> {
   (principal: Tprincipal): string;
 }
-export interface ResolvesAssignedId<Tdoc> {
+interface ResolvesAssignedId<Tdoc> {
   (principal: Tdoc): string;
 }
 
@@ -400,8 +406,127 @@ function roleCheckersOnRoleKey<TRoleKey extends string>(roleKey: TRoleKey) {
   };
 }
 
-export const htBase = {
+function AddInitData<TWhereToLook extends string, TProjector extends AnySyncProjector, TNext extends ReturnType<TProjector>, TWhatYoullFind extends Parameters<TProjector>[0], TWhereToStore extends string>(whereToLook: TWhereToLook, projector: TProjector, whereToStore: TWhereToStore) {
+  return function<TSuper extends Constructor>(Super: TSuper): TSuper & Constructor<Record<TWhereToStore, TNext>> {
+    // @ts-ignore
+    return class WithInitData extends Super {
+      // do-not-at-ts-ignore
+      //[whereToStore]: TNext;
+      constructor(...args: any[]) {
+        super(...args);
+        const req = args[0];
+        (<any>this)[whereToStore] = projector(req[whereToLook]);
+      }
+    };
+  };
+}
+
+//export function PreAuthorizeWith<TPrincipalKey extends string & keyof InstanceType<TSuper>, TPrincipal extends InstanceType<TSuper>[TPrincipalKey], TAuthKey extends string, TSuper extends Constructor<Record<TAuthKey,IsFinalAuth<TPrincipal>> & (OptionallyHasPreAuth)>>(Super: TSuper, principalKey: TPrincipalKey, authorizer: IsPreAuth<TPrincipal>) {
+export function AddPreAuth<TPrincipalKey extends string, TPrincipal>(principalKey: TPrincipalKey, authorizer: IsPreAuth<TPrincipal>) {
+  return function<TSuper extends Constructor<Record<TPrincipalKey,TPrincipal> & (OptionallyHasPreAuth)>>(Super: TSuper) {
+    // @ts-ignore
+    return class WithPreAuthorize extends Super {
+      // do-not-at-ts-ignore
+      //[whereToStore]: TNext;
+      constructor(...args: any[]) {
+        super(...args);
+      }
+      async preAuthorize() {
+        // @todo: MAKE SURE THIS WORKS PROPERLY IF THERE'S GAPS IN THE PROTOTYPE CHAIN
+        // i.e. chain doesn't break or double-call!!
+        if(super.preAuthorize) {
+          if(!super.preAuthorize()) {
+            return false;
+          }
+        }
+        return authorizer((<any>this)[principalKey]);
+      }
+    };
+  };
+}
+
+type PromiseResolveType<T> = T extends Promise<infer T> ? T : never;
+
+function AddAttachData<TWhereToLook extends string, TProjector extends AnyAsyncProjector, TNext extends PromiseResolveType<ReturnType<TProjector>>, TWhatYoullFind extends Parameters<TProjector>[0], TWhereToStore extends string>(whereToLook: TWhereToLook, projector: TProjector, whereToStore: TWhereToStore) {
+  return function<TSuper extends Constructor<Record<TWhereToLook,TWhatYoullFind> & (OptionallyHasDataAttacher)>>(Super: TSuper): TSuper & Constructor<Record<TWhereToStore, TNext> & HasDataAttacher> {
+    // @ts-ignore
+    return class WithAttachData extends Super {
+      // do-not-at-ts-ignore
+      //[whereToStore]: TNext;
+      constructor(...args: any[]) {
+        super(...args);
+      }
+      async attachData() {
+        // @todo: MAKE SURE THIS WORKS PROPERLY IF THERE'S GAPS IN THE PROTOTYPE CHAIN
+        // i.e. chain doesn't break or double-call!!
+        if(super.attachData) {
+          await super.attachData();
+        }
+        (<any>this)[whereToStore] = await projector((<any>this)[whereToLook]);
+      }
+    };
+  };
+}
+
+export function AddFinalAuth<TPrincipalKey extends string, TAuthKey extends string>(principalKey: TPrincipalKey, authorizerKey: TAuthKey) {
+  return function<TSuper extends Constructor<Record<TPrincipalKey,any> & Record<TAuthKey,IsFinalAuth<InstanceType<TSuper>[TPrincipalKey]>> & (OptionallyHasFinalAuth)>>(Super: TSuper) {
+    // @ts-ignore
+    return class WithFinalAuthorize extends Super {
+      // do-not-at-ts-ignore
+      //[whereToStore]: TNext;
+      constructor(...args: any[]) {
+        super(...args);
+      }
+      async finalAuthorize() {
+        // @todo: MAKE SURE THIS WORKS PROPERLY IF THERE'S GAPS IN THE PROTOTYPE CHAIN
+        // i.e. chain doesn't break or double-call!!
+        if(super.finalAuthorize) {
+          if(!await super.finalAuthorize()) {
+            return false;
+          }
+        }
+        return await (<any>this)[authorizerKey]((<any>this)[principalKey]);
+      }
+    };
+  };
+}
+
+interface ClassExtender<TClassIn, TClassOut> {
+  (ClassIn: TClassIn): TClassOut;
+}
+
+function composeExtenders<ClassIn>(): ClassExtender<ClassIn, ClassIn>;
+function composeExtenders<ClassIn, A>(fn1: ClassExtender<ClassIn, A>): ClassExtender<ClassIn, A>;
+function composeExtenders<ClassIn, A, B>(fn1: ClassExtender<ClassIn, A>, fn2: ClassExtender<A, B>): ClassExtender<ClassIn, B>;
+function composeExtenders<ClassIn, A, B, C>(fn1: ClassExtender<ClassIn, A>, fn2: ClassExtender<A, B>, fn3: ClassExtender<B, C>): ClassExtender<ClassIn, C>;
+function composeExtenders<ClassIn, A, B, C, D>(fn1: ClassExtender<ClassIn, A>, fn2: ClassExtender<A, B>, fn3: ClassExtender<B, C>, fn4: ClassExtender<C, D>): ClassExtender<ClassIn, D>;
+function composeExtenders<ClassIn, A, B, C, D, E>(fn1: ClassExtender<ClassIn, A>, fn2: ClassExtender<A, B>, fn3: ClassExtender<B, C>, fn4: ClassExtender<C, D>, fn5: ClassExtender<D, E>): ClassExtender<ClassIn, E>;
+function composeExtenders<ClassIn, A, B, C, D, E, F>(fn1: ClassExtender<ClassIn, A>, fn2: ClassExtender<A, B>, fn3: ClassExtender<B, C>, fn4: ClassExtender<C, D>, fn5: ClassExtender<D, E>, fn6: ClassExtender<E, F>): ClassExtender<ClassIn, F>;
+function composeExtenders<ClassIn, A, B, C, D, E, F, G>(fn1: ClassExtender<ClassIn, A>, fn2: ClassExtender<A, B>, fn3: ClassExtender<B, C>, fn4: ClassExtender<C, D>, fn5: ClassExtender<D, E>, fn6: ClassExtender<E, F>, fn7: ClassExtender<F, G>): ClassExtender<ClassIn, G>;
+function composeExtenders<ClassIn, A, B, C, D, E, F, G, H>(fn1: ClassExtender<ClassIn, A>, fn2: ClassExtender<A, B>, fn3: ClassExtender<B, C>, fn4: ClassExtender<C, D>, fn5: ClassExtender<D, E>, fn6: ClassExtender<E, F>, fn7: ClassExtender<F, G>, fn8: ClassExtender<G, H>): ClassExtender<ClassIn, H>;
+function composeExtenders<ClassIn, A, B, C, D, E, F, G, H, I>(fn1: ClassExtender<ClassIn, A>, fn2: ClassExtender<A, B>, fn3: ClassExtender<B, C>, fn4: ClassExtender<C, D>, fn5: ClassExtender<D, E>, fn6: ClassExtender<E, F>, fn7: ClassExtender<F, G>, fn8: ClassExtender<G, H>, fn9: ClassExtender<H, I>): ClassExtender<ClassIn, I>;
+function composeExtenders<ClassIn, A, B, C, D, E, F, G, H, I>(fn1: ClassExtender<ClassIn, A>, fn2: ClassExtender<A, B>, fn3: ClassExtender<B, C>, fn4: ClassExtender<C, D>, fn5: ClassExtender<D, E>, fn6: ClassExtender<E, F>, fn7: ClassExtender<F, G>, fn8: ClassExtender<G, H>, fn9: ClassExtender<H, I>, ...fns: Array<ClassExtender<any,any>>): ClassExtender<ClassIn, {}>;
+
+function composeExtenders(...fns: Array<ClassExtender<any, any>>) {
+  if(!fns) {
+    return (inClass: any) => inClass;
+  }
+  if(fns.length===1) {
+    return fns[0];
+  }
+  return function composed<TSuper>(Super: TSuper) {
+    return fns.reduce((prev, fn)=>fn(prev), Super);
+  }
+}
+
+export const htCore = {
   HipRedirectException,
+}
+
+export const htDeclarative = {
+  AddInitData,
+  AddAttachData,
+  AddFinalAuth,
 }
 
 export const htExpress = {
