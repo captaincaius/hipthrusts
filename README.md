@@ -114,15 +114,15 @@ middleware.  As a bonus, if you're using typescript, it will even be typed prope
 
 ### Other OO Web Frameworks
 
-- Class: Entire controller that groups a set of related response handlers (same resource type, etc)
+- Class: Entire controller that groups a set of related response handlers (same collection, etc)
 - Instance method: One specific response handler callback (similar to a single express middleware)
 - Instance: Meaningless - the class is essentially a singleton, so "this" is shared by ALL requests
 
 ### HipThrusTS
 
-- Class: A description of a SINGLE ENDPOINT's response handler
-- Instance method: One of the lifecycle stages mentioned above
-- Instance: An actual request/response instantiated at every request!
+- Class: A description of a SINGLE ENDPOINT's response handler's lifecycle stages
+- Instance method: One of the lifecycle stages mentioned above (preAuth, doWork, etc.)
+- Instance: A single actual request/response that's individually instantiated for every request!
 
 Because of this (pun totally intended), "this" is shared by all the mandatory stages of a single request's
 lifecycle, and that's where context shared among lifecycle stages lives.  "this" is the new local middleware
@@ -134,9 +134,12 @@ As far as I can tell, HipThrusTS is the first node.js web API framework using th
 NOTE: THE ABOVE IS ONLY MEANT TO CONTRAST HIPTHRUSTS WITH WHAT ALREADY EXISTS (AND SERVE AS A SALES PITCH)!
 NONE OF THE ABOVE WAS MEANT AS DISRESPECT TO THE HARD-WORKING AUTHORS OF ANY OTHER LIBRARIES!
 
+In fact, there's no reason you can't use HipThrusTS on top of any of those!  PRs are welcome from anyone 
+who would like to write the wrappers ;).
+
 ...interview continued below...
 
-- You: I love you
+- You: Wow!  I think I love you
   - HT: I love code review
 
 - You: That didn't go as planned - let's see some code then
@@ -151,12 +154,12 @@ import { UserModel } from '../models/user.ts';
 
 // ...
 
-// Provide every request/response instance has an instance-scoped member shaped as
-// the InstanceType of UserModel - by default it will be grabbed from req.user,
-// but this can be overridden.
+// Provide every request/response instance has an instance-scoped
+// member shaped as the InstanceType of UserModel - by default it
+// will be grabbed from req.user, but this can be overridden.
 export const MyHTBase = withUserFromReq(EmptyClass, UserModel);
-// Note: this will be available for all stages because it's attached in the
-// constructor.
+// Note: this will be available for all stages because it's attached
+// in the constructor.
 
 // ...
 ```
@@ -164,41 +167,65 @@ export const MyHTBase = withUserFromReq(EmptyClass, UserModel);
 ```typescript
 // src/api/thing.controller.ts
 
-// ThingModel is your base model, and the others are derived from it with subsets of fields picked, meant for
-// various sanitizations (input or output) needed.
-import { ThingModel, ThingIDOnlyModel, ThingOwnerEditableModel, ThingOwnerVisibleModel } from '../models/thing.ts';
+// ThingModel is your base model, and the others are derived from it
+// with subsets of fields picked, meant for various sanitizations
+// (input or output) needed.
+import {
+  ThingModel,
+  ThingIDOnlyModel,
+  ThingOwnerEditableModel,
+  ThingOwnerVisibleModel
+} from '../models/thing.ts';
 import { HasRole } from '../models/user.ts';
-import { AttachDataWith, FinalAuthorizeWith, PreAuthorizeWith, hipHandlerFactory } from 'hipthrusts';
+import {
+  AttachDataWith,
+  FinalAuthorizeWith,
+  PreAuthorizeWith,
+  hipHandlerFactory
+} from 'hipthrusts';
 import { Router } from 'express';
 
 const ByIDParam = SanitizeParamsWith(MyHTBase, ThingIDOnlyModel);
 
-// Define a base class to be extended/mixed for any endpoints for an "owner"
+// Define a base class to be extended/mixed for any endpoints for
+// an "owner"
 const RequireOwner = PreAuthorizeWith(
   FinalAuthorizeWith(
     AttachDataWith(
       AttachDataWith(
         AttachDataWith(
-          ByIDParam, 'params', params=>Promise.resolve(params.id), 'thingId'
+          ByIDParam,
+          'params',
+          params=>Promise.resolve(params.id),
+          'thingId'
         ),
         'thingId', findByIdAndRequire(ThingModel), 'thing'
       ),
-      'thing', fromWrappedInstanceMethod('isOwner'), 'isThingOwner'
+      'thing',
+      fromWrappedInstanceMethod('isOwner'),
+      'isThingOwner'
     ), 'user_user', 'isThingOwner'
   ),
   HasRole(['thingAuthor'])
 );
-// Now you can apply this to any handlers that need ownership required! \o/
+// Now you can apply this to any handlers that need ownership
+// required! \o/
 
-// My philosophy is that if different types of users need different authorizations, sanitizations, etc,
-// they should have separate URLs prefixed by their relationship to the resource (e.g. byOwner)
+// My philosophy is that if different types of users need different
+// authorizations, sanitizations, etc, they should have separate
+// URLs prefixed by their relationship to the resource (e.g. byOwner)
 // If you don't like it, help implement meta-handlers :)
 Router.get('byOwner/:id',
   hipHandlerFactory(
-    // if there are fields that certain principals shouldn't see, they can be sanitized with different models
-    class GetThingById extends SanitizeResponseWith(RequireOwner, ThingOwnerVisibleModel) {
+    // if there are fields that certain principals shouldn't see,
+    // they can be sanitized with different models
+    class GetThingById extends SanitizeResponseWith(
+      RequireOwner,
+      ThingOwnerVisibleModel
+    ) {
       async doWork() {
-        // note that this.thing was provided by RequireOwner - it's typed too!
+        // note that this.thing was provided by RequireOwner - it's
+        // typed too!
         return { unsafeResponse: this.thing };
       }
     }
@@ -207,9 +234,16 @@ Router.get('byOwner/:id',
 
 Router.put('byOwner/:id',
   hipHandlerFactory(
-    // make sure owners can't mess up protected fields on a resource (foreign keys, IDs, etc) by using a different
-    // model for sanitization
-    class UpdateThingById extends SanitizeBodyWith(SanitizeResponseWith(RequireOwner, ThingIDOnlyModel), ThingOwnerEditableModel) {
+    // make sure owners can't mess up protected fields on a resource
+    // (foreign keys, IDs, etc) by using a different model for
+    // sanitization
+    class UpdateThingById extends SanitizeBodyWith(
+      SanitizeResponseWith(
+        RequireOwner,
+        ThingIDOnlyModel
+      ),
+      ThingOwnerEditableModel
+    ) {
       async doWork() {
         this.thing.set(this.body);
         await this.thing.save();
@@ -228,19 +262,25 @@ Router.put('byOwner/:id',
 
 - Take the class factories to the next level by:
   - implementing special-purpose HipThrusTS-aware mixins
-  - supporting a pipeable syntax similar to rxjs's pipeable operators instead of the current onion syntax
+  - supporting a pipeable syntax similar to rxjs's pipeable operators
+  instead of the current onion syntax
 - Support frameworks other than express.
 - Support ODM/ORMs other than mongoose.
-- Support "meta-handlers" for people that don't share my philosophy that separate authorizations warrant separate URLs.
+- Support "meta-handlers" for people that don't share my philosophy
+that separate authorizations warrant separate URLs.
 - Create helpers for basic CRUD operations.
-- Create a "recipes" layer on top of what currently exists that can spit out multiple handlers so one can simply
-declare "I have a 'thing' with 'owners' defined like this, 'creaters' defined like this, 'readers' defined like this.
-Owners should be able to modify, creaters should be able to create, and readers should be able to create".
+- Create a "recipes" layer on top of what currently exists that can
+spit out multiple handlers so one can simply declare "I have a 'thing'
+with 'owners' defined like this, 'creaters' defined like this, 'readers'
+defined like this. Owners should be able to modify, creaters should be
+able to create, and readers should be able to create".
 - Better documentation, semantics, and tests.
 - Create a starter
 
 ## Why the name "HipThrusTS"
 
-It's a pun.  Hip thrusts are a great excercise invented by Bret Contreras for strengthening the glute muscles.  This library
-is made for strengthening your digital back-end, so it seemed like an appropriate name.
+It's a pun.  Hip thrusts are a great excercise invented by Bret
+Contreras for strengthening the glute muscles.  This library is made
+for strengthening your digital back-end, so it seemed like an
+appropriate name.
 
