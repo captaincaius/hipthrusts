@@ -3,7 +3,7 @@ import {
   Response as ExpressResponse,
   NextFunction as ExpressNextFunction,
 } from 'express';
-import Boom from 'boom';
+import Boom from '@hapi/boom';
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 
@@ -33,7 +33,7 @@ interface HipWorkResponse<ResponseShape> {
   status?: number;
 }
 
-export class HipRedirectException {
+class HipRedirectException {
   constructor(readonly redirectUrl: string, readonly redirectCode = 302) {}
 }
 
@@ -110,7 +110,8 @@ async function assertHipthrustable(RequestHandler: Constructor<AnyHipThrustable>
     'doWork',
     'sanitizeResponse'
   ];
-  for(const method in requiredMethods) {
+  for(const methodIdx in requiredMethods) {
+    const method = requiredMethods[methodIdx];
     if(!RequestHandler.prototype[method] || (typeof RequestHandler.prototype[method]) !== 'function') {
       throw new Error(`Missing instance method "${method}" on supposedly hipthrustable class`);
     }
@@ -119,7 +120,7 @@ async function assertHipthrustable(RequestHandler: Constructor<AnyHipThrustable>
 
 
 // express-specific!
-function toHandlerClass<
+function toExpressHandlerClass<
   TReq extends ExpressRequest,
   TParamsSafe,
   TBodySafe,
@@ -149,7 +150,7 @@ function toHandlerClass<
   };
 }
 
-export function hipHandlerFactory<
+function hipExpressHandlerFactory<
   TParamsSafe,
   TBodySafe,
   TResBodyUnsafeReturn extends TResBodyUnsafeInput,
@@ -165,7 +166,7 @@ export function hipHandlerFactory<
   >
 ) {
   assertHipthrustable(HandlingStrategy);
-  const RequestHandler = toHandlerClass(HandlingStrategy);
+  const RequestHandler = toExpressHandlerClass(HandlingStrategy);
   return async function(
     req: ExpressRequest,
     res: ExpressResponse,
@@ -186,6 +187,7 @@ export function hipHandlerFactory<
   };
 }
 
+// @fixme: generalize this to a general initializeWith similar to attachDataWith
 // @todo: parameter order?
 export function withUserFromReq<
   TSuper extends Constructor,
@@ -264,58 +266,33 @@ export function FinalAuthorizeWith<TPrincipalKey extends string & keyof Instance
   };
 }
 
-interface HasValidateSync {
-  validateSync(): {errors: any[]}
-}
-interface HasToObject<T> {
-  toObject(): T
+interface IsPreAuth<TPrincipal> {
+  (principal: TPrincipal): boolean;
 }
 
-export function SanitizeParamsWith<TSuper extends Constructor, TSafeParam extends ReturnType<TInstance['toObject']>, TModel extends Constructor<HasValidateSync & HasToObject<any>>, TInstance extends InstanceType<TModel>>(Super: TSuper, Model: TModel) {
-  return class WithSanitizedParams extends Super {
+interface OptionallyHasPreAuth {
+  preAuthorize?(): boolean;
+}
+
+export function PreAuthorizeWith<TPrincipalKey extends string & keyof InstanceType<TSuper>, TPrincipal extends InstanceType<TSuper>[TPrincipalKey], TAuthKey extends string, TSuper extends Constructor<Record<TAuthKey,IsFinalAuth<TPrincipal>> & (OptionallyHasPreAuth)>>(Super: TSuper, principalKey: TPrincipalKey, authorizer: IsPreAuth<TPrincipal>) {
+  // @ts-ignore
+  return class WithFinalAuthorize extends Super {
+    // do-not-at-ts-ignore
+    //[whereToStore]: TNext;
     constructor(...args: any[]) {
       super(...args);
     }
-    sanitizeParams(unsafeParams: any) {
-      const doc = new Model(unsafeParams);
-      const validateErrors = doc.validateSync();
-      if(validateErrors.errors && Array.isArray(validateErrors.errors) && validateErrors.errors.length) {
-        throw Boom.badRequest('Params not valid');
+    async preAuthorize() {
+      // @todo: MAKE SURE THIS WORKS PROPERLY IF THERE'S GAPS IN THE PROTOTYPE CHAIN
+      // i.e. chain doesn't break or double-call!!
+      if(super.preAuthorize) {
+        if(!super.preAuthorize()) {
+          return false;
+        }
       }
-      //@tswtf: why do I need to force this?!
-      return <TSafeParam>doc.toObject();
+      return authorizer((<any>this)[principalKey]);
     }
-  }
-}
-
-export function SanitizeBodyWith<TSuper extends Constructor, TSafeBody extends ReturnType<TInstance['toObject']>, TModel extends Constructor<HasValidateSync & HasToObject<any>>, TInstance extends InstanceType<TModel>>(Super: TSuper, Model: TModel) {
-  return class WithSanitizedParams extends Super {
-    constructor(...args: any[]) {
-      super(...args);
-    }
-    sanitizeBody(unsafeBody: any) {
-      const doc = new Model(unsafeBody);
-      const validateErrors = doc.validateSync();
-      if(validateErrors.errors && Array.isArray(validateErrors.errors) && validateErrors.errors.length) {
-        throw Boom.badRequest('Body not valid');
-      }
-      //@tswtf: why do I need to force this?!
-      return <TSafeBody>doc.toObject();
-    }
-  }
-}
-
-export function SanitizeResponseWith<TSuper extends Constructor, TSafeResponse extends ReturnType<TInstance['toObject']>, TModel extends Constructor<HasToObject<any>>, TInstance extends InstanceType<TModel>>(Super: TSuper, Model: TModel) {
-  return class WithSanitizedParams extends Super {
-    constructor(...args: any[]) {
-      super(...args);
-    }
-    sanitizeResponse(unsafeResponse: any) {
-      const doc = new Model(unsafeResponse);
-      //@tswtf: why do I need to force this?!
-      return <TSafeResponse>doc.toObject();
-    }
-  }
+  };
 }
 
 interface FunctionTaking<TIn> {
@@ -332,11 +309,65 @@ export function fromWrappedInstanceMethod<TIn, TOut extends ReturnType<TInstance
   }
 }
 
+interface HasValidateSync {
+  validateSync(): {errors: any[]}
+}
+interface HasToObject<T> {
+  toObject(): T
+}
+
+function SanitizeParamsWith<TSuper extends Constructor, TSafeParam extends ReturnType<TInstance['toObject']>, TModel extends Constructor<HasValidateSync & HasToObject<any>>, TInstance extends InstanceType<TModel>>(Super: TSuper, Model: TModel) {
+  return class WithSanitizedParams extends Super {
+    constructor(...args: any[]) {
+      super(...args);
+    }
+    sanitizeParams(unsafeParams: any) {
+      const doc = new Model(unsafeParams);
+      const validateErrors = doc.validateSync();
+      if(validateErrors.errors && Array.isArray(validateErrors.errors) && validateErrors.errors.length) {
+        throw Boom.badRequest('Params not valid');
+      }
+      //@tswtf: why do I need to force this?!
+      return <TSafeParam>doc.toObject();
+    }
+  }
+}
+
+function SanitizeBodyWith<TSuper extends Constructor, TSafeBody extends ReturnType<TInstance['toObject']>, TModel extends Constructor<HasValidateSync & HasToObject<any>>, TInstance extends InstanceType<TModel>>(Super: TSuper, Model: TModel) {
+  return class WithSanitizedParams extends Super {
+    constructor(...args: any[]) {
+      super(...args);
+    }
+    sanitizeBody(unsafeBody: any) {
+      const doc = new Model(unsafeBody);
+      const validateErrors = doc.validateSync();
+      if(validateErrors.errors && Array.isArray(validateErrors.errors) && validateErrors.errors.length) {
+        throw Boom.badRequest('Body not valid');
+      }
+      //@tswtf: why do I need to force this?!
+      return <TSafeBody>doc.toObject();
+    }
+  }
+}
+
+function SanitizeResponseWith<TSuper extends Constructor, TSafeResponse extends ReturnType<TInstance['toObject']>, TModel extends Constructor<HasToObject<any>>, TInstance extends InstanceType<TModel>>(Super: TSuper, Model: TModel) {
+  return class WithSanitizedParams extends Super {
+    constructor(...args: any[]) {
+      super(...args);
+    }
+    sanitizeResponse(unsafeResponse: any) {
+      const doc = new Model(unsafeResponse);
+      //@tswtf: why do I need to force this?!
+      return <TSafeResponse>doc.toObject();
+    }
+  }
+}
+
 interface ModelWithFindById<TInstance = any> {
   findById(id: string): {exec(): Promise<TInstance>}
 }
 
-export function findByIdAndRequire(Model: ModelWithFindById) {
+function findByIdAndRequire(Model: ModelWithFindById) {
   return function(id: string) {
     return Model.findById(id).exec()
       .then(result=> {
@@ -357,4 +388,33 @@ export interface ResolvesPrincipalId<Tprincipal> {
 }
 export interface ResolvesAssignedId<Tdoc> {
   (principal: Tdoc): string;
+}
+
+function roleCheckersOnRoleKey<TRoleKey extends string>(roleKey: TRoleKey) {
+  return {
+    roleIsWithin(roles: string[]) {
+      return function roleIsWithinThese(principal: Record<TRoleKey, string>) {
+        return roles && roles.length && principal && principal[roleKey] && roles.includes(principal[roleKey]);
+      }
+    }
+  };
+}
+
+export const htBase = {
+  HipRedirectException,
+}
+
+export const htExpress = {
+  hipHandlerFactory: hipExpressHandlerFactory,
+}
+
+export const htMongoose = {
+  findByIdAndRequire,
+  SanitizeBodyWith,
+  SanitizeParamsWith,
+  SanitizeResponseWith,
+}
+
+export const htUsers = {
+  roleCheckersOnRoleKey,
 }
