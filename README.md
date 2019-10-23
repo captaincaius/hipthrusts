@@ -279,8 +279,11 @@ able to create, and readers should be able to create".
 
 ## Why the name "HipThrusTS"
 
-It's a pun.  Hip thrusts are a great excercise invented by Bret
-Contreras for strengthening the glute muscles.  This library is made
-for strengthening your digital back-end, so it seemed like an
-appropriate name.
+It's a pun.  Hip thrusts are a great excercise invented by Dr. Bret
+Contreras, PHD for strengthening the glute muscles.  This library is
+made for strengthening your digital back-end, so it seemed like an
+appropriate name.  He was kind enough to give permission to use the
+name.  He's one of the world's leading experts in sport science, so
+check out [his website](https://bretcontreras.com/) and follow him
+anywhere you can if fitness is one of your interests.
 
