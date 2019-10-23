@@ -39,7 +39,7 @@ class HipRedirectException {
 
 async function executeHipthrustable(requestHandler: AnyHipThrustable) {
   try {
-    if(!requestHandler.preAuthorize()) {
+    if(requestHandler.preAuthorize() !== true) {
       throw Boom.forbidden('General pre-authorization lacking for this resource');
     }
   }
@@ -69,7 +69,7 @@ async function executeHipthrustable(requestHandler: AnyHipThrustable) {
     }
   }
   try {
-    if(!(await requestHandler.finalAuthorize())) {
+    if((await requestHandler.finalAuthorize()) !== true) {
       throw Boom.forbidden('General authorization lacking for this resource');
     }
   }
@@ -320,10 +320,10 @@ export function fromWrappedInstanceMethod<TIn, TOut extends ReturnType<TInstance
 }
 
 interface HasValidateSync {
-  validateSync(): {errors: any[]}
+  validateSync(paths?: any, options?: any): {errors: any[]}
 }
 interface HasToObject<T> {
-  toObject(): T
+  toObject(options?: any): T
 }
 
 /*
@@ -380,14 +380,20 @@ interface ModelWithFindById<TInstance = any> {
 }
 
 function findByIdAndRequire(Model: ModelWithFindById) {
-  return function(id: string) {
-    return Model.findById(id).exec()
-      .then(result=> {
-        if(!result) {
-          throw Boom.notFound('Resource not found');
-        }
-        return result;
-      });
+  return async function(id: string) {
+    // prevent accidental searching for all from previous stages
+    // (e.g. if someone forgot to make id param required in schema so
+    // validation passes when it shouldn't - this example is b/c
+    // mongoose won't initialize with invalid ObjectIds passed to it.
+    if(!id || !(id.toString())) {
+      // @fixme: use something else...
+      throw Boom.notFound('Resource not found');
+    }
+    const result = await Model.findById(id).exec();
+    if(!result) {
+      throw Boom.notFound('Resource not found');
+    }
+    return result;
   }
 }
 
@@ -406,14 +412,14 @@ interface ResolvesAssignedId<Tdoc> {
 
 function assigneeCheckersOnIdKey<TPrincipalIdKey extends string>(principalIdKey: TPrincipalIdKey) {
   return {
-    idOnKeyIs<TIdKey extends string, TObj extends Record<TIdKey, string>>(obj: TObj, idKey: TIdKey) {
-      return function<TPrincipal extends Record<TPrincipalIdKey, string>>(principal: TPrincipal) {
+    idOnKeyIs<TIdKey extends string>(idKey: TIdKey) {
+      return function<TPrincipal extends Record<TPrincipalIdKey, string>>(this:Record<TIdKey, string>, principal: TPrincipal) {
         return (
           principal &&
-          obj &&
+          this &&
           principal[principalIdKey] &&
-          obj[idKey] &&
-          principal[principalIdKey].toString()==obj[idKey].toString()
+          this[idKey] &&
+          principal[principalIdKey].toString()==this[idKey].toString()
         );
       }
     }
@@ -544,6 +550,14 @@ function AddFinalAuthTo<TPrincipalKey extends string & keyof InstanceType<TSuper
   return AddFinalAuth(principalKey, authorizerKey)(Super);
 }
 
+function stripIdTransform(doc: any, ret: {_id: any}, options: any) {
+  delete ret._id;
+  return ret;
+}
+
+// @note for docs: NEVER use _id - mongoose gives it special treatment
+// also, ALWAYS rememver to make required fields required cause mongoose will STRIP invalid fields first!
+// figure out how to make that security gotcha harder to happen
 function AddSanitizeParams<TSafeParam extends ReturnType<TInstance['toObject']>, TModel extends Constructor<HasValidateSync & HasToObject<any>>, TInstance extends InstanceType<TModel>>(Model: TModel) {
   return function<TSuper extends Constructor>(Super: TSuper) {
     return class WithSanitizedParams extends Super {
@@ -553,16 +567,17 @@ function AddSanitizeParams<TSafeParam extends ReturnType<TInstance['toObject']>,
       sanitizeParams(unsafeParams: any) {
         const doc = new Model(unsafeParams);
         const validateErrors = doc.validateSync();
-        if(validateErrors.errors && Array.isArray(validateErrors.errors) && validateErrors.errors.length) {
+        if(validateErrors !== undefined) {
           throw Boom.badRequest('Params not valid');
         }
         //@tswtf: why do I need to force this?!
-        return <TSafeParam>doc.toObject();
+        return <TSafeParam>doc.toObject({transform: stripIdTransform});
       }
     };
   };
 }
 
+// @note: sanitize body validates modified only!  This is cause you usually will only send fields to update.
 function AddSanitizeBody<TSafeBody extends ReturnType<TInstance['toObject']>, TModel extends Constructor<HasValidateSync & HasToObject<any>>, TInstance extends InstanceType<TModel>>(Model: TModel) {
   return function<TSuper extends Constructor>(Super: TSuper) {
     return class WithSanitizedBody extends Super {
@@ -571,12 +586,12 @@ function AddSanitizeBody<TSafeBody extends ReturnType<TInstance['toObject']>, TM
       }
       sanitizeBody(unsafeBody: any) {
         const doc = new Model(unsafeBody);
-        const validateErrors = doc.validateSync();
-        if(validateErrors.errors && Array.isArray(validateErrors.errors) && validateErrors.errors.length) {
+        const validateErrors = doc.validateSync(undefined, {validateModifiedOnly: true});
+        if(validateErrors !== undefined) {
           throw Boom.badRequest('Body not valid');
         }
         //@tswtf: why do I need to force this?!
-        return <TSafeBody>doc.toObject();
+        return <TSafeBody>doc.toObject({transform: stripIdTransform});
       }
     }
   }
