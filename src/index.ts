@@ -33,7 +33,7 @@ interface HipWorkResponse<ResponseShape> {
   status?: number;
 }
 
-class HipRedirectException {
+export class HipRedirectException {
   constructor(readonly redirectUrl: string, readonly redirectCode = 302) {}
 }
 
@@ -649,10 +649,6 @@ function composeExtenders(...fns: Array<ClassExtender<any, any>>) {
   return function composed<TSuper>(Super: TSuper) {
     return fns.reduce((prev, fn)=>fn(prev), Super);
   }
-}
-
-export const htCore = {
-  HipRedirectException,
 }
 
 export const htDeclarative = {
