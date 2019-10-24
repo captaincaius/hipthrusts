@@ -12,11 +12,15 @@
     ]
   },
   "description": "Build stronger, leaner backends with HipThrusTS",
-  "main": "index.js",
-  "types": "index.d.js",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "prepublish": "tsc"
   },
   "license": "MIT",

@@ -2,3 +2,5 @@ index.js
 index.d.ts
 node_modules
 package-lock.json
+build
+lib
