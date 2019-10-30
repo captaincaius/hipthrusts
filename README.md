@@ -97,12 +97,12 @@ const ThingByIdParamFactory = DocumentFactoryFrom({
 });
 // Define the derived schema for fields the owner is able to modify
 const ThingOwnerEditableFactory = DocumentFactoryFrom(
-  SchemaObjToDTO(ThingSchemaObj, 'editableField')
+  dtoSchemaObj(ThingSchemaObj, 'editableField')
 );
 // Define the shape of the response to prevent leakage
 // relevant to other examples
 const ThingUpdateResponseFactory = DocumentFactoryFrom(
-  SchemaObjToDTO(ThingSchemaObj, '_id')
+  dtoSchemaObj(ThingSchemaObj, '_id')
 );
 
 export const UpdateSanitizers = HTPipe(
@@ -167,7 +167,7 @@ declaratively instead too.
 > What if I want to customize EVERY lifecycle stage?
 
 As an example, the original example's helpers and pipes generate a
-class a little like below that could have been implmented manually
+class a little like below that could have been implemented manually
 like so:
 
 ```typescript
