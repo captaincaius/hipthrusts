@@ -1,0 +1,15 @@
+language: node_js
+sudo: false
+node_js: [12, 11, 10, 9, 8]
+install:
+  - travis_retry npm install
+before_script:
+  - echo ':)'
+matrix:
+  include:
+    - name: '👕Linter'
+      node_js: 10
+      before_script: skip
+      script: npm run lint
+notifications:
+  email: false

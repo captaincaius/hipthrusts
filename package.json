@@ -22,7 +22,7 @@
     "clean": "rimraf lib .tsbuildinfo .nyc_output coverage doc build",
     "test": "npm run buildtests && npm run mocha",
     "build": "tsc -p tsconfig.build.json",
-    "buildtests": "npm run lint && tsc -p tsconfig.json",
+    "buildtests": "tsc -p tsconfig.json",
     "lint": "tslint --project tsconfig.json",
     "mocha": "nyc mocha \"./test/index.test.ts\" --timeout 15000",
     "coverage": "nyc report --reporter=text-lcov | coveralls",
@@ -74,7 +74,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "pretty-quick --staged"
+      "pre-commit": "pretty-quick --staged && npm run lint && npm run test"
     }
   },
   "author": "Captain Caius"
