@@ -2,6 +2,8 @@
 
 Build stronger, leaner backends with HipThrusTS
 
+[![Build Status](https://travis-ci.com/captaincaius/hipthrusts.svg?branch=master)](https://travis-ci.com/captaincaius/hipthrusts)
+
 ## WHO is HipThrusTS for?
 
 You:
