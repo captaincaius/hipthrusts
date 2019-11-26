@@ -104,6 +104,23 @@ export function htMongooseFactory(mongoose: any) {
     };
   }
 
+  function WithBodyUpdating(entityToUpdate: string, updateWith: string) {
+    // tslint:disable-next-line:only-arrow-functions
+    return function<TSuper extends Constructor>(Super: TSuper) {
+      return class WithUpdatingBody extends Super {
+        constructor(...args: any[]) {
+          super(...args);
+        }
+        public async doWork() {
+          const responseEntityKey = 'responseEntity';
+          (this as any)[entityToUpdate].set((this as any)[updateWith]);
+          await (this as any)[entityToUpdate].save();
+          (this as any)[responseEntityKey] = (this as any)[entityToUpdate];
+        }
+      };
+    };
+  }
+
   // @note: sanitize body validates modified only!  This is cause you usually will only send fields to update.
   function WithBodySanitized<
     TSafeBody extends ReturnType<TInstance['toObject']>,
@@ -181,6 +198,7 @@ export function htMongooseFactory(mongoose: any) {
   return {
     WithBodySanitized,
     WithBodySanitizedTo,
+    WithBodyUpdating,
     WithParamsSanitized,
     WithParamsSanitizedTo,
     WithResponseSanitized,

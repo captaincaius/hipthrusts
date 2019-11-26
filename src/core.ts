@@ -16,8 +16,9 @@ export interface HipThrustable<
   preAuthorize(): boolean;
   attachData?(): Promise<void>;
   finalAuthorize(): Promise<boolean>;
-  doWork(): Promise<HipWorkResponse<TResBodyUnsafeReturn>>;
+  response(): Promise<HipWorkResponse<TResBodyUnsafeReturn>>;
   sanitizeResponse(unsafeResponse: TResBodyUnsafeInput): any;
+  doWork(): any;
 }
 
 export type AnyHipThrustable = HipThrustable<any, any, any, any>;
@@ -79,7 +80,8 @@ export async function executeHipthrustable(requestHandler: AnyHipThrustable) {
     }
   }
   try {
-    const { unsafeResponse, status } = await requestHandler.doWork();
+    await requestHandler.doWork();
+    const { unsafeResponse, status } = await requestHandler.response();
     const safeResponse = requestHandler.sanitizeResponse(unsafeResponse);
     const responseAndStatus = { response: safeResponse, status: status || 200 };
     return responseAndStatus;
@@ -103,6 +105,7 @@ export async function assertHipthrustable(
     'preAuthorize',
     'finalAuthorize',
     'doWork',
+    'response',
     'sanitizeResponse',
   ];
   requiredMethods.forEach(method => {
