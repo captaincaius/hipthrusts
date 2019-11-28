@@ -104,7 +104,7 @@ export function htMongooseFactory(mongoose: any) {
     };
   }
 
-  function WithBodyUpdating(entityToUpdate: string, updateWith: string) {
+  function WithUpdateByBody(entityToUpdate: string) {
     // tslint:disable-next-line:only-arrow-functions
     return function<TSuper extends Constructor>(Super: TSuper) {
       return class WithUpdatingBody extends Super {
@@ -112,10 +112,13 @@ export function htMongooseFactory(mongoose: any) {
           super(...args);
         }
         public async doWork() {
-          const responseEntityKey = 'responseEntity';
-          (this as any)[entityToUpdate].set((this as any)[updateWith]);
-          await (this as any)[entityToUpdate].save();
-          (this as any)[responseEntityKey] = (this as any)[entityToUpdate];
+          if (Object.keys(this as any).includes(entityToUpdate)) {
+            // tslint:disable:no-string-literal
+            (this as any)[entityToUpdate].set((this as any)['body']);
+            await (this as any)[entityToUpdate].save();
+          } else {
+            throw Boom.badRequest('Resource not found');
+          }
         }
       };
     };
@@ -198,11 +201,11 @@ export function htMongooseFactory(mongoose: any) {
   return {
     WithBodySanitized,
     WithBodySanitizedTo,
-    WithBodyUpdating,
     WithParamsSanitized,
     WithParamsSanitizedTo,
     WithResponseSanitized,
     WithResponseSanitizedTo,
+    WithUpdateByBody,
     documentFactoryFrom,
     dtoSchemaObj,
     findByIdRequired,

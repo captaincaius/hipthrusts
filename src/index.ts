@@ -160,25 +160,21 @@ export function WithResponse<
     Record<TWhereToLook, TWhatYoullFind> & TKnown
   >,
   TWhereToLook extends string,
-  TWhatYoullFind extends Parameters<TProjector>[0],
-  TProjector extends AsyncProjector<
-    any,
-    TWhereToLook extends keyof TKnown ? TKnown[TWhereToLook] : any
-  >,
-  TNext extends PromiseResolveType<ReturnType<TProjector>>,
+  TWhatYoullFind,
   TWhereToStore extends string
->(whereToLook: TWhereToLook, projector: TProjector) {
+>(whereToLook: TWhereToLook) {
   // tslint:disable-next-line:only-arrow-functions
   return function<TSuper extends TSuperConstraint>(
     Super: TSuper
-  ): TSuper & Constructor<Record<TWhereToStore, TNext> & HasDataAttacher> {
+  ): TSuper &
+    Constructor<Record<TWhereToStore, TWhatYoullFind> & HasDataAttacher> {
     // @ts-ignore
     return class WithResponseData extends Super {
       constructor(...args: any[]) {
         super(...args);
       }
       public async response() {
-        return projector((this as any)[whereToLook]);
+        return { unsafeResponse: (this as any)[whereToLook] };
       }
     };
   };
