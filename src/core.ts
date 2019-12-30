@@ -16,9 +16,9 @@ export interface HipThrustable<
   preAuthorize(): boolean;
   attachData?(): Promise<void>;
   finalAuthorize(): Promise<boolean>;
+  doWork(): Promise<void>;
   response(): HipWorkResponse<TResBodyUnsafeReturn>;
   sanitizeResponse(unsafeResponse: TResBodyUnsafeInput): any;
-  doWork(): Promise<void>;
 }
 
 export type AnyHipThrustable = HipThrustable<any, any, any, any>;

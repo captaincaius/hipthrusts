@@ -111,10 +111,10 @@ export function htMongooseFactory(mongoose: any) {
         constructor(...args: any[]) {
           super(...args);
         }
-        public async doWork(): Promise<void> {
+        public async doWork() {
           if (Object.keys(this as any).includes(entityToUpdate)) {
             // tslint:disable:no-string-literal
-            (this as any)[entityToUpdate].set((this as any)['body']);
+            (this as any)[entityToUpdate].set((this as any).body);
             await (this as any)[entityToUpdate].save();
           } else {
             throw Boom.badRequest('Resource not found');
