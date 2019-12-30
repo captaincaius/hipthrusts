@@ -173,7 +173,7 @@ export function WithResponse<
       constructor(...args: any[]) {
         super(...args);
       }
-      public async response() {
+      public response() {
         return { unsafeResponse: (this as any)[whereToLook] };
       }
     };

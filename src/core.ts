@@ -80,8 +80,8 @@ export async function executeHipthrustable(requestHandler: AnyHipThrustable) {
     }
   }
   try {
-    requestHandler.doWork();
-    const { unsafeResponse, status } = await requestHandler.response();
+    await requestHandler.doWork();
+    const { unsafeResponse, status } = requestHandler.response();
     const safeResponse = requestHandler.sanitizeResponse(unsafeResponse);
     const responseAndStatus = { response: safeResponse, status: status || 200 };
     return responseAndStatus;

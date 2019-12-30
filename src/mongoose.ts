@@ -115,7 +115,7 @@ export function htMongooseFactory(mongoose: any) {
           if (Object.keys(this as any).includes(entityToUpdate)) {
             // tslint:disable:no-string-literal
             (this as any)[entityToUpdate].set((this as any)['body']);
-            return await (this as any)[entityToUpdate].save();
+            await (this as any)[entityToUpdate].save();
           } else {
             throw Boom.badRequest('Resource not found');
           }
