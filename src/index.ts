@@ -85,7 +85,7 @@ export function WithPreAuth<
   // tslint:disable-next-line:only-arrow-functions
   return function<
     TSuper extends Constructor<
-      Record<TPrincipalKey, TPrincipal> & (OptionallyHasPreAuth)
+      Record<TPrincipalKey, TPrincipal> & OptionallyHasPreAuth
     >
   >(Super: TSuper) {
     // @ts-ignore
@@ -189,7 +189,7 @@ export function WithFinalAuth<
     TSuper extends Constructor<
       Record<TPrincipalKey, any> &
         Record<TAuthKey, IsFinalAuth<InstanceType<TSuper>[TPrincipalKey]>> &
-        (OptionallyHasFinalAuth)
+        OptionallyHasFinalAuth
     >
   >(Super: TSuper) {
     // @ts-ignore
@@ -208,6 +208,20 @@ export function WithFinalAuth<
           }
         }
         return await (this as any)[authorizerKey]((this as any)[principalKey]);
+      }
+    };
+  };
+}
+
+export function NoopFinalAuth() {
+  // tslint:disable-next-line:only-arrow-functions
+  return function<TSuper extends Constructor>(Super: TSuper) {
+    return class WithFinalAuthorize extends Super {
+      constructor(...args: any[]) {
+        super(...args);
+      }
+      public async finalAuthorize() {
+        return true;
       }
     };
   };
@@ -235,7 +249,7 @@ export function WithPreAuthTo<
   TSuper extends Constructor<
     Record<TPrincipalKey, any> &
       Record<TAuthKey, IsFinalAuth<TPrincipal>> &
-      (OptionallyHasPreAuth)
+      OptionallyHasPreAuth
   >
 >(
   Super: TSuper,
@@ -250,7 +264,7 @@ export function WithAttachedTo<
   TWhereToLook extends string & keyof InstanceType<TSuper>,
   TWhatYoullFind,
   TSuper extends Constructor<
-    Record<TWhereToLook, TWhatYoullFind> & (OptionallyHasDataAttacher)
+    Record<TWhereToLook, TWhatYoullFind> & OptionallyHasDataAttacher
   >,
   TNext
 >(
@@ -264,7 +278,7 @@ export function WithAttachedTo<
   TWhereToLook extends string & keyof InstanceType<TSuper>,
   TWhatYoullFind,
   TSuper extends Constructor<
-    Record<TWhereToLook, TWhatYoullFind> & (OptionallyHasDataAttacher)
+    Record<TWhereToLook, TWhatYoullFind> & OptionallyHasDataAttacher
   >,
   TNext
 >(
@@ -283,7 +297,7 @@ export function WithFinalAuthTo<
   TSuper extends Constructor<
     Record<TPrincipalKey, any> &
       Record<TAuthKey, IsFinalAuth<TPrincipal>> &
-      (OptionallyHasFinalAuth)
+      OptionallyHasFinalAuth
   >
 >(Super: TSuper, principalKey: TPrincipalKey, authorizerKey: TAuthKey) {
   return WithFinalAuth(principalKey, authorizerKey)(Super);
