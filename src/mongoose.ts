@@ -63,18 +63,24 @@ export function htMongooseFactory(mongoose: any) {
     ...rest: any
   ) => HasValidateSync & HasToObject<T>;
 
-  function documentFactoryFrom(schemaConfigObject: any, name = '') {
+  function documentFactoryFromForRequest(schemaConfigObject: any) {
     const schema = new mongoose.Schema(schemaConfigObject, {
       _id: false,
       id: false,
     });
 
-    const MyModel = mongoose.model(name, schema);
-    return (initializerPojo: any) => new MyModel(initializerPojo);
-    // return (initializerPojo: any) => new mongoose.Document(initializerPojo, schema);
-    // switch the 2 lines above with the one line when this issue is fixed and released
-    // https://github.com/Automattic/mongoose/issues/8272
-    // also remove name parameter
+    return (initializerPojo: any) =>
+      new mongoose.Document(initializerPojo, schema);
+  }
+
+  function documentFactoryFromForResponse(schemaConfigObject: any) {
+    const schema = new mongoose.Schema(schemaConfigObject, {
+      _id: true,
+      id: true,
+    });
+
+    return (initializerPojo: any) =>
+      new mongoose.Document(initializerPojo, schema);
   }
 
   // @note for docs: NEVER use _id - mongoose gives it special treatment
@@ -104,6 +110,30 @@ export function htMongooseFactory(mongoose: any) {
     };
   }
 
+  function WithSaveOnDocument(docKey: string) {
+    // tslint:disable-next-line:only-arrow-functions
+    return function<TSuper extends Constructor>(Super: TSuper) {
+      return class WithSaveOnDocument extends Super {
+        constructor(...args: any[]) {
+          super(...args);
+        }
+        public async doWork() {
+          if (Object.keys(this).includes(docKey)) {
+            try {
+              await (this as any)[docKey].save();
+            } catch (err) {
+              throw Boom.badData(
+                'Some data not pass validation, please check your data before create new instance'
+              );
+            }
+          } else {
+            throw Boom.badRequest('Resource not found');
+          }
+        }
+      };
+    };
+  }
+
   function WithUpdateByBody(entityToUpdate: string) {
     // tslint:disable-next-line:only-arrow-functions
     return function<TSuper extends Constructor>(Super: TSuper) {
@@ -119,6 +149,20 @@ export function htMongooseFactory(mongoose: any) {
           } else {
             throw Boom.badRequest('Resource not found');
           }
+        }
+      };
+    };
+  }
+
+  function WithNoopWork() {
+    // tslint:disable-next-line:only-arrow-functions
+    return function<TSuper extends Constructor>(Super: TSuper) {
+      return class WithNoopWork extends Super {
+        constructor(...args: any[]) {
+          super(...args);
+        }
+        public async doWork() {
+          return null;
         }
       };
     };
@@ -146,6 +190,20 @@ export function htMongooseFactory(mongoose: any) {
           }
           // @tswtf: why do I need to force this?!
           return doc.toObject({ transform: stripIdTransform }) as TSafeBody;
+        }
+      };
+    };
+  }
+
+  function WithGetRequestBodyIgnore() {
+    // tslint:disable-next-line:only-arrow-functions
+    return function<TSuper extends Constructor>(Super: TSuper) {
+      return class WithGetRequestBodyIgnore extends Super {
+        constructor(...args: any[]) {
+          super(...args);
+        }
+        public sanitizeBody() {
+          return {};
         }
       };
     };
@@ -201,12 +259,16 @@ export function htMongooseFactory(mongoose: any) {
   return {
     WithBodySanitized,
     WithBodySanitizedTo,
+    WithGetRequestBodyIgnore,
+    WithNoopWork,
     WithParamsSanitized,
     WithParamsSanitizedTo,
     WithResponseSanitized,
     WithResponseSanitizedTo,
     WithUpdateByBody,
-    documentFactoryFrom,
+    WithSaveOnDocument,
+    documentFactoryFromForRequest,
+    documentFactoryFromForResponse,
     dtoSchemaObj,
     findByIdRequired,
     stripIdTransform,

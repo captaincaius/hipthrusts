@@ -109,6 +109,20 @@ export function WithPreAuth<
   };
 }
 
+export function WithNoopPreAuth() {
+  // tslint:disable-next-line:only-arrow-functions
+  return function<TSuper extends Constructor>(Super: TSuper) {
+    return class WithNoopPreAuth extends Super {
+      constructor(...args: any[]) {
+        super(...args);
+      }
+      public preAuthorize() {
+        return true;
+      }
+    };
+  };
+}
+
 type PromiseResolveType<T> = T extends Promise<infer R> ? R : never;
 
 export function WithAttached<
@@ -154,6 +168,18 @@ export function WithAttached<
   };
 }
 
+export function WithPojoToDocument(
+  pojoKey: string,
+  modelClass: any,
+  newDocKey: string
+) {
+  return WithAttached(
+    pojoKey,
+    pojoKey => Promise.resolve(new modelClass(pojoKey)),
+    newDocKey
+  );
+}
+
 export function WithResponse<
   TKnown,
   TSuperConstraint extends Constructor<
@@ -162,7 +188,7 @@ export function WithResponse<
   TWhereToLook extends string,
   TWhatYoullFind,
   TWhereToStore extends string
->(whereToLook: TWhereToLook) {
+>(whereToLook: TWhereToLook, preferredResponseStatusCode: number) {
   // tslint:disable-next-line:only-arrow-functions
   return function<TSuper extends TSuperConstraint>(
     Super: TSuper
@@ -174,7 +200,12 @@ export function WithResponse<
         super(...args);
       }
       public response() {
-        return { unsafeResponse: (this as any)[whereToLook] };
+        return {
+          unsafeResponse: (this as any)[whereToLook],
+          status: preferredResponseStatusCode
+            ? preferredResponseStatusCode
+            : 200,
+        };
       }
     };
   };
