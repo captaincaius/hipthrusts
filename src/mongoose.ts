@@ -113,7 +113,7 @@ export function htMongooseFactory(mongoose: any) {
   function WithSaveOnDocument(docKey: string) {
     // tslint:disable-next-line:only-arrow-functions
     return function<TSuper extends Constructor>(Super: TSuper) {
-      return class WithSaveOnDocument extends Super {
+      return class SaveOnDocument extends Super {
         constructor(...args: any[]) {
           super(...args);
         }
@@ -157,7 +157,7 @@ export function htMongooseFactory(mongoose: any) {
   function WithNoopWork() {
     // tslint:disable-next-line:only-arrow-functions
     return function<TSuper extends Constructor>(Super: TSuper) {
-      return class WithNoopWork extends Super {
+      return class NoopWork extends Super {
         constructor(...args: any[]) {
           super(...args);
         }
@@ -198,7 +198,7 @@ export function htMongooseFactory(mongoose: any) {
   function WithGetRequestBodyIgnore() {
     // tslint:disable-next-line:only-arrow-functions
     return function<TSuper extends Constructor>(Super: TSuper) {
-      return class WithGetRequestBodyIgnore extends Super {
+      return class GetRequestBodyIgnore extends Super {
         constructor(...args: any[]) {
           super(...args);
         }
@@ -265,8 +265,8 @@ export function htMongooseFactory(mongoose: any) {
     WithParamsSanitizedTo,
     WithResponseSanitized,
     WithResponseSanitizedTo,
-    WithUpdateByBody,
     WithSaveOnDocument,
+    WithUpdateByBody,
     documentFactoryFromForRequest,
     documentFactoryFromForResponse,
     dtoSchemaObj,

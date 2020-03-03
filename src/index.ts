@@ -112,7 +112,7 @@ export function WithPreAuth<
 export function WithNoopPreAuth() {
   // tslint:disable-next-line:only-arrow-functions
   return function<TSuper extends Constructor>(Super: TSuper) {
-    return class WithNoopPreAuth extends Super {
+    return class NoopPreAuth extends Super {
       constructor(...args: any[]) {
         super(...args);
       }
@@ -175,6 +175,7 @@ export function WithPojoToDocument(
 ) {
   return WithAttached(
     pojoKey,
+    // tslint:disable-next-line:no-shadowed-variable
     pojoKey => Promise.resolve(new modelClass(pojoKey)),
     newDocKey
   );
@@ -201,10 +202,10 @@ export function WithResponse<
       }
       public response() {
         return {
-          unsafeResponse: (this as any)[whereToLook],
           status: preferredResponseStatusCode
             ? preferredResponseStatusCode
             : 200,
+          unsafeResponse: (this as any)[whereToLook],
         };
       }
     };
