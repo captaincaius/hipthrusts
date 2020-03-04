@@ -1,4 +1,5 @@
 import Boom from '@hapi/boom';
+import { WithAttached } from './subclassers';
 import { Constructor } from './types';
 // tslint:disable-next-line:no-var-requires
 const mask = require('json-mask');
@@ -229,6 +230,19 @@ export function htMongooseFactory(mongoose: any) {
     };
   }
 
+  function WithPojoToDocument(
+    pojoKey: string,
+    modelClass: any,
+    newDocKey: string
+  ) {
+    return WithAttached(
+      pojoKey,
+      // tslint:disable-next-line:no-shadowed-variable
+      pojoKey => Promise.resolve(new modelClass(pojoKey)),
+      newDocKey
+    );
+  }
+
   function WithParamsSanitizedTo<
     TSuper extends Constructor,
     TSafeParam extends ReturnType<TInstance['toObject']>,
@@ -263,6 +277,7 @@ export function htMongooseFactory(mongoose: any) {
     WithNoopWork,
     WithParamsSanitized,
     WithParamsSanitizedTo,
+    WithPojoToDocument,
     WithResponseSanitized,
     WithResponseSanitizedTo,
     WithSaveOnDocument,
