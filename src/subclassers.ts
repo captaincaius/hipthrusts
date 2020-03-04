@@ -69,9 +69,7 @@ export function WithPreAuth<
 >(principalKey: TPrincipalKey, authorizer: TAuthorizer) {
   // tslint:disable-next-line:only-arrow-functions
   return function<
-    TSuper extends Constructor<
-      Record<TPrincipalKey, TPrincipal> & OptionallyHasPreAuth
-    >
+    TSuper extends Constructor<Record<TPrincipalKey, TPrincipal>>
   >(Super: TSuper) {
     // @ts-ignore
     return class WithPreAuthorize extends Super {
@@ -102,7 +100,7 @@ export function WithResponse<
   TWhereToLook extends string,
   TWhatYoullFind,
   TWhereToStore extends string
->(whereToLook: TWhereToLook, preferredResponseStatusCode: number) {
+>(whereToLook: TWhereToLook, successStatusCode: number) {
   // tslint:disable-next-line:only-arrow-functions
   return function<TSuper extends TSuperConstraint>(
     Super: TSuper
@@ -115,9 +113,7 @@ export function WithResponse<
       }
       public response() {
         return {
-          status: preferredResponseStatusCode
-            ? preferredResponseStatusCode
-            : 200,
+          status: successStatusCode,
           unsafeResponse: (this as any)[whereToLook],
         };
       }

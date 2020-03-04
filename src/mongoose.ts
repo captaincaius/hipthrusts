@@ -124,7 +124,7 @@ export function htMongooseFactory(mongoose: any) {
               await (this as any)[docKey].save();
             } catch (err) {
               throw Boom.badData(
-                'Some data not pass validation, please check your data before create new instance'
+                'Unable to save. Please check if data sent was valid.'
               );
             }
           } else {
@@ -196,7 +196,7 @@ export function htMongooseFactory(mongoose: any) {
     };
   }
 
-  function WithGetRequestBodyIgnore() {
+  function WithGetRequestBodyIgnored() {
     // tslint:disable-next-line:only-arrow-functions
     return function<TSuper extends Constructor>(Super: TSuper) {
       return class GetRequestBodyIgnore extends Super {
@@ -222,7 +222,7 @@ export function htMongooseFactory(mongoose: any) {
           super(...args);
         }
         public sanitizeResponse(unsafeResponse: any) {
-          const doc = DocFactory(unsafeResponse);
+          const doc = DocFactory(unsafeResponse.toObject());
           // @tswtf: why do I need to force this?!
           return doc.toObject() as TSafeResponse;
         }
@@ -273,7 +273,7 @@ export function htMongooseFactory(mongoose: any) {
   return {
     WithBodySanitized,
     WithBodySanitizedTo,
-    WithGetRequestBodyIgnore,
+    WithGetRequestBodyIgnored,
     WithNoopWork,
     WithParamsSanitized,
     WithParamsSanitizedTo,

@@ -52,17 +52,7 @@ export function fromWrappedInstanceMethod<
 }
 
 export function WithNoopPreAuth() {
-  // tslint:disable-next-line:only-arrow-functions
-  return function<TSuper extends Constructor>(Super: TSuper) {
-    return class NoopPreAuth extends Super {
-      constructor(...args: any[]) {
-        super(...args);
-      }
-      public preAuthorize() {
-        return true;
-      }
-    };
-  };
+  return WithPreAuth('user_user', () => true);
 }
 
 export function NoopFinalAuth() {
