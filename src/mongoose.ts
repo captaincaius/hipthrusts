@@ -237,8 +237,7 @@ export function htMongooseFactory(mongoose: any) {
   ) {
     return WithAttached(
       pojoKey,
-      // tslint:disable-next-line:no-shadowed-variable
-      pojoKey => Promise.resolve(new modelClass(pojoKey)),
+      pojo => Promise.resolve(new modelClass(pojo)),
       newDocKey
     );
   }
