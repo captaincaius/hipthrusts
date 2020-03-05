@@ -1,4 +1,5 @@
 import Boom from '@hapi/boom';
+import { WithAttached } from './subclassers';
 import { Constructor } from './types';
 // tslint:disable-next-line:no-var-requires
 const mask = require('json-mask');
@@ -63,18 +64,24 @@ export function htMongooseFactory(mongoose: any) {
     ...rest: any
   ) => HasValidateSync & HasToObject<T>;
 
-  function documentFactoryFrom(schemaConfigObject: any, name = '') {
+  function documentFactoryFromForRequest(schemaConfigObject: any) {
     const schema = new mongoose.Schema(schemaConfigObject, {
       _id: false,
       id: false,
     });
 
-    const MyModel = mongoose.model(name, schema);
-    return (initializerPojo: any) => new MyModel(initializerPojo);
-    // return (initializerPojo: any) => new mongoose.Document(initializerPojo, schema);
-    // switch the 2 lines above with the one line when this issue is fixed and released
-    // https://github.com/Automattic/mongoose/issues/8272
-    // also remove name parameter
+    return (initializerPojo: any) =>
+      new mongoose.Document(initializerPojo, schema);
+  }
+
+  function documentFactoryFromForResponse(schemaConfigObject: any) {
+    const schema = new mongoose.Schema(schemaConfigObject, {
+      _id: true,
+      id: true,
+    });
+
+    return (initializerPojo: any) =>
+      new mongoose.Document(initializerPojo, schema);
   }
 
   // @note for docs: NEVER use _id - mongoose gives it special treatment
@@ -104,6 +111,30 @@ export function htMongooseFactory(mongoose: any) {
     };
   }
 
+  function WithSaveOnDocument(docKey: string) {
+    // tslint:disable-next-line:only-arrow-functions
+    return function<TSuper extends Constructor>(Super: TSuper) {
+      return class SaveOnDocument extends Super {
+        constructor(...args: any[]) {
+          super(...args);
+        }
+        public async doWork() {
+          if (Object.keys(this).includes(docKey)) {
+            try {
+              await (this as any)[docKey].save();
+            } catch (err) {
+              throw Boom.badData(
+                'Unable to save. Please check if data sent was valid.'
+              );
+            }
+          } else {
+            throw Boom.badRequest('Resource not found');
+          }
+        }
+      };
+    };
+  }
+
   function WithUpdateByBody(entityToUpdate: string) {
     // tslint:disable-next-line:only-arrow-functions
     return function<TSuper extends Constructor>(Super: TSuper) {
@@ -119,6 +150,20 @@ export function htMongooseFactory(mongoose: any) {
           } else {
             throw Boom.badRequest('Resource not found');
           }
+        }
+      };
+    };
+  }
+
+  function WithNoopWork() {
+    // tslint:disable-next-line:only-arrow-functions
+    return function<TSuper extends Constructor>(Super: TSuper) {
+      return class NoopWork extends Super {
+        constructor(...args: any[]) {
+          super(...args);
+        }
+        public async doWork() {
+          return null;
         }
       };
     };
@@ -151,6 +196,20 @@ export function htMongooseFactory(mongoose: any) {
     };
   }
 
+  function WithGetRequestBodyIgnored() {
+    // tslint:disable-next-line:only-arrow-functions
+    return function<TSuper extends Constructor>(Super: TSuper) {
+      return class GetRequestBodyIgnore extends Super {
+        constructor(...args: any[]) {
+          super(...args);
+        }
+        public sanitizeBody() {
+          return {};
+        }
+      };
+    };
+  }
+
   function WithResponseSanitized<
     TSafeResponse extends ReturnType<TInstance['toObject']>,
     TDocFactory extends DocumentFactory<any>,
@@ -163,12 +222,24 @@ export function htMongooseFactory(mongoose: any) {
           super(...args);
         }
         public sanitizeResponse(unsafeResponse: any) {
-          const doc = DocFactory(unsafeResponse);
+          const doc = DocFactory(unsafeResponse.toObject());
           // @tswtf: why do I need to force this?!
           return doc.toObject() as TSafeResponse;
         }
       };
     };
+  }
+
+  function WithPojoToDocument(
+    pojoKey: string,
+    modelClass: any,
+    newDocKey: string
+  ) {
+    return WithAttached(
+      pojoKey,
+      pojo => Promise.resolve(new modelClass(pojo)),
+      newDocKey
+    );
   }
 
   function WithParamsSanitizedTo<
@@ -201,12 +272,17 @@ export function htMongooseFactory(mongoose: any) {
   return {
     WithBodySanitized,
     WithBodySanitizedTo,
+    WithGetRequestBodyIgnored,
+    WithNoopWork,
     WithParamsSanitized,
     WithParamsSanitizedTo,
+    WithPojoToDocument,
     WithResponseSanitized,
     WithResponseSanitizedTo,
+    WithSaveOnDocument,
     WithUpdateByBody,
-    documentFactoryFrom,
+    documentFactoryFromForRequest,
+    documentFactoryFromForResponse,
     dtoSchemaObj,
     findByIdRequired,
     stripIdTransform,
