@@ -46,27 +46,28 @@ export function fromWrappedInstanceMethod<
   return function(instance: TInstance) {
     // tslint:disable-next-line:only-arrow-functions
     return Promise.resolve(function(arg: TIn): Promise<TOut> {
-      return Promise.resolve(instance[instanceMethodName](arg) as TOut);
+      if (instanceMethodName === 'finalAuthForAll') {
+        return Promise.resolve(true as TOut);
+      } else {
+        return Promise.resolve(instance[instanceMethodName](arg) as TOut);
+      }
     });
   };
 }
 
 export function WithNoopPreAuth() {
-  return WithPreAuth('user_user', () => true);
+  return WithPreAuth('defaultNoopAuthUserKey', () => true);
 }
 
 export function NoopFinalAuth() {
-  // tslint:disable-next-line:only-arrow-functions
-  return function<TSuper extends Constructor>(Super: TSuper) {
-    return class WithFinalAuthorize extends Super {
-      constructor(...args: any[]) {
-        super(...args);
-      }
-      public async finalAuthorize() {
-        return true;
-      }
-    };
-  };
+  return HTPipe(
+    WithAttached(
+      'defaultNoopAuthUserKey',
+      fromWrappedInstanceMethod('finalAuthForAll'),
+      'isUserExist'
+    ),
+    WithFinalAuth('defaultNoopAuthUserKey', 'isUserExist')
+  );
 }
 
 export function WithInitTo<

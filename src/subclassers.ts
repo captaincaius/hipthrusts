@@ -1,3 +1,4 @@
+import Boom from '@hapi/boom';
 import { Constructor } from './types';
 
 type SyncProjector<TNext, TSource> = (source: TSource) => TNext;
@@ -7,6 +8,11 @@ type AnySyncProjector = SyncProjector<any, any>;
 type AsyncProjector<TNext, TSource> = (source: TSource) => Promise<TNext>;
 
 type AnyAsyncProjector = AsyncProjector<any, any>;
+
+enum DoWorkAllowedMethods {
+  UPDATE = 'update',
+  CREATE = 'create',
+}
 
 export interface HasDataAttacher {
   attachData(): Promise<any>;
@@ -129,8 +135,7 @@ export function WithFinalAuth<
   return function<
     TSuper extends Constructor<
       Record<TPrincipalKey, any> &
-        Record<TAuthKey, IsFinalAuth<InstanceType<TSuper>[TPrincipalKey]>> &
-        OptionallyHasFinalAuth
+        Record<TAuthKey, IsFinalAuth<InstanceType<TSuper>[TPrincipalKey]>>
     >
   >(Super: TSuper) {
     // @ts-ignore
@@ -194,6 +199,44 @@ export function WithAttached<
         (this as any)[whereToStore] = await projector(
           (this as any)[whereToLook]
         );
+      }
+    };
+  };
+}
+
+export function WithDoWork<
+  TWhereToLook extends string,
+  TWorkMethod extends DoWorkAllowedMethods,
+  TUpdateWithEntity extends string
+>(
+  whereToLook: TWhereToLook,
+  workMethod: TWorkMethod,
+  updateWithEntityKey?: TUpdateWithEntity
+) {
+  // tslint:disable-next-line:only-arrow-functions
+  return function<TSuper extends Constructor>(Super: TSuper) {
+    return class DoWork extends Super {
+      constructor(...args: any[]) {
+        super(...args);
+      }
+      public async doWork() {
+        if (Object.keys(this).includes(whereToLook)) {
+          if (workMethod === DoWorkAllowedMethods.UPDATE) {
+            const updateWithEntity = updateWithEntityKey
+              ? updateWithEntityKey
+              : 'body';
+            (this as any)[whereToLook].set((this as any)[updateWithEntity]);
+          }
+          try {
+            await (this as any)[whereToLook].save();
+          } catch (err) {
+            throw Boom.badData(
+              'Unable to save. Please check if data sent was valid.'
+            );
+          }
+        } else {
+          throw Boom.badRequest('Resource not found');
+        }
       }
     };
   };

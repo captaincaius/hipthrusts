@@ -1,5 +1,5 @@
 import Boom from '@hapi/boom';
-import { WithAttached } from './subclassers';
+import { WithAttached, WithDoWork } from './subclassers';
 import { Constructor } from './types';
 // tslint:disable-next-line:no-var-requires
 const mask = require('json-mask');
@@ -13,6 +13,11 @@ interface HasValidateSync {
 }
 interface HasToObject<T> {
   toObject(options?: any): T;
+}
+
+enum DoWorkAllowedMethods {
+  UPDATE = 'update',
+  CREATE = 'create',
 }
 
 export function htMongooseFactory(mongoose: any) {
@@ -112,47 +117,11 @@ export function htMongooseFactory(mongoose: any) {
   }
 
   function WithSaveOnDocument(docKey: string) {
-    // tslint:disable-next-line:only-arrow-functions
-    return function<TSuper extends Constructor>(Super: TSuper) {
-      return class SaveOnDocument extends Super {
-        constructor(...args: any[]) {
-          super(...args);
-        }
-        public async doWork() {
-          if (Object.keys(this).includes(docKey)) {
-            try {
-              await (this as any)[docKey].save();
-            } catch (err) {
-              throw Boom.badData(
-                'Unable to save. Please check if data sent was valid.'
-              );
-            }
-          } else {
-            throw Boom.badRequest('Resource not found');
-          }
-        }
-      };
-    };
+    return WithDoWork(docKey, DoWorkAllowedMethods.CREATE);
   }
 
   function WithUpdateByBody(entityToUpdate: string) {
-    // tslint:disable-next-line:only-arrow-functions
-    return function<TSuper extends Constructor>(Super: TSuper) {
-      return class WithUpdatingBody extends Super {
-        constructor(...args: any[]) {
-          super(...args);
-        }
-        public async doWork() {
-          if (Object.keys(this as any).includes(entityToUpdate)) {
-            // tslint:disable:no-string-literal
-            (this as any)[entityToUpdate].set((this as any).body);
-            await (this as any)[entityToUpdate].save();
-          } else {
-            throw Boom.badRequest('Resource not found');
-          }
-        }
-      };
-    };
+    return WithDoWork(entityToUpdate, DoWorkAllowedMethods.UPDATE);
   }
 
   // @note: sanitize body validates modified only!  This is cause you usually will only send fields to update.
@@ -160,7 +129,7 @@ export function htMongooseFactory(mongoose: any) {
     TSafeBody extends ReturnType<TInstance['toObject']>,
     TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>
-  >(DocFactory: TDocFactory) {
+  >(DocFactory?: TDocFactory) {
     // tslint:disable-next-line:only-arrow-functions
     return function<TSuper extends Constructor>(Super: TSuper) {
       return class WithSanitizedBody extends Super {
@@ -168,32 +137,26 @@ export function htMongooseFactory(mongoose: any) {
           super(...args);
         }
         public sanitizeBody(unsafeBody: any) {
-          const doc = DocFactory(unsafeBody);
-          const validateErrors = doc.validateSync(undefined, {
-            validateModifiedOnly: true,
-          });
-          if (validateErrors !== undefined) {
-            throw Boom.badRequest('Body not valid');
+          if (DocFactory) {
+            const doc = DocFactory(unsafeBody);
+            const validateErrors = doc.validateSync(undefined, {
+              validateModifiedOnly: true,
+            });
+            if (validateErrors !== undefined) {
+              throw Boom.badRequest('Body not valid');
+            }
+            // @tswtf: why do I need to force this?!
+            return doc.toObject({ transform: stripIdTransform }) as TSafeBody;
+          } else {
+            return {};
           }
-          // @tswtf: why do I need to force this?!
-          return doc.toObject({ transform: stripIdTransform }) as TSafeBody;
         }
       };
     };
   }
 
   function WithGetRequestBodyIgnored() {
-    // tslint:disable-next-line:only-arrow-functions
-    return function<TSuper extends Constructor>(Super: TSuper) {
-      return class GetRequestBodyIgnore extends Super {
-        constructor(...args: any[]) {
-          super(...args);
-        }
-        public sanitizeBody() {
-          return {};
-        }
-      };
-    };
+    return WithBodySanitized();
   }
 
   function WithResponseSanitized<
