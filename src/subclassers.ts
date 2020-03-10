@@ -9,11 +9,6 @@ type AsyncProjector<TNext, TSource> = (source: TSource) => Promise<TNext>;
 
 type AnyAsyncProjector = AsyncProjector<any, any>;
 
-enum DoWorkAllowedMethods {
-  UPDATE = 'update',
-  CREATE = 'create',
-}
-
 export interface HasDataAttacher {
   attachData(): Promise<any>;
 }
@@ -204,14 +199,8 @@ export function WithAttached<
   };
 }
 
-export function WithDoWork<
-  TWhereToLook extends string,
-  TWorkMethod extends DoWorkAllowedMethods,
-  TUpdateWithEntity extends string
->(
-  whereToLook: TWhereToLook,
-  workMethod: TWorkMethod,
-  updateWithEntityKey?: TUpdateWithEntity
+export function WithDoWork<TProjector extends AnyAsyncProjector>(
+  projector: TProjector
 ) {
   // tslint:disable-next-line:only-arrow-functions
   return function<TSuper extends Constructor>(Super: TSuper) {
@@ -220,23 +209,7 @@ export function WithDoWork<
         super(...args);
       }
       public async doWork() {
-        if (Object.keys(this).includes(whereToLook)) {
-          if (workMethod === DoWorkAllowedMethods.UPDATE) {
-            const updateWithEntity = updateWithEntityKey
-              ? updateWithEntityKey
-              : 'body';
-            (this as any)[whereToLook].set((this as any)[updateWithEntity]);
-          }
-          try {
-            await (this as any)[whereToLook].save();
-          } catch (err) {
-            throw Boom.badData(
-              'Unable to save. Please check if data sent was valid.'
-            );
-          }
-        } else {
-          throw Boom.badRequest('Resource not found');
-        }
+        return projector(this);
       }
     };
   };

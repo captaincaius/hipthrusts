@@ -15,11 +15,6 @@ interface HasToObject<T> {
   toObject(options?: any): T;
 }
 
-enum DoWorkAllowedMethods {
-  UPDATE = 'update',
-  CREATE = 'create',
-}
-
 export function htMongooseFactory(mongoose: any) {
   function findByIdRequired(Model: ModelWithFindById) {
     // tslint:disable-next-line:only-arrow-functions
@@ -117,11 +112,17 @@ export function htMongooseFactory(mongoose: any) {
   }
 
   function WithSaveOnDocument(docKey: string) {
-    return WithDoWork(docKey, DoWorkAllowedMethods.CREATE);
+    return WithDoWork(requestData =>
+      Promise.resolve(requestData[docKey].save())
+    );
   }
 
-  function WithUpdateByBody(entityToUpdate: string) {
-    return WithDoWork(entityToUpdate, DoWorkAllowedMethods.UPDATE);
+  function WithUpdateByBody(entityToUpdate: string, updateWithEntity: string) {
+    return WithDoWork(requestData =>
+      Promise.resolve(
+        requestData[entityToUpdate].set(requestData[updateWithEntity])
+      ).then(requestData[entityToUpdate].save())
+    );
   }
 
   // @note: sanitize body validates modified only!  This is cause you usually will only send fields to update.
