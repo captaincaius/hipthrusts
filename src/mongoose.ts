@@ -182,7 +182,7 @@ export function htMongooseFactory(mongoose: any) {
     };
   }
 
-  function WithGetRequestBodyIgnored() {
+  function WithRequestBodyIgnored() {
     // tslint:disable-next-line:only-arrow-functions
     return function<TSuper extends Constructor>(Super: TSuper) {
       return class GetRequestBodyIgnore extends Super {
@@ -258,10 +258,10 @@ export function htMongooseFactory(mongoose: any) {
   return {
     WithBodySanitized,
     WithBodySanitizedTo,
-    WithGetRequestBodyIgnored,
     WithParamsSanitized,
     WithParamsSanitizedTo,
     WithPojoToDocument,
+    WithRequestBodyIgnored,
     WithResponseSanitized,
     WithResponseSanitizedTo,
     WithSaveOnDocument,
