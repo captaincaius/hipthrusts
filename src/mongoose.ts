@@ -111,18 +111,25 @@ export function htMongooseFactory(mongoose: any) {
     };
   }
 
-  function WithSaveOnDocument(docKey: string) {
-    return WithDoWork(requestData =>
-      Promise.resolve(requestData[docKey].save())
-    );
+  function WithSaveOnDocument(entityToCreate: string) {
+    return WithDoWork(async requestData => {
+      if (Object.keys(requestData).includes(entityToCreate)) {
+        return await requestData[entityToCreate].save();
+      } else {
+        throw Boom.badRequest('Resource not found');
+      }
+    });
   }
 
   function WithUpdateByBody(entityToUpdate: string, updateWithEntity: string) {
-    return WithDoWork(requestData =>
-      Promise.resolve(
-        requestData[entityToUpdate].set(requestData[updateWithEntity])
-      ).then(requestData[entityToUpdate].save())
-    );
+    return WithDoWork(async requestData => {
+      if (Object.keys(requestData).includes(entityToUpdate)) {
+        await requestData[entityToUpdate].set(requestData[updateWithEntity]);
+        return await requestData[entityToUpdate].save();
+      } else {
+        throw Boom.badRequest('Resource not found');
+      }
+    });
   }
 
   // @note: sanitize body validates modified only!  This is cause you usually will only send fields to update.

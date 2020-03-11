@@ -209,7 +209,17 @@ export function WithDoWork<TProjector extends AnyAsyncProjector>(
         super(...args);
       }
       public async doWork() {
-        return projector(this);
+        try {
+          await projector(this);
+        } catch (err) {
+          if (Boom.isBoom(err)) {
+            throw err;
+          } else {
+            throw Boom.badData(
+              'Unable to save. Please check if data sent was valid.'
+            );
+          }
+        }
       }
     };
   };
