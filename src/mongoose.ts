@@ -208,7 +208,7 @@ export function htMongooseFactory(mongoose: any) {
           super(...args);
         }
         public sanitizeResponse(unsafeResponse: any) {
-          const doc = DocFactory(unsafeResponse.toObject());
+          const doc = DocFactory(unsafeResponse);
           // @tswtf: why do I need to force this?!
           return doc.toObject() as TSafeResponse;
         }
