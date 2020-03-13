@@ -13,21 +13,9 @@ export interface HasDataAttacher {
   attachData(): Promise<any>;
 }
 
-interface OptionallyHasDataAttacher {
-  attachData?(): Promise<any>;
-}
-
 type IsFinalAuth<TPrincipal> = (principal: TPrincipal) => Promise<boolean>;
 
-interface OptionallyHasFinalAuth {
-  finalAuthorize?(): Promise<boolean>;
-}
-
 type IsPreAuth<TPrincipal> = (principal: TPrincipal) => boolean;
-
-interface OptionallyHasPreAuth {
-  preAuthorize?(): boolean;
-}
 
 type FunctionTaking<TIn> = (param: TIn) => any;
 
@@ -122,15 +110,13 @@ export function WithResponse<
   };
 }
 
-export function WithFinalAuth<
-  TPrincipalKey extends string,
-  TAuthKey extends string
->(principalKey: TPrincipalKey, authorizerKey: TAuthKey) {
+export function WithFinalAuth<TProjector extends AnyAsyncProjector>(
+  projector: TProjector
+) {
   // tslint:disable-next-line:only-arrow-functions
   return function<
     TSuper extends Constructor<
-      Record<TPrincipalKey, any> &
-        Record<TAuthKey, IsFinalAuth<InstanceType<TSuper>[TPrincipalKey]>>
+      Record<any, any> & Record<any, IsFinalAuth<InstanceType<TSuper>>>
     >
   >(Super: TSuper) {
     // @ts-ignore
@@ -148,7 +134,7 @@ export function WithFinalAuth<
             return false;
           }
         }
-        return await (this as any)[authorizerKey]((this as any)[principalKey]);
+        return await projector(this);
       }
     };
   };
@@ -158,22 +144,12 @@ type PromiseResolveType<T> = T extends Promise<infer R> ? R : never;
 
 export function WithAttached<
   TKnown,
-  TSuperConstraint extends Constructor<
-    Record<TWhereToLook, TWhatYoullFind> & TKnown
-  >,
-  TWhereToLook extends string,
+  TSuperConstraint extends Constructor<Record<any, TWhatYoullFind> & TKnown>,
   TWhatYoullFind extends Parameters<TProjector>[0],
-  TProjector extends AsyncProjector<
-    any,
-    TWhereToLook extends keyof TKnown ? TKnown[TWhereToLook] : any
-  >,
+  TProjector extends AnyAsyncProjector,
   TNext extends PromiseResolveType<ReturnType<TProjector>>,
   TWhereToStore extends string
->(
-  whereToLook: TWhereToLook,
-  projector: TProjector,
-  whereToStore: TWhereToStore
-) {
+>(projector: TProjector, whereToStore: TWhereToStore) {
   // tslint:disable-next-line:only-arrow-functions
   return function<TSuper extends TSuperConstraint>(
     Super: TSuper
@@ -191,35 +167,32 @@ export function WithAttached<
         if (super.attachData) {
           await super.attachData();
         }
-        (this as any)[whereToStore] = await projector(
-          (this as any)[whereToLook]
-        );
+        (this as any)[whereToStore] = await projector(this);
       }
     };
   };
 }
 
-export function WithDoWork<TProjector extends AnyAsyncProjector>(
-  projector: TProjector
-) {
+export function WithDoWork<
+  TProjector extends AnyAsyncProjector,
+  TSuperConstraint extends Constructor<Record<any, any>>
+>(projector: TProjector) {
   // tslint:disable-next-line:only-arrow-functions
-  return function<TSuper extends Constructor>(Super: TSuper) {
-    return class DoWork extends Super {
+  return function<TSuper extends TSuperConstraint>(
+    Super: TSuper
+  ): TSuper & Constructor<Record<any, any>> {
+    // tslint:disable-next-line:no-shadowed-variable
+    return class WithDoWork extends Super {
       constructor(...args: any[]) {
         super(...args);
       }
       public async doWork() {
-        try {
-          await projector(this);
-        } catch (err) {
-          if (Boom.isBoom(err)) {
-            throw err;
-          } else {
-            throw Boom.badData(
-              'Unable to save. Please check if data sent was valid.'
-            );
-          }
+        // @todo: MAKE SURE THIS WORKS PROPERLY IF THERE'S GAPS IN THE PROTOTYPE CHAIN
+        // i.e. chain doesn't break or double-call!!
+        if (super.doWork) {
+          super.doWork();
         }
+        await projector(this);
       }
     };
   };

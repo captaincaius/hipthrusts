@@ -81,7 +81,7 @@ import {
   HTPipe,
   // mixin for adding local instance-scoped variable
   // via a projection function
-  WithAttached,
+  WithAttachedFrom,
   // mixin for implementing required final authorization
   WithFinalAuth,
 } from 'hipthrusts';
@@ -117,13 +117,17 @@ export const UpdateSanitizers = HTPipe(
 // for any endpoints for an "owner" to use
 // also provides the "thing" itself on the "this.thing" property
 export const AuthThingOwner = HTPipe(
-  WithAttached(
+  WithAttachedFrom(
     'params',
     (params: { id: string }) => Promise.resolve(params.id),
     'thingId'
   ),
-  WithAttached('thingId', findByIdAndRequire(ThingModel), 'thing'),
-  WithAttached('thing', fromWrappedInstanceMethod('isOwner'), 'isThingOwner'),
+  WithAttachedFrom('thingId', findByIdAndRequire(ThingModel), 'thing'),
+  WithAttachedFrom(
+    'thing',
+    fromWrappedInstanceMethod('isOwner'),
+    'isThingOwner'
+  ),
   FinalAuthorizeWith('user_user', 'isThingOwner')
 );
 export const UpdatePreauth = WithPreAuth(HasRole(['thingAuthor']));

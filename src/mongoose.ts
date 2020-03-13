@@ -1,5 +1,6 @@
 import Boom from '@hapi/boom';
-import { WithAttached, WithDoWork } from './subclassers';
+import { WithAttachedFrom } from '.';
+import { WithDoWork } from './subclassers';
 import { Constructor } from './types';
 // tslint:disable-next-line:no-var-requires
 const mask = require('json-mask');
@@ -111,21 +112,31 @@ export function htMongooseFactory(mongoose: any) {
     };
   }
 
-  function WithSaveOnDocument(entityToCreate: string) {
+  function WithSaveOnDocument(propertyKeyOfDocument: string) {
     return WithDoWork(async requestData => {
-      if (Object.keys(requestData).includes(entityToCreate)) {
-        return await requestData[entityToCreate].save();
+      if (Object.keys(requestData).includes(propertyKeyOfDocument)) {
+        try {
+          return await requestData[propertyKeyOfDocument].save();
+        } catch (err) {
+          throw Boom.badData(
+            'Unable to save. Please check if data sent was valid.'
+          );
+        }
       } else {
         throw Boom.badRequest('Resource not found');
       }
     });
   }
 
-  function WithUpdateByBody(entityToUpdate: string, updateWithEntity: string) {
+  function WithUpdateDocument(
+    propertyKeyOfDocument: string,
+    propertyKeyWithNewData: string = 'body'
+  ) {
     return WithDoWork(async requestData => {
-      if (Object.keys(requestData).includes(entityToUpdate)) {
-        await requestData[entityToUpdate].set(requestData[updateWithEntity]);
-        return await requestData[entityToUpdate].save();
+      if (Object.keys(requestData).includes(propertyKeyOfDocument)) {
+        return await requestData[propertyKeyOfDocument].set(
+          requestData[propertyKeyWithNewData]
+        );
       } else {
         throw Boom.badRequest('Resource not found');
       }
@@ -137,7 +148,7 @@ export function htMongooseFactory(mongoose: any) {
     TSafeBody extends ReturnType<TInstance['toObject']>,
     TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>
-  >(DocFactory?: TDocFactory) {
+  >(DocFactory: TDocFactory) {
     // tslint:disable-next-line:only-arrow-functions
     return function<TSuper extends Constructor>(Super: TSuper) {
       return class WithSanitizedBody extends Super {
@@ -164,7 +175,9 @@ export function htMongooseFactory(mongoose: any) {
   }
 
   function WithGetRequestBodyIgnored() {
-    return WithBodySanitized();
+    return WithBodySanitized(
+      documentFactoryFromForRequest(dtoSchemaObj({}, ''))
+    );
   }
 
   function WithResponseSanitized<
@@ -192,7 +205,7 @@ export function htMongooseFactory(mongoose: any) {
     modelClass: any,
     newDocKey: string
   ) {
-    return WithAttached(
+    return WithAttachedFrom(
       pojoKey,
       pojo => Promise.resolve(new modelClass(pojo)),
       newDocKey
@@ -236,7 +249,7 @@ export function htMongooseFactory(mongoose: any) {
     WithResponseSanitized,
     WithResponseSanitizedTo,
     WithSaveOnDocument,
-    WithUpdateByBody,
+    WithUpdateDocument,
     documentFactoryFromForRequest,
     documentFactoryFromForResponse,
     dtoSchemaObj,
