@@ -114,11 +114,9 @@ export function WithFinalAuth<TProjector extends AnyAsyncProjector>(
   projector: TProjector
 ) {
   // tslint:disable-next-line:only-arrow-functions
-  return function<
-    TSuper extends Constructor<
-      Record<any, any> & Record<any, IsFinalAuth<InstanceType<TSuper>>>
-    >
-  >(Super: TSuper) {
+  return function<TSuper extends Constructor<Parameters<TProjector>[0]>>(
+    Super: TSuper
+  ) {
     // @ts-ignore
     return class WithFinalAuthorize extends Super {
       // do-not-at-ts-ignore

@@ -114,7 +114,7 @@ export function htMongooseFactory(mongoose: any) {
 
   function WithSaveOnDocument(propertyKeyOfDocument: string) {
     return WithDoWork(async requestData => {
-      if (Object.keys(requestData).includes(propertyKeyOfDocument)) {
+      if (requestData[propertyKeyOfDocument]) {
         try {
           return await requestData[propertyKeyOfDocument].save();
         } catch (err) {
@@ -133,7 +133,7 @@ export function htMongooseFactory(mongoose: any) {
     propertyKeyWithNewData: string = 'body'
   ) {
     return WithDoWork(async requestData => {
-      if (Object.keys(requestData).includes(propertyKeyOfDocument)) {
+      if (requestData[propertyKeyOfDocument]) {
         return await requestData[propertyKeyOfDocument].set(
           requestData[propertyKeyWithNewData]
         );
