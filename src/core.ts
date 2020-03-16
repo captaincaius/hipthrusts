@@ -81,6 +81,8 @@ export async function executeHipthrustable(requestHandler: AnyHipThrustable) {
   }
   try {
     if (requestHandler.doWork) {
+      // to keep executeHipthrustable from being too opinionated, it's doWork's responsibility to handle and throw client errors.
+      // Any un-boom'ed errors here should be interpreted as server errors
       await requestHandler.doWork();
     }
     const { unsafeResponse, status } = requestHandler.response();

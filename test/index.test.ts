@@ -3,7 +3,7 @@ import chaiAsPromised from 'chai-as-promised';
 import 'mocha';
 import { expectType } from 'tsd';
 
-import { HTPipe, WithAttached, WithInit } from '../src';
+import { HTPipe, WithAttachedFrom, WithInit } from '../src';
 
 use(chaiAsPromised);
 
@@ -44,8 +44,8 @@ describe('HipThrusTS', () => {
         expect(hipRequestInstance.existingField).to.be.equal('Hyrule');
       });
     });
-    describe('WithAttached', () => {
-      const AddThingIdFromParams = WithAttached(
+    describe('WithAttachedFrom', () => {
+      const AddThingIdFromParams = WithAttachedFrom(
         'params',
         (params: { id: string }) => Promise.resolve(params.id),
         'thingId'
@@ -62,9 +62,9 @@ describe('HipThrusTS', () => {
           }
         }
         // @todo: fix like the HTPipe stuff (no assign) - this may not actually work!
-        const typeIsOkay: (typeof BaseWithoutParams) extends (Parameters<
+        const typeIsOkay: typeof BaseWithoutParams extends Parameters<
           typeof AddThingIdFromParams
-        >[0])
+        >[0]
           ? true
           : false = false;
         expectType<false>(typeIsOkay);
@@ -78,9 +78,9 @@ describe('HipThrusTS', () => {
           }
         }
         // @todo: fix like the HTPipe stuff (no assign) - this may not actually work!
-        const typeIsOkay: (typeof BaseWithMistypedParams) extends (Parameters<
+        const typeIsOkay: typeof BaseWithMistypedParams extends Parameters<
           typeof AddThingIdFromParams
-        >[0])
+        >[0]
           ? true
           : false = false;
         expectType<false>(typeIsOkay);
@@ -95,9 +95,9 @@ describe('HipThrusTS', () => {
         }
         it('pleases the compiler', () => {
           // @todo: fix like the HTPipe stuff (no assign) - this may not actually work!
-          const typeIsOkay: (typeof BaseWithProperParams) extends (Parameters<
+          const typeIsOkay: typeof BaseWithProperParams extends Parameters<
             typeof AddThingIdFromParams
-          >[0])
+          >[0]
             ? true
             : false = true;
           expectType<true>(typeIsOkay);
@@ -138,22 +138,26 @@ describe('HipThrusTS', () => {
         };
       }
       const AddWholeFamily = HTPipe(
-        WithAttached(
+        WithAttachedFrom(
           'grandparent',
           (grandparent: Grandparent) => Promise.resolve(grandparent.parent),
           'parent'
         ),
-        WithAttached(
+        WithAttachedFrom(
           'parent',
           parent => Promise.resolve(parent.child),
           'child'
         ),
-        WithAttached(
+        WithAttachedFrom(
           'grandparent',
           grandparent => Promise.resolve(grandparent.gName),
           'gName'
         ),
-        WithAttached('child', child => Promise.resolve(child.age), 'childAge')
+        WithAttachedFrom(
+          'child',
+          child => Promise.resolve(child.age),
+          'childAge'
+        )
       );
       class BaseWithProperParams {
         public grandparent = {

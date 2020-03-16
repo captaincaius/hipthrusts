@@ -1,5 +1,6 @@
 import Boom from '@hapi/boom';
-import { WithAttached } from './subclassers';
+import { WithAttachedFrom } from '.';
+import { WithDoWork } from './subclassers';
 import { Constructor } from './types';
 // tslint:disable-next-line:no-var-requires
 const mask = require('json-mask');
@@ -133,48 +134,35 @@ export function htMongooseFactory(mongoose: any) {
     };
   }
 
-  function WithSaveOnDocument(docKey: string) {
-    // tslint:disable-next-line:only-arrow-functions
-    return function<TSuper extends Constructor>(Super: TSuper) {
-      return class SaveOnDocument extends Super {
-        constructor(...args: any[]) {
-          super(...args);
+  function WithSaveOnDocument(propertyKeyOfDocument: string) {
+    return WithDoWork(async requestData => {
+      if (requestData[propertyKeyOfDocument]) {
+        try {
+          return await requestData[propertyKeyOfDocument].save();
+        } catch (err) {
+          throw Boom.badData(
+            'Unable to save. Please check if data sent was valid.'
+          );
         }
-        public async doWork() {
-          if (Object.keys(this).includes(docKey)) {
-            try {
-              await (this as any)[docKey].save();
-            } catch (err) {
-              throw Boom.badData(
-                'Unable to save. Please check if data sent was valid.'
-              );
-            }
-          } else {
-            throw Boom.badRequest('Resource not found');
-          }
-        }
-      };
-    };
+      } else {
+        throw Boom.badRequest('Resource not found');
+      }
+    });
   }
 
-  function WithUpdateByBody(entityToUpdate: string) {
-    // tslint:disable-next-line:only-arrow-functions
-    return function<TSuper extends Constructor>(Super: TSuper) {
-      return class WithUpdatingBody extends Super {
-        constructor(...args: any[]) {
-          super(...args);
-        }
-        public async doWork() {
-          if (Object.keys(this as any).includes(entityToUpdate)) {
-            // tslint:disable:no-string-literal
-            (this as any)[entityToUpdate].set((this as any).body);
-            await (this as any)[entityToUpdate].save();
-          } else {
-            throw Boom.badRequest('Resource not found');
-          }
-        }
-      };
-    };
+  function WithUpdateDocument(
+    propertyKeyOfDocument: string,
+    propertyKeyWithNewData: string = 'body'
+  ) {
+    return WithDoWork(async requestData => {
+      if (requestData[propertyKeyOfDocument]) {
+        return await requestData[propertyKeyOfDocument].set(
+          requestData[propertyKeyWithNewData]
+        );
+      } else {
+        throw Boom.badRequest('Resource not found');
+      }
+    });
   }
 
   // @note: sanitize body validates modified only!  This is cause you usually will only send fields to update.
@@ -190,32 +178,28 @@ export function htMongooseFactory(mongoose: any) {
           super(...args);
         }
         public sanitizeBody(unsafeBody: any) {
-          const doc = DocFactory(unsafeBody);
-          const validateErrors = doc.validateSync(undefined, {
-            validateModifiedOnly: true,
-          });
-          if (validateErrors !== undefined) {
-            throw Boom.badRequest('Body not valid');
+          if (DocFactory) {
+            const doc = DocFactory(unsafeBody);
+            const validateErrors = doc.validateSync(undefined, {
+              validateModifiedOnly: true,
+            });
+            if (validateErrors !== undefined) {
+              throw Boom.badRequest('Body not valid');
+            }
+            // @tswtf: why do I need to force this?!
+            return doc.toObject({ transform: stripIdTransform }) as TSafeBody;
+          } else {
+            return {};
           }
-          // @tswtf: why do I need to force this?!
-          return doc.toObject({ transform: stripIdTransform }) as TSafeBody;
         }
       };
     };
   }
 
   function WithRequestBodyIgnored() {
-    // tslint:disable-next-line:only-arrow-functions
-    return function<TSuper extends Constructor>(Super: TSuper) {
-      return class GetRequestBodyIgnore extends Super {
-        constructor(...args: any[]) {
-          super(...args);
-        }
-        public sanitizeBody() {
-          return {};
-        }
-      };
-    };
+    return WithBodySanitized(
+      documentFactoryFromForRequest(dtoSchemaObj({}, ''))
+    );
   }
 
   function WithResponseSanitized<
@@ -243,7 +227,7 @@ export function htMongooseFactory(mongoose: any) {
     modelClass: any,
     newDocKey: string
   ) {
-    return WithAttached(
+    return WithAttachedFrom(
       pojoKey,
       pojo => Promise.resolve(new modelClass(pojo)),
       newDocKey
@@ -287,7 +271,7 @@ export function htMongooseFactory(mongoose: any) {
     WithResponseSanitized,
     WithResponseSanitizedTo,
     WithSaveOnDocument,
-    WithUpdateByBody,
+    WithUpdateDocument,
     documentFactoryFromForRequest,
     documentFactoryFromForResponse,
     dtoSchemaObj,
