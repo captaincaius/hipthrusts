@@ -9,6 +9,10 @@ interface ModelWithFindById<TInstance = any> {
   findById(id: string): { exec(): Promise<TInstance> };
 }
 
+interface ModelWithFindOne<TInstance = any> {
+  findOne(options: any): { exec(): Promise<TInstance> };
+}
+
 interface HasValidateSync {
   validateSync(paths?: any, options?: any): { errors: any[] };
 }
@@ -28,6 +32,24 @@ export function htMongooseFactory(mongoose: any) {
         throw Boom.badRequest('Missing dependent resource ID');
       }
       const result = await Model.findById(id).exec();
+      if (!result) {
+        throw Boom.notFound('Resource not found');
+      }
+      return result;
+    };
+  }
+
+  function findOneByRequired(Model: ModelWithFindOne, fieldName: string) {
+    // tslint:disable-next-line:only-arrow-functions
+    return async function(fieldValue: any) {
+      if (!fieldValue || !fieldValue.toString()) {
+        throw Boom.badRequest('Missing dependent resource value');
+      }
+      const result = await Model.findOne({
+        [fieldName]: {
+          $eq: fieldValue,
+        },
+      }).exec();
       if (!result) {
         throw Boom.notFound('Resource not found');
       }
@@ -174,7 +196,7 @@ export function htMongooseFactory(mongoose: any) {
     };
   }
 
-  function WithGetRequestBodyIgnored() {
+  function WithRequestBodyIgnored() {
     return WithBodySanitized(
       documentFactoryFromForRequest(dtoSchemaObj({}, ''))
     );
@@ -192,7 +214,7 @@ export function htMongooseFactory(mongoose: any) {
           super(...args);
         }
         public sanitizeResponse(unsafeResponse: any) {
-          const doc = DocFactory(unsafeResponse.toObject());
+          const doc = DocFactory(unsafeResponse);
           // @tswtf: why do I need to force this?!
           return doc.toObject() as TSafeResponse;
         }
@@ -242,10 +264,10 @@ export function htMongooseFactory(mongoose: any) {
   return {
     WithBodySanitized,
     WithBodySanitizedTo,
-    WithGetRequestBodyIgnored,
     WithParamsSanitized,
     WithParamsSanitizedTo,
     WithPojoToDocument,
+    WithRequestBodyIgnored,
     WithResponseSanitized,
     WithResponseSanitizedTo,
     WithSaveOnDocument,
@@ -254,6 +276,7 @@ export function htMongooseFactory(mongoose: any) {
     documentFactoryFromForResponse,
     dtoSchemaObj,
     findByIdRequired,
+    findOneByRequired,
     stripIdTransform,
   };
 }
