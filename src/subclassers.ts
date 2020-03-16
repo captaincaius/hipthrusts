@@ -51,15 +51,13 @@ export function WithInit<
   };
 }
 
-export function WithPreAuth<
-  TPrincipalKey extends string,
-  TAuthorizer extends IsPreAuth<any>,
-  TPrincipal extends Parameters<TAuthorizer>[0]
->(principalKey: TPrincipalKey, authorizer: TAuthorizer) {
+export function WithPreAuth<TAuthorizer extends IsPreAuth<any>>(
+  authorizer: TAuthorizer
+) {
   // tslint:disable-next-line:only-arrow-functions
-  return function<
-    TSuper extends Constructor<Record<TPrincipalKey, TPrincipal>>
-  >(Super: TSuper) {
+  return function<TSuper extends Constructor<Parameters<TAuthorizer>[0]>>(
+    Super: TSuper
+  ) {
     // @ts-ignore
     return class WithPreAuthorize extends Super {
       // do-not-at-ts-ignore
@@ -75,7 +73,7 @@ export function WithPreAuth<
             return false;
           }
         }
-        return authorizer((this as any)[principalKey]);
+        return authorizer(this);
       }
     };
   };

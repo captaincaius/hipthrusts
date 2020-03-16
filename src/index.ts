@@ -49,7 +49,14 @@ export function fromWrappedInstanceMethod<
 }
 
 export function WithNoopPreAuth() {
-  return WithPreAuth('defaultNoopAuthUserKey', () => true);
+  return WithPreAuth(() => true);
+}
+
+export function WithPreAuthFrom<
+  TPrincipalKey extends string,
+  TAuthorizer extends IsPreAuth<any>
+>(principalKey: TPrincipalKey, authorizer: TAuthorizer) {
+  return WithPreAuth(requestData => authorizer(requestData[principalKey]));
 }
 
 export function WithFinalAuthFrom<
@@ -139,7 +146,7 @@ export function WithPreAuthTo<
   principalKey: TPrincipalKey,
   authorizer: IsPreAuth<TPrincipal>
 ) {
-  return WithPreAuth(principalKey, authorizer)(Super);
+  return WithPreAuthFrom(principalKey, authorizer)(Super);
 }
 
 export function WithAttachedFromTo<
