@@ -8,6 +8,10 @@ interface ModelWithFindById<TInstance = any> {
   findById(id: string): { exec(): Promise<TInstance> };
 }
 
+interface ModelWithFindOne<TInstance = any> {
+  findOne(options: any): { exec(): Promise<TInstance> };
+}
+
 interface HasValidateSync {
   validateSync(paths?: any, options?: any): { errors: any[] };
 }
@@ -27,6 +31,24 @@ export function htMongooseFactory(mongoose: any) {
         throw Boom.badRequest('Missing dependent resource ID');
       }
       const result = await Model.findById(id).exec();
+      if (!result) {
+        throw Boom.notFound('Resource not found');
+      }
+      return result;
+    };
+  }
+
+  function findOneByRequired(Model: ModelWithFindOne, fieldName: string) {
+    // tslint:disable-next-line:only-arrow-functions
+    return async function(fieldValue: any) {
+      if (!fieldValue || !fieldValue.toString()) {
+        throw Boom.badRequest('Missing dependent resource value');
+      }
+      const result = await Model.findOne({
+        [fieldName]: {
+          $eq: fieldValue,
+        },
+      }).exec();
       if (!result) {
         throw Boom.notFound('Resource not found');
       }
@@ -270,6 +292,7 @@ export function htMongooseFactory(mongoose: any) {
     documentFactoryFromForResponse,
     dtoSchemaObj,
     findByIdRequired,
+    findOneByRequired,
     stripIdTransform,
   };
 }
