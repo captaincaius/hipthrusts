@@ -186,7 +186,7 @@ export function WithDoWork<
         // @todo: MAKE SURE THIS WORKS PROPERLY IF THERE'S GAPS IN THE PROTOTYPE CHAIN
         // i.e. chain doesn't break or double-call!!
         if (super.doWork) {
-          super.doWork();
+          await super.doWork();
         }
         await projector(this);
       }
