@@ -1,5 +1,7 @@
 import { Constructor } from './types';
 
+// @fixme: redo all these functionally!
+
 type SyncProjector<TNext, TSource> = (source: TSource) => TNext;
 
 type AnySyncProjector = SyncProjector<any, any>;

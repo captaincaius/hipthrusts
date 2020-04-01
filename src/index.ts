@@ -1,10 +1,16 @@
+import { isHasAttachData } from './core';
 import {
   WithAttached,
   WithFinalAuth,
   WithInit,
   WithPreAuth,
 } from './subclassers';
-import { Constructor } from './types';
+import {
+  Constructor,
+  HasAttachData,
+  OptionallyHasAttachData,
+  PromiseResolveOrSync,
+} from './types';
 
 type SyncProjector<TNext, TSource> = (source: TSource) => TNext;
 
@@ -143,6 +149,84 @@ export function WithFinalAuthTo<
   >
 >(Super: TSuper, principalKey: TPrincipalKey, authorizerKey: TAuthKey) {
   return WithFinalAuth(principalKey, authorizerKey)(Super);
+}
+
+// @todo: implement all the other HTPipe*'s - note that each one will be slightly different based on their specifics...
+// i.e. can return bool vs not, possibly async vs sync only, mandatory vs not mandatory...
+// then the final master HTPipe will just build an object out of all the sub-HTPipe*'s
+export function HTPipeAttachData<
+  TLeft extends OptionallyHasAttachData<
+    any,
+    TRight extends HasAttachData<any, any>
+      ? Partial<Parameters<TRight['attachData']>[0]>
+      : any
+  >,
+  TRight extends OptionallyHasAttachData<any, any>,
+  TContextInLeft extends TLeft extends HasAttachData<any, any>
+    ? Parameters<TLeft['attachData']>[0]
+    : {},
+  TContextInRight extends TRight extends HasAttachData<any, any>
+    ? Parameters<TRight['attachData']>[0]
+    : {},
+  TContextOutLeft extends TLeft extends HasAttachData<any, any>
+    ? PromiseResolveOrSync<ReturnType<TLeft['attachData']>>
+    : {},
+  TContextOutRight extends TRight extends HasAttachData<any, any>
+    ? PromiseResolveOrSync<ReturnType<TRight['attachData']>>
+    : {}
+>(
+  left: TLeft,
+  right: TRight
+): HasAttachData<
+  TContextInLeft & Omit<TContextInRight, keyof TContextOutLeft>,
+  TContextOutLeft & TContextOutRight
+>;
+// @todo: consider for better DX, making the above NOT Optionally_, and making 3 more variants that spit out more direct
+// TLeft, TRight, and {} types instead.  CAREFUL: Make sure that if the constraint on TLeft is violated, it isn't allowed by
+// another overload by accident! i.e. make sure that if one of left's outputs has a type mismatch with one of right's inputs, it errors!
+// CAREFUL: these names mean different things above and below O.o
+export function HTPipeAttachData<
+  TLeft extends OptionallyHasAttachData<any, any>,
+  TRight extends OptionallyHasAttachData<any, any>,
+  TContextInLeft extends TLeft extends HasAttachData<any, any>
+    ? Parameters<TLeft['attachData']>[0]
+    : never,
+  TContextInRight extends TRight extends HasAttachData<any, any>
+    ? Parameters<TRight['attachData']>[0]
+    : never,
+  TContextOutLeft extends TLeft extends HasAttachData<any, any>
+    ? PromiseResolveOrSync<ReturnType<TLeft['attachData']>>
+    : never,
+  TContextOutRight extends TRight extends HasAttachData<any, any>
+    ? PromiseResolveOrSync<ReturnType<TRight['attachData']>>
+    : never
+>(left: TLeft, right: TRight) {
+  if (isHasAttachData(left) && isHasAttachData(right)) {
+    return {
+      attachData: async (
+        context: TContextOutLeft extends TContextInRight
+          ? TContextInLeft
+          : TContextInRight & TContextInLeft
+      ) => {
+        const leftOut = (await Promise.resolve(left.attachData(context))) || {};
+        const rightIn = {
+          ...context,
+          ...leftOut,
+        };
+        const rightOut =
+          (await Promise.resolve(right.attachData(rightIn))) || {};
+        return { ...leftOut, ...rightOut };
+      },
+    };
+  } else if (isHasAttachData(left)) {
+    // return { attachData: (context: TContextInLeft) => left.attachData(context) };
+    return { attachData: left.attachData };
+  } else if (isHasAttachData(right)) {
+    // return { attachData: (context: TContextInRight) => right.attachData(context) };
+    return { attachData: right.attachData };
+  } else {
+    return {};
+  }
 }
 
 type ClassExtender<TClassIn, TClassOut> = (ClassIn: TClassIn) => TClassOut;

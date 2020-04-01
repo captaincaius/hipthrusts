@@ -62,9 +62,9 @@ describe('HipThrusTS', () => {
           }
         }
         // @todo: fix like the HTPipe stuff (no assign) - this may not actually work!
-        const typeIsOkay: (typeof BaseWithoutParams) extends (Parameters<
+        const typeIsOkay: typeof BaseWithoutParams extends Parameters<
           typeof AddThingIdFromParams
-        >[0])
+        >[0]
           ? true
           : false = false;
         expectType<false>(typeIsOkay);
@@ -78,9 +78,9 @@ describe('HipThrusTS', () => {
           }
         }
         // @todo: fix like the HTPipe stuff (no assign) - this may not actually work!
-        const typeIsOkay: (typeof BaseWithMistypedParams) extends (Parameters<
+        const typeIsOkay: typeof BaseWithMistypedParams extends Parameters<
           typeof AddThingIdFromParams
-        >[0])
+        >[0]
           ? true
           : false = false;
         expectType<false>(typeIsOkay);
@@ -95,9 +95,9 @@ describe('HipThrusTS', () => {
         }
         it('pleases the compiler', () => {
           // @todo: fix like the HTPipe stuff (no assign) - this may not actually work!
-          const typeIsOkay: (typeof BaseWithProperParams) extends (Parameters<
+          const typeIsOkay: typeof BaseWithProperParams extends Parameters<
             typeof AddThingIdFromParams
-          >[0])
+          >[0]
             ? true
             : false = true;
           expectType<true>(typeIsOkay);
@@ -193,3 +193,91 @@ describe('HipThrusTS', () => {
     });
   });
 });
+
+// @fixme: MAKE TESTS OUT OF EVERYTHING BELOW!
+// cover withDefault cases too
+// for each stage cover:
+// - happy path from previous stage normal
+// - happy path from way before normal
+// - happy path from previous stage with extra keys in object PROVIDED
+// - happy path from way before normal with extra keys in object PROVIDED
+// - sad path missing that particular key altogether
+// - sad path provided by previous but type mismatch
+// - sad path ONLY PARTIALLY provided by previous (e.g. provided params: {a: string}, requesting params: {a: string, b: number})
+// - sad path provided by way before but type mismatch
+// - sad path ONLY PARTIALLY provided way before (e.g. provided params: {a: string}, requesting params: {a: string, b: number})
+/*
+const blah2 = {
+    initPreContext() {
+        return {};
+    },
+    sanitizeParams() {
+        return {
+            ting: 5
+        };
+    },
+    sanitizeBody() {
+        return {
+            ting: 5
+        };
+    },
+    preAuthorize(context: {params: {ting: number}, body: {}}) {
+        return {asdf: {ting: 4}};
+    },
+    attachData(context: {asdf: {ting: number}}) {
+        return {adOut: 4, ddd: "hi"};
+    },
+    finalAuthorize(context: {ddd: string}) {
+        return {};
+    },
+    doWork(context: {}) {
+      return {};
+    },
+    respond(context: {}) {
+      return {unsafeResponse: {}};
+    },
+    sanitizeResponse(unsafeResponse: {}) {
+      return {};
+    }
+}
+hipExpressHandlerFactory(blah2);
+*/
+
+// @fixme: MAKE TESTS OUT OF EVERYTHING BELOW!
+// also test the types come out correct (not too broad and not too narrow!)
+/*
+const left = {
+  attachData(context: {a: string}) {
+    return {b: 4};
+  }
+}
+const leftBad = {
+  attachData(context: {a: string}) {
+    return {b: "bad"};
+  }
+}
+const rightFullyCovered = {
+  attachData(context: {b: number}) {
+    return {c: 4};
+  }
+}
+const rightPartiallyCovered = {
+  attachData(context: {b: number, other: string}) {
+    return {c: 4};
+  }
+}
+const rightNotCovered = {
+  attachData(context: {other: string}) {
+    return {c: 4};
+  }
+}
+
+const pipedError = HTPipeAttachData(leftBad,rightFullyCovered);
+const pipedAtoBC = HTPipeAttachData(left,rightFullyCovered);
+const pipedAOtoBC1 = HTPipeAttachData(left,rightPartiallyCovered);
+const pipedAOtoBC2 = HTPipeAttachData(left,rightPartiallyCovered);
+const pipedLeftOnly = HTPipeAttachData(left,{});
+const pipedRightOnly = HTPipeAttachData({},rightPartiallyCovered);
+const pipedNoneToNone = HTPipeAttachData({},{});
+// @todo: ALSO ADD ALL THE ABOVE PATHS BUT W/ ASYNC!
+*/

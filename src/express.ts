@@ -7,65 +7,61 @@ import {
   assertHipthrustable,
   executeHipthrustable,
   HipRedirectException,
-  HipThrustable,
 } from './core';
-import { Constructor } from './types';
+import {
+  HasAllRequireds,
+  HasAttachDataProperOptionals,
+  HasBodyProperOptionals,
+  HasDoWorkProperOptionals,
+  HasFinalAuthorizeProperOptionals,
+  HasInitPreContext,
+  HasInitPreContextProperOptionals,
+  HasParamsProperOptionals,
+  HasPreauthProperOptionals,
+  HasRespondProperOptionals,
+  HasUpToAttachDataProperOptionals,
+  HasUpToDoWorkProperOptionals,
+  HasUpToFinalAuthorizeProperOptionals,
+  HasUpToRespondProperOptionals,
+} from './types';
 
-function toExpressHandlerClass<
-  TReq extends ExpressRequest,
-  TParamsSafe,
-  TBodySafe,
-  TResBodyUnsafeReturn extends TResBodyUnsafeInput,
-  TResBodyUnsafeInput,
-  TStrategy extends Constructor<
-    HipThrustable<
-      TParamsSafe,
-      TBodySafe,
-      TResBodyUnsafeReturn,
-      TResBodyUnsafeInput
-    >
-  >
->(Strategy: TStrategy) {
-  return class extends Strategy {
-    protected unsafeReq: TReq;
-    protected unsafeRes: Express.Response;
-    constructor(...args: any[]) {
-      super(...args);
-      const req = args[0];
-      const res = args[1];
-      this.unsafeReq = req;
-      this.unsafeRes = res;
-      this.params = this.sanitizeParams(req.params);
-      this.body = this.sanitizeBody(req.body);
-    }
-  };
+interface ExpressInitialUnsafeContext {
+  req: ExpressRequest;
+  res: ExpressResponse;
 }
 
 export function hipExpressHandlerFactory<
-  TParamsSafe,
-  TBodySafe,
-  TResBodyUnsafeReturn extends TResBodyUnsafeInput,
-  TResBodyUnsafeInput
->(
-  HandlingStrategy: Constructor<
-    HipThrustable<
-      TParamsSafe,
-      TBodySafe,
-      TResBodyUnsafeReturn,
-      TResBodyUnsafeInput
-    >
-  >
-) {
-  assertHipthrustable(HandlingStrategy);
-  const RequestHandler = toExpressHandlerClass(HandlingStrategy);
+  TConf extends HasAllRequireds &
+    HasInitPreContext<any, any> &
+    HasInitPreContextProperOptionals<TConf> &
+    HasParamsProperOptionals<TConf> &
+    HasBodyProperOptionals<TConf> &
+    HasPreauthProperOptionals<TConf> &
+    HasUpToAttachDataProperOptionals<TConf> &
+    HasAttachDataProperOptionals<TConf> &
+    HasUpToFinalAuthorizeProperOptionals<TConf> &
+    HasFinalAuthorizeProperOptionals<TConf> &
+    HasUpToDoWorkProperOptionals<TConf> &
+    HasDoWorkProperOptionals<TConf> &
+    HasUpToRespondProperOptionals<TConf> &
+    HasRespondProperOptionals<TConf>
+>(handlingStrategy: TConf) {
+  assertHipthrustable(handlingStrategy);
+  // @todo: MINOR: consider bringing this back - it's tricky though cause you need to
+  // trick typescript into knowing it's assignable to executeHipthrustable's param!
+  // const fullHipthrustable = withDefaultImplementations(handlingStrategy);
   return async (
     req: ExpressRequest,
     res: ExpressResponse,
     next: ExpressNextFunction
   ) => {
     try {
-      const requestHandler = new RequestHandler(req, res);
-      const { response, status } = await executeHipthrustable(requestHandler);
+      const { response, status } = await executeHipthrustable(
+        handlingStrategy,
+        { req, res },
+        req.params,
+        req.body
+      );
       res.status(status).json(response);
     } catch (exception) {
       if (exception instanceof HipRedirectException) {
