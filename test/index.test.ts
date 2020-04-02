@@ -3,7 +3,7 @@ import chaiAsPromised from 'chai-as-promised';
 import 'mocha';
 import { expectType } from 'tsd';
 
-import { HTPipe, WithAttached, WithInit } from '../src';
+import { HTPipe, HTPipeAttachData, WithAttached, WithInit } from '../src';
 
 use(chaiAsPromised);
 
@@ -192,6 +192,116 @@ describe('HipThrusTS', () => {
       });
     });
   });
+  describe('Hipthrusts functional only', () => {
+    describe('HTPipeAttachData', async () => {
+      const left = {
+        attachData(context: { a: string }) {
+          return { b: 4 };
+        },
+      };
+      const leftBad = {
+        attachData(context: { a: string }) {
+          return { b: 'bad' };
+        },
+      };
+      const rightFullyCovered = {
+        attachData(context: { b: number }) {
+          return { c: 4 };
+        },
+      };
+      const rightPartiallyCovered = {
+        attachData(context: { b: number; other: string }) {
+          return { c: 4 };
+        },
+      };
+      const rightNotCovered = {
+        attachData(context: { other: string }) {
+          return { c: 4 };
+        },
+      };
+
+      // async paths
+
+      const leftAsync = {
+        attachData(context: { a: string }) {
+          return Promise.resolve({ b: 4 });
+        },
+      };
+      const leftBadAsync = {
+        attachData(context: { a: string }) {
+          return Promise.resolve({ b: 'bad' });
+        },
+      };
+      const rightFullyCoveredAsync = {
+        attachData(context: { b: number }) {
+          return Promise.resolve({ c: 4 });
+        },
+      };
+      const rightPartiallyCoveredAsync = {
+        attachData(context: { b: number; other: string }) {
+          return Promise.resolve({ c: 4 });
+        },
+      };
+      const rightNotCoveredAsync = {
+        attachData(context: { other: string }) {
+          return Promise.resolve({ c: 4 });
+        },
+      };
+
+      // HTPipeAttachData with sync
+
+      const pipedAtoBC = HTPipeAttachData(left, rightFullyCovered);
+      const pipedAOtoBC1 = HTPipeAttachData(left, rightPartiallyCovered);
+      const pipedAOtoBC2 = HTPipeAttachData(left, rightPartiallyCovered);
+      const pipedLeftOnly = HTPipeAttachData(left, {});
+      const pipedRightOnly = HTPipeAttachData({}, rightPartiallyCovered);
+      const pipedNoneToNone = HTPipeAttachData({}, {});
+
+      const pipedAtoBCResult = await pipedAtoBC.attachData({ a: '' });
+
+      const typeIsOkayFalse: typeof pipedAtoBCResult.b extends string
+        ? true
+        : false = false;
+      expectType<false>(typeIsOkayFalse);
+
+      const typeIsOkayTrue: typeof pipedAtoBCResult.b extends number
+        ? true
+        : false = true;
+      expectType<true>(typeIsOkayTrue);
+
+      // HTPipeAttachData with async
+
+      const pipedAtoBCAsync = HTPipeAttachData(
+        leftAsync,
+        rightFullyCoveredAsync
+      );
+      const pipedAOtoBC1Async = HTPipeAttachData(
+        leftAsync,
+        rightPartiallyCoveredAsync
+      );
+      const pipedAOtoBC2Async = HTPipeAttachData(
+        leftAsync,
+        rightPartiallyCoveredAsync
+      );
+      const pipedLeftOnlyAsync = HTPipeAttachData(leftAsync, {});
+      const pipedRightOnlyAsync = HTPipeAttachData(
+        {},
+        rightPartiallyCoveredAsync
+      );
+
+      const pipedAtoBCAsyncResult = await pipedAtoBCAsync.attachData({ a: '' });
+
+      const typeIsOkayAsyncFalse: typeof pipedAtoBCResult.b extends string
+        ? true
+        : false = false;
+      expectType<false>(typeIsOkayAsyncFalse);
+
+      const typeIsOkayAsyncTrue: typeof pipedAtoBCResult.b extends number
+        ? true
+        : false = true;
+      expectType<true>(typeIsOkayAsyncTrue);
+    });
+  });
 });
 
 // @fixme: MAKE TESTS OUT OF EVERYTHING BELOW!
@@ -241,43 +351,4 @@ const blah2 = {
     }
 }
 hipExpressHandlerFactory(blah2);
-*/
-
-// @fixme: MAKE TESTS OUT OF EVERYTHING BELOW!
-// also test the types come out correct (not too broad and not too narrow!)
-/*
-const left = {
-  attachData(context: {a: string}) {
-    return {b: 4};
-  }
-}
-const leftBad = {
-  attachData(context: {a: string}) {
-    return {b: "bad"};
-  }
-}
-const rightFullyCovered = {
-  attachData(context: {b: number}) {
-    return {c: 4};
-  }
-}
-const rightPartiallyCovered = {
-  attachData(context: {b: number, other: string}) {
-    return {c: 4};
-  }
-}
-const rightNotCovered = {
-  attachData(context: {other: string}) {
-    return {c: 4};
-  }
-}
-
-const pipedError = HTPipeAttachData(leftBad,rightFullyCovered);
-const pipedAtoBC = HTPipeAttachData(left,rightFullyCovered);
-const pipedAOtoBC1 = HTPipeAttachData(left,rightPartiallyCovered);
-const pipedAOtoBC2 = HTPipeAttachData(left,rightPartiallyCovered);
-const pipedLeftOnly = HTPipeAttachData(left,{});
-const pipedRightOnly = HTPipeAttachData({},rightPartiallyCovered);
-const pipedNoneToNone = HTPipeAttachData({},{});
-// @todo: ALSO ADD ALL THE ABOVE PATHS BUT W/ ASYNC!
 */
