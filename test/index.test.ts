@@ -358,10 +358,7 @@ describe('HipThrusTS', () => {
         const pipedRightOnly = HTPipeAttachData({}, {});
 
         // tslint:disable-next-line:prefer-const
-        let returnTypeOfHTPipeAttachData: HasAttachData<
-          {} & Omit<{}, keyof {}>,
-          {}
-        >;
+        let returnTypeOfHTPipeAttachData: {};
 
         const typeIsOkay: typeof pipedRightOnly extends typeof returnTypeOfHTPipeAttachData
           ? true
