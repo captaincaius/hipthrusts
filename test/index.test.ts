@@ -4,6 +4,7 @@ import 'mocha';
 import { expectType } from 'tsd';
 
 import { HTPipe, HTPipeAttachData, WithAttached, WithInit } from '../src';
+import { HasAttachData, PromiseResolveOrSync } from '../src/types';
 
 use(chaiAsPromised);
 
@@ -193,113 +194,340 @@ describe('HipThrusTS', () => {
     });
   });
   describe('Hipthrusts functional only', () => {
-    describe('HTPipeAttachData', async () => {
-      const left = {
-        attachData(context: { a: string }) {
-          return { b: 4 };
-        },
-      };
-      const leftBad = {
-        attachData(context: { a: string }) {
-          return { b: 'bad' };
-        },
-      };
-      const rightFullyCovered = {
-        attachData(context: { b: number }) {
-          return { c: 4 };
-        },
-      };
-      const rightPartiallyCovered = {
-        attachData(context: { b: number; other: string }) {
-          return { c: 4 };
-        },
-      };
-      const rightNotCovered = {
-        attachData(context: { other: string }) {
-          return { c: 4 };
-        },
-      };
+    describe('HTPipeAttachData', () => {
+      it('attaches properly typed data from left and right sync data attacher', () => {
+        const left = {
+          attachData(context: { a: string }) {
+            return { b: 4 };
+          },
+        };
+
+        const rightFullyCovered = {
+          attachData(context: { b: number }) {
+            return { c: 4 };
+          },
+        };
+
+        const pipedAtoBC = HTPipeAttachData(left, rightFullyCovered);
+
+        // tslint:disable-next-line:prefer-const
+        let leftParamsType: Parameters<
+          (context: { a: string }) => { b: number }
+        >[0];
+        // tslint:disable-next-line:prefer-const
+        let leftReturnType: ReturnType<(context: {
+          a: string;
+        }) => { b: number }>;
+
+        // tslint:disable-next-line:prefer-const
+        let rightParamsType: Parameters<
+          (context: { b: number }) => { c: number }
+        >[0];
+        // tslint:disable-next-line:prefer-const
+        let rightReturnType: ReturnType<(context: {
+          b: number;
+        }) => { c: number }>;
+
+        // tslint:disable-next-line:prefer-const
+        let returnTypeOfHTPipeAttachData: HasAttachData<
+          typeof leftParamsType &
+            Omit<
+              typeof rightParamsType,
+              keyof PromiseResolveOrSync<typeof leftReturnType>
+            >,
+          PromiseResolveOrSync<typeof leftReturnType> &
+            PromiseResolveOrSync<typeof rightReturnType>
+        >;
+
+        const typeIsOkay: typeof pipedAtoBC extends typeof returnTypeOfHTPipeAttachData
+          ? true
+          : false = true;
+        expectType<true>(typeIsOkay);
+      });
+      it('attaches properly typed data from left sync data attacher and right not fully covered sync data attacher', () => {
+        const left = {
+          attachData(context: { a: string }) {
+            return { b: 4 };
+          },
+        };
+
+        const rightPartiallyCovered = {
+          attachData(context: { b: number; other: string }) {
+            return { c: 4 };
+          },
+        };
+
+        const pipedAOtoBC1 = HTPipeAttachData(left, rightPartiallyCovered);
+
+        // tslint:disable-next-line:prefer-const
+        let leftParamsType: Parameters<
+          (context: { a: string }) => { b: number }
+        >[0];
+        // tslint:disable-next-line:prefer-const
+        let leftReturnType: ReturnType<(context: {
+          a: string;
+        }) => { b: number }>;
+
+        // tslint:disable-next-line:prefer-const
+        let rightParamsType: Parameters<
+          (context: { b: number; other: string }) => { c: number }
+        >[0];
+        // tslint:disable-next-line:prefer-const
+        let rightReturnType: ReturnType<(context: {
+          b: number;
+          other: string;
+        }) => { c: number }>;
+
+        // tslint:disable-next-line:prefer-const
+        let returnTypeOfHTPipeAttachData: HasAttachData<
+          typeof leftParamsType &
+            Omit<
+              typeof rightParamsType,
+              keyof PromiseResolveOrSync<typeof leftReturnType>
+            >,
+          PromiseResolveOrSync<typeof leftReturnType> &
+            PromiseResolveOrSync<typeof rightReturnType>
+        >;
+
+        const typeIsOkay: typeof pipedAOtoBC1 extends typeof returnTypeOfHTPipeAttachData
+          ? true
+          : false = true;
+        expectType<true>(typeIsOkay);
+      });
+      it('attaches properly typed data from left sync data attacher only', () => {
+        const left = {
+          attachData(context: { a: string }) {
+            return { b: 4 };
+          },
+        };
+
+        const pipedLeftOnly = HTPipeAttachData(left, {});
+
+        // tslint:disable-next-line:prefer-const
+        let leftParamsType: Parameters<
+          (context: { a: string }) => { b: number }
+        >[0];
+        // tslint:disable-next-line:prefer-const
+        let leftReturnType: ReturnType<(context: {
+          a: string;
+        }) => { b: number }>;
+
+        // tslint:disable-next-line:prefer-const
+        let returnTypeOfHTPipeAttachData: HasAttachData<
+          typeof leftParamsType &
+            Omit<{}, keyof PromiseResolveOrSync<typeof leftReturnType>>,
+          PromiseResolveOrSync<typeof leftReturnType> & {}
+        >;
+
+        const typeIsOkay: typeof pipedLeftOnly extends typeof returnTypeOfHTPipeAttachData
+          ? true
+          : false = true;
+        expectType<true>(typeIsOkay);
+      });
+      it('attaches properly typed data from right sync data attacher only', () => {
+        const rightPartiallyCovered = {
+          attachData(context: { b: number; other: string }) {
+            return { c: 4 };
+          },
+        };
+
+        const pipedRightOnly = HTPipeAttachData({}, rightPartiallyCovered);
+
+        // tslint:disable-next-line:prefer-const
+        let rightParamsType: Parameters<
+          (context: { b: number; other: string }) => { c: number }
+        >[0];
+        // tslint:disable-next-line:prefer-const
+        let rightReturnType: ReturnType<(context: {
+          b: number;
+          other: string;
+        }) => { c: number }>;
+
+        // tslint:disable-next-line:prefer-const
+        let returnTypeOfHTPipeAttachData: HasAttachData<
+          {} & Omit<typeof rightParamsType, keyof {}>,
+          {} & PromiseResolveOrSync<typeof rightReturnType>
+        >;
+
+        const typeIsOkay: typeof pipedRightOnly extends typeof returnTypeOfHTPipeAttachData
+          ? true
+          : false = true;
+        expectType<true>(typeIsOkay);
+      });
+      it('no attaches data when left and right is empty objects', () => {
+        const pipedRightOnly = HTPipeAttachData({}, {});
+
+        // tslint:disable-next-line:prefer-const
+        let returnTypeOfHTPipeAttachData: HasAttachData<
+          {} & Omit<{}, keyof {}>,
+          {}
+        >;
+
+        const typeIsOkay: typeof pipedRightOnly extends typeof returnTypeOfHTPipeAttachData
+          ? true
+          : false = true;
+        expectType<true>(typeIsOkay);
+      });
 
       // async paths
 
-      const leftAsync = {
-        attachData(context: { a: string }) {
-          return Promise.resolve({ b: 4 });
-        },
-      };
-      const leftBadAsync = {
-        attachData(context: { a: string }) {
-          return Promise.resolve({ b: 'bad' });
-        },
-      };
-      const rightFullyCoveredAsync = {
-        attachData(context: { b: number }) {
-          return Promise.resolve({ c: 4 });
-        },
-      };
-      const rightPartiallyCoveredAsync = {
-        attachData(context: { b: number; other: string }) {
-          return Promise.resolve({ c: 4 });
-        },
-      };
-      const rightNotCoveredAsync = {
-        attachData(context: { other: string }) {
-          return Promise.resolve({ c: 4 });
-        },
-      };
+      it('attaches properly typed data from left and right async data attacher', () => {
+        const left = {
+          attachData(context: { a: string }) {
+            return Promise.resolve({ b: 4 });
+          },
+        };
 
-      // HTPipeAttachData with sync
+        const rightFullyCovered = {
+          attachData(context: { b: number }) {
+            return Promise.resolve({ c: 4 });
+          },
+        };
 
-      const pipedAtoBC = HTPipeAttachData(left, rightFullyCovered);
-      const pipedAOtoBC1 = HTPipeAttachData(left, rightPartiallyCovered);
-      const pipedAOtoBC2 = HTPipeAttachData(left, rightPartiallyCovered);
-      const pipedLeftOnly = HTPipeAttachData(left, {});
-      const pipedRightOnly = HTPipeAttachData({}, rightPartiallyCovered);
-      const pipedNoneToNone = HTPipeAttachData({}, {});
+        const pipedAtoBC = HTPipeAttachData(left, rightFullyCovered);
 
-      const pipedAtoBCResult = await pipedAtoBC.attachData({ a: '' });
+        // tslint:disable-next-line:prefer-const
+        let leftParamsType: Parameters<
+          (context: { a: string }) => Promise<{ b: number }>
+        >[0];
+        // tslint:disable-next-line:prefer-const
+        let leftReturnType: ReturnType<(context: {
+          a: string;
+        }) => Promise<{ b: number }>>;
 
-      const typeIsOkayFalse: typeof pipedAtoBCResult.b extends string
-        ? true
-        : false = false;
-      expectType<false>(typeIsOkayFalse);
+        // tslint:disable-next-line:prefer-const
+        let rightParamsType: Parameters<
+          (context: { b: number }) => Promise<{ c: number }>
+        >[0];
+        // tslint:disable-next-line:prefer-const
+        let rightReturnType: ReturnType<(context: {
+          b: number;
+        }) => Promise<{ c: number }>>;
 
-      const typeIsOkayTrue: typeof pipedAtoBCResult.b extends number
-        ? true
-        : false = true;
-      expectType<true>(typeIsOkayTrue);
+        // tslint:disable-next-line:prefer-const
+        let returnTypeOfHTPipeAttachData: HasAttachData<
+          typeof leftParamsType &
+            Omit<
+              typeof rightParamsType,
+              keyof PromiseResolveOrSync<typeof leftReturnType>
+            >,
+          PromiseResolveOrSync<typeof leftReturnType> &
+            PromiseResolveOrSync<typeof rightReturnType>
+        >;
 
-      // HTPipeAttachData with async
+        const typeIsOkay: typeof pipedAtoBC extends typeof returnTypeOfHTPipeAttachData
+          ? true
+          : false = true;
+        expectType<true>(typeIsOkay);
+      });
+      it('attaches properly typed data from left async data attacher and right not fully covered async data attacher', () => {
+        const left = {
+          attachData(context: { a: string }) {
+            return Promise.resolve({ b: 4 });
+          },
+        };
+        const rightPartiallyCovered = {
+          attachData(context: { b: number; other: string }) {
+            return Promise.resolve({ c: 4 });
+          },
+        };
+        const pipedAOtoBC1 = HTPipeAttachData(left, rightPartiallyCovered);
 
-      const pipedAtoBCAsync = HTPipeAttachData(
-        leftAsync,
-        rightFullyCoveredAsync
-      );
-      const pipedAOtoBC1Async = HTPipeAttachData(
-        leftAsync,
-        rightPartiallyCoveredAsync
-      );
-      const pipedAOtoBC2Async = HTPipeAttachData(
-        leftAsync,
-        rightPartiallyCoveredAsync
-      );
-      const pipedLeftOnlyAsync = HTPipeAttachData(leftAsync, {});
-      const pipedRightOnlyAsync = HTPipeAttachData(
-        {},
-        rightPartiallyCoveredAsync
-      );
+        // tslint:disable-next-line:prefer-const
+        let leftParamsType: Parameters<
+          (context: { a: string }) => Promise<{ b: number }>
+        >[0];
+        // tslint:disable-next-line:prefer-const
+        let leftReturnType: ReturnType<(context: {
+          a: string;
+        }) => Promise<{ b: number }>>;
 
-      const pipedAtoBCAsyncResult = await pipedAtoBCAsync.attachData({ a: '' });
+        // tslint:disable-next-line:prefer-const
+        let rightParamsType: Parameters<
+          (context: { b: number; other: string }) => Promise<{ c: number }>
+        >[0];
+        // tslint:disable-next-line:prefer-const
+        let rightReturnType: ReturnType<(context: {
+          b: number;
+          other: string;
+        }) => Promise<{ c: number }>>;
 
-      const typeIsOkayAsyncFalse: typeof pipedAtoBCResult.b extends string
-        ? true
-        : false = false;
-      expectType<false>(typeIsOkayAsyncFalse);
+        // tslint:disable-next-line:prefer-const
+        let returnTypeOfHTPipeAttachData: HasAttachData<
+          typeof leftParamsType &
+            Omit<
+              typeof rightParamsType,
+              keyof PromiseResolveOrSync<typeof leftReturnType>
+            >,
+          PromiseResolveOrSync<typeof leftReturnType> &
+            PromiseResolveOrSync<typeof rightReturnType>
+        >;
 
-      const typeIsOkayAsyncTrue: typeof pipedAtoBCResult.b extends number
-        ? true
-        : false = true;
-      expectType<true>(typeIsOkayAsyncTrue);
+        const typeIsOkay: typeof pipedAOtoBC1 extends typeof returnTypeOfHTPipeAttachData
+          ? true
+          : false = true;
+        expectType<true>(typeIsOkay);
+      });
+      it('attaches properly typed data from left async data attacher only', () => {
+        const left = {
+          attachData(context: { a: string }) {
+            return Promise.resolve({ b: 4 });
+          },
+        };
+
+        const pipedLeftOnly = HTPipeAttachData(left, {});
+
+        // tslint:disable-next-line:prefer-const
+        let leftParamsType: Parameters<
+          (context: { a: string }) => Promise<{ b: number }>
+        >[0];
+        // tslint:disable-next-line:prefer-const
+        let leftReturnType: ReturnType<(context: {
+          a: string;
+        }) => Promise<{ b: number }>>;
+
+        // tslint:disable-next-line:prefer-const
+        let returnTypeOfHTPipeAttachData: HasAttachData<
+          typeof leftParamsType &
+            Omit<{}, keyof PromiseResolveOrSync<typeof leftReturnType>>,
+          PromiseResolveOrSync<typeof leftReturnType> & {}
+        >;
+
+        const typeIsOkay: typeof pipedLeftOnly extends typeof returnTypeOfHTPipeAttachData
+          ? true
+          : false = true;
+        expectType<true>(typeIsOkay);
+      });
+      it('attaches properly typed data from right async data attacher only', () => {
+        const rightPartiallyCovered = {
+          attachData(context: { b: number; other: string }) {
+            return Promise.resolve({ c: 4 });
+          },
+        };
+
+        const pipedRightOnly = HTPipeAttachData({}, rightPartiallyCovered);
+
+        // tslint:disable-next-line:prefer-const
+        let rightParamsType: Parameters<
+          (context: { b: number; other: string }) => { c: number }
+        >[0];
+        // tslint:disable-next-line:prefer-const
+        let rightReturnType: ReturnType<(context: {
+          b: number;
+          other: string;
+        }) => { c: number }>;
+
+        // tslint:disable-next-line:prefer-const
+        let returnTypeOfHTPipeAttachData: HasAttachData<
+          {} & Omit<typeof rightParamsType, keyof {}>,
+          {} & PromiseResolveOrSync<typeof rightReturnType>
+        >;
+
+        const typeIsOkay: typeof pipedRightOnly extends typeof returnTypeOfHTPipeAttachData
+          ? true
+          : false = true;
+        expectType<true>(typeIsOkay);
+      });
     });
   });
 });
