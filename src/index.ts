@@ -178,12 +178,18 @@ export function HTPipeAttachData<
 
 // only left has attach data
 export function HTPipeAttachData<
-  TLeft extends HasAttachData<any, any>,
+  TLeft extends HasAttachData<
+    any,
+    TRight extends HasAttachData<any, any>
+      ? Partial<Parameters<TRight['attachData']>[0]>
+      : any
+  >,
+  TRight extends OptionallyHasAttachData<any, any>,
   TContextInLeft extends Parameters<TLeft['attachData']>[0],
   TContextOutLeft extends PromiseResolveOrSync<ReturnType<TLeft['attachData']>>
 >(
   left: TLeft,
-  right: {}
+  right: TRight
 ): HasAttachData<
   TContextInLeft & Omit<{}, keyof TContextOutLeft>,
   TContextOutLeft & {}
@@ -191,18 +197,30 @@ export function HTPipeAttachData<
 
 // only right has attach data
 export function HTPipeAttachData<
+  TLeft extends OptionallyHasAttachData<
+    any,
+    Partial<Parameters<TRight['attachData']>[0]>
+  >,
   TRight extends HasAttachData<any, any>,
   TContextInRight extends Parameters<TRight['attachData']>[0],
   TContextOutRight extends PromiseResolveOrSync<
     ReturnType<TRight['attachData']>
   >
 >(
-  left: {},
+  left: TLeft,
   right: TRight
 ): HasAttachData<{} & Omit<TContextInRight, keyof {}>, {} & TContextOutRight>;
 
 // both are empty objects
-export function HTPipeAttachData(left: {}, right: {}): {};
+export function HTPipeAttachData<
+  TLeft extends OptionallyHasAttachData<
+    any,
+    TRight extends HasAttachData<any, any>
+      ? Partial<Parameters<TRight['attachData']>[0]>
+      : any
+  >,
+  TRight extends OptionallyHasAttachData<any, any>
+>(left: TLeft, right: TRight): {};
 
 // main function
 export function HTPipeAttachData<
