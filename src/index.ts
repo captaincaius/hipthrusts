@@ -155,7 +155,7 @@ export function WithFinalAuthTo<
 // i.e. can return bool vs not, possibly async vs sync only, mandatory vs not mandatory...
 // then the final master HTPipe will just build an object out of all the sub-HTPipe*'s
 
-// Left and right have attach data
+// left has attachData AND right has attachData AND left's return keys that exist in right's parameters are assignable to right's correspondingly
 export function HTPipeAttachData<
   TLeft extends HasAttachData<
     any,
@@ -176,7 +176,9 @@ export function HTPipeAttachData<
   TContextOutLeft & TContextOutRight
 >;
 
-// only left has attach data
+// left has attachData and right does not
+// if right has attachData, left's return keys that exist in right's parameters must be assignable to right's correspondingly
+// this conditional type is necessary to disqualify left-and-right cases that fell through the first overload because of the type incompatibility so they aren't grouped in with the left-only cases
 export function HTPipeAttachData<
   TLeft extends HasAttachData<
     any,
@@ -187,15 +189,10 @@ export function HTPipeAttachData<
   TRight extends OptionallyHasAttachData<any, any>,
   TContextInLeft extends Parameters<TLeft['attachData']>[0],
   TContextOutLeft extends PromiseResolveOrSync<ReturnType<TLeft['attachData']>>
->(
-  left: TLeft,
-  right: TRight
-): HasAttachData<
-  TContextInLeft & Omit<{}, keyof TContextOutLeft>,
-  TContextOutLeft & {}
->;
+>(left: TLeft, right: TRight): HasAttachData<TContextInLeft, TContextOutLeft>;
 
-// only right has attach data
+// right has attachData and left does not
+// this conditional type is necessary to disqualify left-and-right cases that fell through the first overload because of the type incompatibility so they aren't grouped in with the right-only cases
 export function HTPipeAttachData<
   TLeft extends OptionallyHasAttachData<
     any,
@@ -206,12 +203,10 @@ export function HTPipeAttachData<
   TContextOutRight extends PromiseResolveOrSync<
     ReturnType<TRight['attachData']>
   >
->(
-  left: TLeft,
-  right: TRight
-): HasAttachData<{} & Omit<TContextInRight, keyof {}>, {} & TContextOutRight>;
+>(left: TLeft, right: TRight): HasAttachData<TContextInRight, TContextOutRight>;
 
-// both are empty objects
+// right and left doesn't have attachData
+// this conditional type is necessary to disqualify left-and-right cases that fell through the first overload because of the type incompatibility so they aren't grouped in with the right-only cases
 export function HTPipeAttachData<
   TLeft extends OptionallyHasAttachData<
     any,
