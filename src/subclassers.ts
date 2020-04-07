@@ -1,4 +1,12 @@
-import { Constructor } from './types';
+import {
+  Constructor,
+  HasAttachData,
+  HasDoWork,
+  HasInitPreContext,
+  HasFinalAuthorize,
+  HasPreAuthorize,
+  PromiseResolveOrSync,
+} from './types';
 
 // @fixme: redo all these functionally!
 
@@ -33,6 +41,46 @@ interface OptionallyHasPreAuth {
 type FunctionTaking<TIn> = (param: TIn) => any;
 
 type HasTypedFunctionOn<T, K extends string> = Record<K, FunctionTaking<T>>;
+
+export function WithInitFunctional(
+  projector: AnySyncProjector
+): HasInitPreContext<any, any> {
+  return {
+    initPreContext: projector,
+  };
+}
+
+export function WithPreAuthFunctional(
+  projector: PromiseResolveOrSync<any>
+): HasPreAuthorize<any, any> {
+  return {
+    preAuthorize: projector,
+  };
+}
+
+export function DoWorkFunctional(
+  projector: PromiseResolveOrSync<any>
+): HasDoWork<any, any> {
+  return {
+    doWork: projector,
+  };
+}
+
+export function WithFinalAuthFunctional(
+  projector: PromiseResolveOrSync<any>
+): HasFinalAuthorize<any, any> {
+  return {
+    finalAuthorize: projector,
+  };
+}
+
+export function WithAttachedFunctional(
+  projector: PromiseResolveOrSync<any>
+): HasAttachData<any, any> {
+  return {
+    attachData: projector,
+  };
+}
 
 export function WithInit<
   TKnown,

@@ -1,6 +1,12 @@
 import Boom from '@hapi/boom';
 import { WithAttached } from './subclassers';
-import { Constructor } from './types';
+import {
+  Constructor,
+  HasDoWork,
+  HasSanitizeBody,
+  HasSanitizeParams,
+  HasSanitizeResponse,
+} from './types';
 // tslint:disable-next-line:no-var-requires
 const mask = require('json-mask');
 
@@ -133,6 +139,25 @@ export function htMongooseFactory(mongoose: any) {
     };
   }
 
+  function WithParamsSanitizedFunctional<
+    TSafeParam extends ReturnType<TInstance['toObject']>,
+    TDocFactory extends DocumentFactory<any>,
+    TInstance extends ReturnType<TDocFactory>,
+    TUnsafeParam
+  >(DocFactory: TDocFactory): HasSanitizeParams<TSafeParam, TUnsafeParam> {
+    return {
+      sanitizeParams: (unsafeParams: TUnsafeParam) => {
+        const doc = DocFactory(unsafeParams);
+        const validateErrors = doc.validateSync();
+        if (validateErrors !== undefined) {
+          throw Boom.badRequest('Params not valid');
+        }
+        // @tswtf: why do I need to force this?!
+        return doc.toObject({ transform: stripIdTransform }) as TSafeParam;
+      },
+    };
+  }
+
   function WithSaveOnDocument(docKey: string) {
     // tslint:disable-next-line:only-arrow-functions
     return function<TSuper extends Constructor>(Super: TSuper) {
@@ -157,6 +182,26 @@ export function htMongooseFactory(mongoose: any) {
     };
   }
 
+  function WithSaveOnDocumentFunctional(
+    propertyKeyOfDocument: string
+  ): HasDoWork<any, any> {
+    return {
+      doWork: async (context: any) => {
+        if (context[propertyKeyOfDocument]) {
+          try {
+            return await context[propertyKeyOfDocument].save();
+          } catch (err) {
+            throw Boom.badData(
+              'Unable to save. Please check if data sent was valid.'
+            );
+          }
+        } else {
+          throw Boom.badRequest('Resource not found');
+        }
+      },
+    };
+  }
+
   function WithUpdateByBody(entityToUpdate: string) {
     // tslint:disable-next-line:only-arrow-functions
     return function<TSuper extends Constructor>(Super: TSuper) {
@@ -174,6 +219,23 @@ export function htMongooseFactory(mongoose: any) {
           }
         }
       };
+    };
+  }
+
+  function WithUpdateDocumentFunctional(
+    propertyKeyOfDocument: string,
+    propertyKeyWithNewData: string = 'body'
+  ): HasDoWork<any, any> {
+    return {
+      doWork: async (context: any) => {
+        if (context[propertyKeyOfDocument]) {
+          return await context[propertyKeyOfDocument].set(
+            context[propertyKeyWithNewData]
+          );
+        } else {
+          throw Boom.badRequest('Resource not found');
+        }
+      },
     };
   }
 
@@ -204,6 +266,27 @@ export function htMongooseFactory(mongoose: any) {
     };
   }
 
+  function WithBodySanitizedFunctional<
+    TSafeBody extends ReturnType<TInstance['toObject']>,
+    TDocFactory extends DocumentFactory<any>,
+    TInstance extends ReturnType<TDocFactory>,
+    TUnsafeBody
+  >(DocFactory: TDocFactory): HasSanitizeBody<TSafeBody, TUnsafeBody> {
+    return {
+      sanitizeBody: (unsafeBody: TUnsafeBody) => {
+        const doc = DocFactory(unsafeBody);
+        const validateErrors = doc.validateSync(undefined, {
+          validateModifiedOnly: true,
+        });
+        if (validateErrors !== undefined) {
+          throw Boom.badRequest('Body not valid');
+        }
+        // @tswtf: why do I need to force this?!
+        return doc.toObject({ transform: stripIdTransform }) as TSafeBody;
+      },
+    };
+  }
+
   function WithRequestBodyIgnored() {
     // tslint:disable-next-line:only-arrow-functions
     return function<TSuper extends Constructor>(Super: TSuper) {
@@ -216,6 +299,12 @@ export function htMongooseFactory(mongoose: any) {
         }
       };
     };
+  }
+
+  function WithRequestBodyIgnoredFunctional() {
+    return WithBodySanitizedFunctional(
+      documentFactoryFromForRequest(dtoSchemaObj({}, ''))
+    );
   }
 
   function WithResponseSanitized<
@@ -235,6 +324,20 @@ export function htMongooseFactory(mongoose: any) {
           return doc.toObject() as TSafeResponse;
         }
       };
+    };
+  }
+
+  function WithResponseSanitizedFunctional<
+    TSafeResponse extends ReturnType<TInstance['toObject']>,
+    TDocFactory extends DocumentFactory<any>,
+    TInstance extends ReturnType<TDocFactory>
+  >(DocFactory: TDocFactory): HasSanitizeResponse<any, any> {
+    return {
+      sanitizeResponse: (unsafeResponse: any) => {
+        const doc = DocFactory(unsafeResponse);
+        // @tswtf: why do I need to force this?!
+        return doc.toObject() as TSafeResponse;
+      },
     };
   }
 
@@ -279,15 +382,21 @@ export function htMongooseFactory(mongoose: any) {
 
   return {
     WithBodySanitized,
+    WithBodySanitizedFunctional,
     WithBodySanitizedTo,
     WithParamsSanitized,
+    WithParamsSanitizedFunctional,
     WithParamsSanitizedTo,
     WithPojoToDocument,
     WithRequestBodyIgnored,
+    WithRequestBodyIgnoredFunctional,
     WithResponseSanitized,
+    WithResponseSanitizedFunctional,
     WithResponseSanitizedTo,
     WithSaveOnDocument,
+    WithSaveOnDocumentFunctional,
     WithUpdateByBody,
+    WithUpdateDocumentFunctional,
     documentFactoryFromForRequest,
     documentFactoryFromForResponse,
     dtoSchemaObj,
