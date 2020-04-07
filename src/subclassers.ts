@@ -5,6 +5,7 @@ import {
   HasFinalAuthorize,
   HasInitPreContext,
   HasPreAuthorize,
+  HasRespond,
   PromiseResolveOrSync,
 } from './types';
 
@@ -79,6 +80,20 @@ export function WithAttachedFunctional(
 ): HasAttachData<any, any> {
   return {
     attachData: projector,
+  };
+}
+
+export function WithResponseFunctional<TWhereToLook extends string>(
+  whereToLook: TWhereToLook,
+  successStatusCode: number
+): HasRespond<any, any> {
+  return {
+    respond: (context: any) => {
+      return {
+        unsafeResponse: context[whereToLook],
+        status: successStatusCode,
+      };
+    },
   };
 }
 
