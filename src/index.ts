@@ -2,8 +2,10 @@ import { isHasAttachData } from './core';
 import {
   WithAttached,
   WithFinalAuth,
+  WithFinalAuthFunctional,
   WithInit,
   WithPreAuth,
+  WithPreAuthFunctional,
 } from './subclassers';
 import {
   Constructor,
@@ -61,6 +63,10 @@ export function WithNoopPreAuth() {
   return WithPreAuth('user_user', () => true);
 }
 
+export function WithNoopPreAuthFunctional() {
+  return WithPreAuthFunctional(() => true);
+}
+
 export function NoopFinalAuth() {
   // tslint:disable-next-line:only-arrow-functions
   return function<TSuper extends Constructor>(Super: TSuper) {
@@ -73,6 +79,10 @@ export function NoopFinalAuth() {
       }
     };
   };
+}
+
+export function NoopFinalAuthFunctional() {
+  return WithFinalAuthFunctional(() => true);
 }
 
 export function WithInitTo<
