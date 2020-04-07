@@ -2,8 +2,8 @@ import {
   Constructor,
   HasAttachData,
   HasDoWork,
-  HasInitPreContext,
   HasFinalAuthorize,
+  HasInitPreContext,
   HasPreAuthorize,
   PromiseResolveOrSync,
 } from './types';
