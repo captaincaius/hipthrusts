@@ -61,11 +61,10 @@
     "pretty-quick": "^1.10.0",
     "rimraf": "3.0.0",
     "ts-node": "^8.4.1",
-    "tsd": "^0.10.0",
     "tslint": "5.20.0",
     "tslint-config-prettier": "^1.18.0",
     "tslint-eslint-rules": "*5.4.0",
-    "typescript": "^3.6.4"
+    "typescript": "^3.9.0-beta"
   },
   "prettier": {
     "trailingComma": "es5",

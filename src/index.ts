@@ -164,26 +164,26 @@ export function WithFinalAuthTo<
 // @todo: implement all the other HTPipe*'s - note that each one will be slightly different based on their specifics...
 // i.e. can return bool vs not, possibly async vs sync only, mandatory vs not mandatory...
 // then the final master HTPipe will just build an object out of all the sub-HTPipe*'s
+
+type keyofTExtendsKeyofUconditionalType<T, U> = keyof T extends keyof U
+  ? U
+  : {};
+// left has attachData AND right has attachData AND left's return keys that exist in right's parameters are assignable to right's correspondingly
 export function HTPipeAttachData<
-  TLeft extends OptionallyHasAttachData<
+  TLeft extends HasAttachData<
     any,
-    TRight extends HasAttachData<any, any>
-      ? Partial<Parameters<TRight['attachData']>[0]>
-      : any
+    keyofTExtendsKeyofUconditionalType<
+      PromiseResolveOrSync<ReturnType<TLeft['attachData']>>,
+      Partial<Parameters<TRight['attachData']>[0]>
+    >
   >,
-  TRight extends OptionallyHasAttachData<any, any>,
-  TContextInLeft extends TLeft extends HasAttachData<any, any>
-    ? Parameters<TLeft['attachData']>[0]
-    : {},
-  TContextInRight extends TRight extends HasAttachData<any, any>
-    ? Parameters<TRight['attachData']>[0]
-    : {},
-  TContextOutLeft extends TLeft extends HasAttachData<any, any>
-    ? PromiseResolveOrSync<ReturnType<TLeft['attachData']>>
-    : {},
-  TContextOutRight extends TRight extends HasAttachData<any, any>
-    ? PromiseResolveOrSync<ReturnType<TRight['attachData']>>
-    : {}
+  TRight extends HasAttachData<any, any>,
+  TContextInLeft extends Parameters<TLeft['attachData']>[0],
+  TContextInRight extends Parameters<TRight['attachData']>[0],
+  TContextOutLeft extends PromiseResolveOrSync<ReturnType<TLeft['attachData']>>,
+  TContextOutRight extends PromiseResolveOrSync<
+    ReturnType<TRight['attachData']>
+  >
 >(
   left: TLeft,
   right: TRight
@@ -191,10 +191,49 @@ export function HTPipeAttachData<
   TContextInLeft & Omit<TContextInRight, keyof TContextOutLeft>,
   TContextOutLeft & TContextOutRight
 >;
-// @todo: consider for better DX, making the above NOT Optionally_, and making 3 more variants that spit out more direct
-// TLeft, TRight, and {} types instead.  CAREFUL: Make sure that if the constraint on TLeft is violated, it isn't allowed by
-// another overload by accident! i.e. make sure that if one of left's outputs has a type mismatch with one of right's inputs, it errors!
-// CAREFUL: these names mean different things above and below O.o
+
+// left has attachData and right does not
+// if right has attachData, left's return keys that exist in right's parameters must be assignable to right's correspondingly
+// this conditional type is necessary to disqualify left-and-right cases that fell through the first overload because of the type incompatibility so they aren't grouped in with the left-only cases
+export function HTPipeAttachData<
+  TLeft extends HasAttachData<
+    any,
+    TRight extends HasAttachData<any, any>
+      ? Partial<Parameters<TRight['attachData']>[0]>
+      : any
+  >,
+  TRight extends OptionallyHasAttachData<any, any>,
+  TContextInLeft extends Parameters<TLeft['attachData']>[0],
+  TContextOutLeft extends PromiseResolveOrSync<ReturnType<TLeft['attachData']>>
+>(left: TLeft, right: TRight): HasAttachData<TContextInLeft, TContextOutLeft>;
+
+// right has attachData and left does not
+// this conditional type is necessary to disqualify left-and-right cases that fell through the first overload because of the type incompatibility so they aren't grouped in with the right-only cases
+export function HTPipeAttachData<
+  TLeft extends OptionallyHasAttachData<
+    any,
+    Partial<Parameters<TRight['attachData']>[0]>
+  >,
+  TRight extends HasAttachData<any, any>,
+  TContextInRight extends Parameters<TRight['attachData']>[0],
+  TContextOutRight extends PromiseResolveOrSync<
+    ReturnType<TRight['attachData']>
+  >
+>(left: TLeft, right: TRight): HasAttachData<TContextInRight, TContextOutRight>;
+
+// right and left doesn't have attachData
+// this conditional type is necessary to disqualify left-and-right cases that fell through the first overload because of the type incompatibility so they aren't grouped in with the right-only cases
+export function HTPipeAttachData<
+  TLeft extends OptionallyHasAttachData<
+    any,
+    TRight extends HasAttachData<any, any>
+      ? Partial<Parameters<TRight['attachData']>[0]>
+      : any
+  >,
+  TRight extends OptionallyHasAttachData<any, any>
+>(left: TLeft, right: TRight): {};
+
+// main function
 export function HTPipeAttachData<
   TLeft extends OptionallyHasAttachData<any, any>,
   TRight extends OptionallyHasAttachData<any, any>,
