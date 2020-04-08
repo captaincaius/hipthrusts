@@ -2,10 +2,8 @@ import { isHasAttachData } from './core';
 import {
   WithAttached,
   WithFinalAuth,
-  WithFinalAuthFunctional,
   WithInit,
   WithPreAuth,
-  WithPreAuthFunctional,
 } from './subclassers';
 import {
   Constructor,
@@ -60,105 +58,11 @@ export function fromWrappedInstanceMethod<
 }
 
 export function WithNoopPreAuth() {
-  return WithPreAuth('user_user', () => true);
-}
-
-export function WithNoopPreAuthFunctional() {
-  return WithPreAuthFunctional(() => true);
+  return WithPreAuth(() => true);
 }
 
 export function NoopFinalAuth() {
-  // tslint:disable-next-line:only-arrow-functions
-  return function<TSuper extends Constructor>(Super: TSuper) {
-    return class WithFinalAuthorize extends Super {
-      constructor(...args: any[]) {
-        super(...args);
-      }
-      public async finalAuthorize() {
-        return true;
-      }
-    };
-  };
-}
-
-export function NoopFinalAuthFunctional() {
-  return WithFinalAuthFunctional(() => true);
-}
-
-export function WithInitTo<
-  TWhereToStore extends string,
-  TWhereToLook extends string,
-  TWhatYoullFind,
-  TSuper extends Constructor<Record<TWhereToLook, TWhatYoullFind>>,
-  TNext
->(
-  Super: TSuper,
-  whereToLook: TWhereToLook,
-  projector: AnySyncProjector,
-  whereToStore: TWhereToStore
-) {
-  return WithInit(whereToLook, projector, whereToStore)(Super);
-}
-
-export function WithPreAuthTo<
-  TPrincipalKey extends string & keyof InstanceType<TSuper>,
-  TPrincipal extends InstanceType<TSuper>[TPrincipalKey],
-  TAuthKey extends string,
-  TSuper extends Constructor<
-    Record<TPrincipalKey, any> &
-      Record<TAuthKey, IsFinalAuth<TPrincipal>> &
-      OptionallyHasPreAuth
-  >
->(
-  Super: TSuper,
-  principalKey: TPrincipalKey,
-  authorizer: IsPreAuth<TPrincipal>
-) {
-  return WithPreAuth(principalKey, authorizer)(Super);
-}
-
-export function WithAttachedTo<
-  TWhereToStore extends string,
-  TWhereToLook extends string & keyof InstanceType<TSuper>,
-  TWhatYoullFind,
-  TSuper extends Constructor<
-    Record<TWhereToLook, TWhatYoullFind> & OptionallyHasDataAttacher
-  >,
-  TNext
->(
-  Super: TSuper,
-  whereToLook: TWhereToLook,
-  projector: AsyncProjector<TNext, TWhatYoullFind>,
-  whereToStore: TWhereToStore
-): TSuper & Constructor<{ [k in TWhereToStore]: TNext } & HasDataAttacher>;
-export function WithAttachedTo<
-  TWhereToStore extends string,
-  TWhereToLook extends string & keyof InstanceType<TSuper>,
-  TWhatYoullFind,
-  TSuper extends Constructor<
-    Record<TWhereToLook, TWhatYoullFind> & OptionallyHasDataAttacher
-  >,
-  TNext
->(
-  Super: TSuper,
-  whereToLook: TWhereToLook,
-  projector: AsyncProjector<TNext, TWhatYoullFind>,
-  whereToStore: TWhereToStore
-) {
-  return WithAttached(whereToLook, projector, whereToStore)(Super);
-}
-
-export function WithFinalAuthTo<
-  TPrincipalKey extends string & keyof InstanceType<TSuper>,
-  TPrincipal extends InstanceType<TSuper>[TPrincipalKey],
-  TAuthKey extends string,
-  TSuper extends Constructor<
-    Record<TPrincipalKey, any> &
-      Record<TAuthKey, IsFinalAuth<TPrincipal>> &
-      OptionallyHasFinalAuth
-  >
->(Super: TSuper, principalKey: TPrincipalKey, authorizerKey: TAuthKey) {
-  return WithFinalAuth(principalKey, authorizerKey)(Super);
+  return WithFinalAuth(() => true);
 }
 
 // @todo: implement all the other HTPipe*'s - note that each one will be slightly different based on their specifics...
