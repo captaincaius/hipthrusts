@@ -13,6 +13,7 @@ interface MockUser {
 }
 
 describe('HipThrusTS', () => {
+  /*
   describe('HipThrusTS declarative', () => {
     describe('WithInit', () => {
       class Base {
@@ -283,6 +284,7 @@ describe('HipThrusTS', () => {
       });
     });
   });
+*/
   describe('Hipthrusts functional only', () => {
     describe('HTPipeAttachData', () => {
       it('attaches properly typed data from left and right sync data attacher', () => {
