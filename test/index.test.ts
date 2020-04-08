@@ -33,21 +33,26 @@ describe('HipThrusTS', () => {
       const hipRequestInstance = new UserAddedRequest(req);
       it('attaches a properly typed member to all request instances', () => {
         // tslint:disable-next-line:prefer-const
-        let isMockUserTypeOkay: typeof hipRequestInstance.user_user extends MockUser
+        let isToMockUserTypeOkay: typeof hipRequestInstance.user_user extends MockUser
+          ? true
+          : false;
+        let isFromMockUserTypeOkay: MockUser extends typeof hipRequestInstance.user_user
           ? true
           : false;
         // @ts-expect-error
-        isMockUserTypeOkay = false;
+        isToMockUserTypeOkay = false;
+        // @ts-expect-error
+        isFromMockUserTypeOkay = false;
 
         // tslint:disable-next-line:prefer-const
-        let mockUserIdTypeIsOkay: typeof hipRequestInstance.user_user._id extends string
+        let fromMockUserIdTypeIsOkay: typeof hipRequestInstance.user_user._id extends string
           ? true
           : false;
         // @ts-expect-error
-        mockUserIdTypeIsOkay = false;
+        fromMockUserIdTypeIsOkay = false;
 
         // tslint:disable-next-line:prefer-const
-        let mockUserEmailTypeIsOkay: typeof hipRequestInstance.user_user._id extends string
+        let mockUserEmailTypeIsOkay: typeof hipRequestInstance.user_user.email extends string
           ? true
           : false;
         // @ts-expect-error
@@ -87,13 +92,20 @@ describe('HipThrusTS', () => {
         }
         // @todo: fix like the HTPipe stuff (no assign) - this may not actually work!
         // tslint:disable-next-line:prefer-const
-        let typeIsOkay: typeof BaseWithoutParams extends Parameters<
+        let typeFromBaseWithoutParamsIsOkay: typeof BaseWithoutParams extends Parameters<
           typeof AddThingIdFromParams
         >[0]
           ? true
           : false = false;
+        let typeToBaseWithoutParamsIsOkay: Parameters<
+          typeof AddThingIdFromParams
+        >[0] extends typeof BaseWithoutParams
+          ? true
+          : false = false;
         // @ts-expect-error
-        typeIsOkay = true;
+        typeFromBaseWithoutParamsIsOkay = true;
+        // @ts-expect-error
+        typeToBaseWithoutParamsIsOkay = true;
       });
       it('compile-time-errors-out when extending a class that has the right member but it does not satisfy the projector', () => {
         class BaseWithMistypedParams {
@@ -105,13 +117,20 @@ describe('HipThrusTS', () => {
         }
         // @todo: fix like the HTPipe stuff (no assign) - this may not actually work!
         // tslint:disable-next-line:prefer-const
-        let typeIsOkay: typeof BaseWithMistypedParams extends Parameters<
+        let typeFromBaseWithMistypedParamsIsOkay: typeof BaseWithMistypedParams extends Parameters<
           typeof AddThingIdFromParams
         >[0]
           ? true
           : false = false;
+        let typeToBaseWithMistypedParamsIsOkay: Parameters<
+          typeof AddThingIdFromParams
+        >[0] extends typeof BaseWithMistypedParams
+          ? true
+          : false = false;
         // @ts-expect-error
-        typeIsOkay = true;
+        typeFromBaseWithMistypedParamsIsOkay = true;
+        // @ts-expect-error
+        typeToBaseWithMistypedParamsIsOkay = true;
       });
       describe('with a proper superclass', () => {
         class BaseWithProperParams {
@@ -157,13 +176,20 @@ describe('HipThrusTS', () => {
           });
           it('news up instances that have the attachData lifecycle stage', () => {
             // tslint:disable-next-line:prefer-const
-            let thingIdTypeIsOkay: ReturnType<
+            let thingIdFromTypeIsOkay: ReturnType<
               typeof requestWithParamId.attachData
             > extends Promise<any>
               ? true
-              : false;
+              : false = true;
+            let thingIdToTypeIsOkay: Promise<any> extends ReturnType<
+              typeof requestWithParamId.attachData
+            >
+              ? true
+              : false = true;
             // @ts-expect-error
-            thingIdTypeIsOkay = false;
+            thingIdFromTypeIsOkay = false;
+            // @ts-expect-error
+            thingIdToTypeIsOkay = false;
           });
           describe('after calling attachData', () => {
             it('news up instances that can call the attachData lifecycle stage', async () => {
@@ -228,13 +254,17 @@ describe('HipThrusTS', () => {
         // these two are to ensure it's not "any" :-/
         // do NOT assign the next one!  TS is too smart for its own good
         // tslint:disable-next-line:prefer-const
-        let isTypedRightThenTrue: typeof happyFamily.childAge extends number
-          ? true
-          : false;
-        // tslint:disable-next-line:prefer-const
-        let isTypedRight: typeof isTypedRightThenTrue extends true
+        let isTypedRightFromChildAge: typeof happyFamily.childAge extends number
           ? true
           : false = true;
+        // tslint:disable-next-line:prefer-const
+        let isTypedRightToChildAge: number extends typeof happyFamily.childAge
+          ? true
+          : false = true;
+        // @ts-expect-error
+        isTypedRightFromChildAge = false;
+        // @ts-expect-error
+        isTypedRightToChildAge = false;
         // just make sure the other two exist cause the above ensures they're properly typed
         let happyFamilyParentExistType: typeof happyFamily.parent extends any
           ? true
@@ -352,7 +382,7 @@ describe('HipThrusTS', () => {
         // @ts-expect-error
         const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
       });
-      it('no attaches data from left sync data attached and right not covered sync data attacher', () => {
+      it('attaches data from left sync data attached and right not covered sync data attacher', () => {
         const left = {
           attachData(context: { a: string }) {
             return { b: 4 };
@@ -364,8 +394,41 @@ describe('HipThrusTS', () => {
           },
         };
 
-        // @ts-expect-error
         const pipedNotCoveredError = HTPipeAttachData(left, rightNotCovered);
+
+        interface CorrectParam {
+          a: string;
+          other: string;
+        }
+        type CorrectReturnValue = PromiseOrSync<{ b: number; c: number }>;
+        type ParamAssignableToCorrect = CorrectParam extends Parameters<
+          typeof pipedNotCoveredError.attachData
+        >[0]
+          ? true
+          : false;
+        type ParamAssignableFromCorrect = Parameters<
+          typeof pipedNotCoveredError.attachData
+        >[0] extends CorrectParam
+          ? true
+          : false;
+        type ReturnAssignableToCorrect = CorrectReturnValue extends ReturnType<
+          typeof pipedNotCoveredError.attachData
+        >
+          ? true
+          : false;
+        type ReturnAssignableFromCorrect = ReturnType<
+          typeof pipedNotCoveredError.attachData
+        > extends CorrectReturnValue
+          ? true
+          : false;
+        // @ts-expect-error
+        const paramAssignableToCorrectShouldFail: ParamAssignableToCorrect = false;
+        // @ts-expect-error
+        const paramAssignableFromCorrectShouldFail: ParamAssignableFromCorrect = false;
+        // @ts-expect-error
+        const returnAssignableToCorrectShouldFail: ReturnAssignableToCorrect = false;
+        // @ts-expect-error
+        const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
       });
       it('attaches properly typed data from left sync data attacher only', () => {
         const left = {
@@ -453,19 +516,30 @@ describe('HipThrusTS', () => {
         const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
       });
       it('no attaches data when left and right is empty objects', () => {
-        const pipedRightOnly = HTPipeAttachData({}, {});
+        const pipedWithEmptyObjectsOnly = HTPipeAttachData({}, {});
 
-        // tslint:disable-next-line:prefer-const
-        let returnTypeOfHTPipeAttachData: {};
-
-        // tslint:disable-next-line:prefer-const
-        let typeIsOkay: typeof pipedRightOnly extends typeof returnTypeOfHTPipeAttachData
+        type ParamAssignableToCorrect = {} extends typeof pipedWithEmptyObjectsOnly
           ? true
-          : false = true;
+          : false;
+        type ParamAssignableFromCorrect = typeof pipedWithEmptyObjectsOnly extends {}
+          ? true
+          : false;
+        type ReturnAssignableToCorrect = {} extends typeof pipedWithEmptyObjectsOnly
+          ? true
+          : false;
+        type ReturnAssignableFromCorrect = typeof pipedWithEmptyObjectsOnly extends {}
+          ? true
+          : false;
         // @ts-expect-error
-        typeIsOkay = false;
+        const paramAssignableToCorrectShouldFail: ParamAssignableToCorrect = false;
+        // @ts-expect-error
+        const paramAssignableFromCorrectShouldFail: ParamAssignableFromCorrect = false;
+        // @ts-expect-error
+        const returnAssignableToCorrectShouldFail: ReturnAssignableToCorrect = false;
+        // @ts-expect-error
+        const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
       });
-      it('no attaches data when left outputs have type mismatch with right inputs', () => {
+      it('no attaches data when left sync outputs have type mismatch with right inputs', () => {
         const leftBad = {
           attachData(context: { a: string }) {
             return { b: 'bad' };
@@ -477,8 +551,10 @@ describe('HipThrusTS', () => {
           },
         };
 
-        // @ts-expect-error
-        const pipedError = HTPipeAttachData(leftBad, rightFullyCovered);
+        function expectErrorWithHTPipeAttachData() {
+          // @ts-expect-error
+          const pipedError = HTPipeAttachData(leftBad, rightFullyCovered);
+        }
       });
 
       // async paths
@@ -578,7 +654,7 @@ describe('HipThrusTS', () => {
         // @ts-expect-error
         const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
       });
-      it('no attaches data from left async data attached and right not covered async data attacher', () => {
+      it('attaches data from left async data attached and right not covered async data attacher', () => {
         const left = {
           attachData(context: { a: string }) {
             return Promise.resolve({ b: 4 });
@@ -590,8 +666,41 @@ describe('HipThrusTS', () => {
           },
         };
 
-        // @ts-expect-error
         const pipedNotCoveredError = HTPipeAttachData(left, rightNotCovered);
+
+        interface CorrectParam {
+          a: string;
+          other: string;
+        }
+        type CorrectReturnValue = PromiseOrSync<{ b: number; c: number }>;
+        type ParamAssignableToCorrect = CorrectParam extends Parameters<
+          typeof pipedNotCoveredError.attachData
+        >[0]
+          ? true
+          : false;
+        type ParamAssignableFromCorrect = Parameters<
+          typeof pipedNotCoveredError.attachData
+        >[0] extends CorrectParam
+          ? true
+          : false;
+        type ReturnAssignableToCorrect = CorrectReturnValue extends ReturnType<
+          typeof pipedNotCoveredError.attachData
+        >
+          ? true
+          : false;
+        type ReturnAssignableFromCorrect = ReturnType<
+          typeof pipedNotCoveredError.attachData
+        > extends CorrectReturnValue
+          ? true
+          : false;
+        // @ts-expect-error
+        const paramAssignableToCorrectShouldFail: ParamAssignableToCorrect = false;
+        // @ts-expect-error
+        const paramAssignableFromCorrectShouldFail: ParamAssignableFromCorrect = false;
+        // @ts-expect-error
+        const returnAssignableToCorrectShouldFail: ReturnAssignableToCorrect = false;
+        // @ts-expect-error
+        const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
       });
       it('attaches properly typed data from left async data attacher only', () => {
         const left = {
@@ -677,6 +786,23 @@ describe('HipThrusTS', () => {
         const returnAssignableToCorrectShouldFail: ReturnAssignableToCorrect = false;
         // @ts-expect-error
         const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
+      });
+      it('no attaches data when left async outputs have type mismatch with right inputs', () => {
+        const leftBad = {
+          attachData(context: { a: string }) {
+            return Promise.resolve({ b: 'bad' });
+          },
+        };
+        const rightFullyCovered = {
+          attachData(context: { b: number }) {
+            return Promise.resolve({ c: 4 });
+          },
+        };
+
+        function expectErrorWithHTPipeAttachData() {
+          // @ts-expect-error
+          const pipedError = HTPipeAttachData(leftBad, rightFullyCovered);
+        }
       });
     });
   });

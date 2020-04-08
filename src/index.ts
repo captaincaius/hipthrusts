@@ -155,11 +155,17 @@ export function WithFinalAuthTo<
 // i.e. can return bool vs not, possibly async vs sync only, mandatory vs not mandatory...
 // then the final master HTPipe will just build an object out of all the sub-HTPipe*'s
 
+type keyofTExtendsKeyofUconditionalType<T, U> = keyof T extends keyof U
+  ? U
+  : {};
 // left has attachData AND right has attachData AND left's return keys that exist in right's parameters are assignable to right's correspondingly
 export function HTPipeAttachData<
   TLeft extends HasAttachData<
     any,
-    Partial<Parameters<TRight['attachData']>[0]>
+    keyofTExtendsKeyofUconditionalType<
+      PromiseResolveOrSync<ReturnType<TLeft['attachData']>>,
+      Partial<Parameters<TRight['attachData']>[0]>
+    >
   >,
   TRight extends HasAttachData<any, any>,
   TContextInLeft extends Parameters<TLeft['attachData']>[0],
