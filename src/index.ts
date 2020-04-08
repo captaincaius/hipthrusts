@@ -155,16 +155,13 @@ export function WithFinalAuthTo<
 // i.e. can return bool vs not, possibly async vs sync only, mandatory vs not mandatory...
 // then the final master HTPipe will just build an object out of all the sub-HTPipe*'s
 
-type keyofTExtendsKeyofUconditionalType<T, U> = keyof T extends keyof U
-  ? U
-  : {};
 // left has attachData AND right has attachData AND left's return keys that exist in right's parameters are assignable to right's correspondingly
 export function HTPipeAttachData<
   TLeft extends HasAttachData<
     any,
-    keyofTExtendsKeyofUconditionalType<
-      PromiseResolveOrSync<ReturnType<TLeft['attachData']>>,
-      Partial<Parameters<TRight['attachData']>[0]>
+    Pick<
+      Parameters<TRight['attachData']>[0],
+      keyof PromiseResolveOrSync<ReturnType<TLeft['attachData']>>
     >
   >,
   TRight extends HasAttachData<any, any>,
@@ -189,7 +186,10 @@ export function HTPipeAttachData<
   TLeft extends HasAttachData<
     any,
     TRight extends HasAttachData<any, any>
-      ? Partial<Parameters<TRight['attachData']>[0]>
+      ? Pick<
+          Parameters<TRight['attachData']>[0],
+          keyof PromiseResolveOrSync<ReturnType<TLeft['attachData']>>
+        >
       : any
   >,
   TRight extends OptionallyHasAttachData<any, any>,
@@ -202,7 +202,18 @@ export function HTPipeAttachData<
 export function HTPipeAttachData<
   TLeft extends OptionallyHasAttachData<
     any,
-    Partial<Parameters<TRight['attachData']>[0]>
+    TRight extends HasAttachData<any, any>
+      ? Pick<
+          Parameters<TRight['attachData']>[0],
+          keyof PromiseResolveOrSync<
+            ReturnType<
+              TLeft extends HasAttachData<any, any>
+                ? TLeft['attachData']
+                : () => {}
+            >
+          >
+        >
+      : any
   >,
   TRight extends HasAttachData<any, any>,
   TContextInRight extends Parameters<TRight['attachData']>[0],
@@ -217,7 +228,16 @@ export function HTPipeAttachData<
   TLeft extends OptionallyHasAttachData<
     any,
     TRight extends HasAttachData<any, any>
-      ? Partial<Parameters<TRight['attachData']>[0]>
+      ? Pick<
+          Parameters<TRight['attachData']>[0],
+          keyof PromiseResolveOrSync<
+            ReturnType<
+              TLeft extends HasAttachData<any, any>
+                ? TLeft['attachData']
+                : () => {}
+            >
+          >
+        >
       : any
   >,
   TRight extends OptionallyHasAttachData<any, any>
