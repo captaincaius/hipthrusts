@@ -118,30 +118,6 @@ export function htMongooseFactory(mongoose: any) {
   function WithParamsSanitized<
     TSafeParam extends ReturnType<TInstance['toObject']>,
     TDocFactory extends DocumentFactory<any>,
-    TInstance extends ReturnType<TDocFactory>
-  >(DocFactory: TDocFactory) {
-    // tslint:disable-next-line:only-arrow-functions
-    return function<TSuper extends Constructor>(Super: TSuper) {
-      return class WithSanitizedParams extends Super {
-        constructor(...args: any[]) {
-          super(...args);
-        }
-        public sanitizeParams(unsafeParams: any) {
-          const doc = DocFactory(unsafeParams);
-          const validateErrors = doc.validateSync();
-          if (validateErrors !== undefined) {
-            throw Boom.badRequest('Params not valid');
-          }
-          // @tswtf: why do I need to force this?!
-          return doc.toObject({ transform: stripIdTransform }) as TSafeParam;
-        }
-      };
-    };
-  }
-
-  function WithParamsSanitizedFunctional<
-    TSafeParam extends ReturnType<TInstance['toObject']>,
-    TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>,
     TUnsafeParam
   >(DocFactory: TDocFactory): HasSanitizeParams<TSafeParam, TUnsafeParam> {
@@ -158,31 +134,7 @@ export function htMongooseFactory(mongoose: any) {
     };
   }
 
-  function WithSaveOnDocument(docKey: string) {
-    // tslint:disable-next-line:only-arrow-functions
-    return function<TSuper extends Constructor>(Super: TSuper) {
-      return class SaveOnDocument extends Super {
-        constructor(...args: any[]) {
-          super(...args);
-        }
-        public async doWork() {
-          if (Object.keys(this).includes(docKey)) {
-            try {
-              await (this as any)[docKey].save();
-            } catch (err) {
-              throw Boom.badData(
-                'Unable to save. Please check if data sent was valid.'
-              );
-            }
-          } else {
-            throw Boom.badRequest('Resource not found');
-          }
-        }
-      };
-    };
-  }
-
-  function WithSaveOnDocumentFunctional(
+  function WithSaveOnDocument(
     propertyKeyOfDocument: string
   ): HasDoWork<any, any> {
     return {
@@ -202,27 +154,7 @@ export function htMongooseFactory(mongoose: any) {
     };
   }
 
-  function WithUpdateByBody(entityToUpdate: string) {
-    // tslint:disable-next-line:only-arrow-functions
-    return function<TSuper extends Constructor>(Super: TSuper) {
-      return class WithUpdatingBody extends Super {
-        constructor(...args: any[]) {
-          super(...args);
-        }
-        public async doWork() {
-          if (Object.keys(this as any).includes(entityToUpdate)) {
-            // tslint:disable:no-string-literal
-            (this as any)[entityToUpdate].set((this as any).body);
-            await (this as any)[entityToUpdate].save();
-          } else {
-            throw Boom.badRequest('Resource not found');
-          }
-        }
-      };
-    };
-  }
-
-  function WithUpdateDocumentFunctional(
+  function WithUpdateDocument(
     propertyKeyOfDocument: string,
     propertyKeyWithNewData: string = 'body'
   ): HasDoWork<any, any> {
@@ -241,32 +173,6 @@ export function htMongooseFactory(mongoose: any) {
 
   // @note: sanitize body validates modified only!  This is cause you usually will only send fields to update.
   function WithBodySanitized<
-    TSafeBody extends ReturnType<TInstance['toObject']>,
-    TDocFactory extends DocumentFactory<any>,
-    TInstance extends ReturnType<TDocFactory>
-  >(DocFactory: TDocFactory) {
-    // tslint:disable-next-line:only-arrow-functions
-    return function<TSuper extends Constructor>(Super: TSuper) {
-      return class WithSanitizedBody extends Super {
-        constructor(...args: any[]) {
-          super(...args);
-        }
-        public sanitizeBody(unsafeBody: any) {
-          const doc = DocFactory(unsafeBody);
-          const validateErrors = doc.validateSync(undefined, {
-            validateModifiedOnly: true,
-          });
-          if (validateErrors !== undefined) {
-            throw Boom.badRequest('Body not valid');
-          }
-          // @tswtf: why do I need to force this?!
-          return doc.toObject({ transform: stripIdTransform }) as TSafeBody;
-        }
-      };
-    };
-  }
-
-  function WithBodySanitizedFunctional<
     TSafeBody extends ReturnType<TInstance['toObject']>,
     TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>,
@@ -288,46 +194,12 @@ export function htMongooseFactory(mongoose: any) {
   }
 
   function WithRequestBodyIgnored() {
-    // tslint:disable-next-line:only-arrow-functions
-    return function<TSuper extends Constructor>(Super: TSuper) {
-      return class GetRequestBodyIgnore extends Super {
-        constructor(...args: any[]) {
-          super(...args);
-        }
-        public sanitizeBody() {
-          return {};
-        }
-      };
-    };
-  }
-
-  function WithRequestBodyIgnoredFunctional() {
-    return WithBodySanitizedFunctional(
+    return WithBodySanitized(
       documentFactoryFromForRequest(dtoSchemaObj({}, ''))
     );
   }
 
   function WithResponseSanitized<
-    TSafeResponse extends ReturnType<TInstance['toObject']>,
-    TDocFactory extends DocumentFactory<any>,
-    TInstance extends ReturnType<TDocFactory>
-  >(DocFactory: TDocFactory) {
-    // tslint:disable-next-line:only-arrow-functions
-    return function<TSuper extends Constructor>(Super: TSuper) {
-      return class WithSanitizedResponse extends Super {
-        constructor(...args: any[]) {
-          super(...args);
-        }
-        public sanitizeResponse(unsafeResponse: any) {
-          const doc = DocFactory(unsafeResponse);
-          // @tswtf: why do I need to force this?!
-          return doc.toObject() as TSafeResponse;
-        }
-      };
-    };
-  }
-
-  function WithResponseSanitizedFunctional<
     TSafeResponse extends ReturnType<TInstance['toObject']>,
     TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>
@@ -341,62 +213,17 @@ export function htMongooseFactory(mongoose: any) {
     };
   }
 
-  function WithPojoToDocument(
-    pojoKey: string,
-    modelClass: any,
-    newDocKey: string
-  ) {
-    return WithAttached(
-      pojoKey,
-      pojo => Promise.resolve(new modelClass(pojo)),
-      newDocKey
-    );
-  }
-
-  function WithParamsSanitizedTo<
-    TSuper extends Constructor,
-    TSafeParam extends ReturnType<TInstance['toObject']>,
-    TDocFactory extends DocumentFactory<any>,
-    TInstance extends ReturnType<TDocFactory>
-  >(Super: TSuper, DocFactory: TDocFactory) {
-    WithParamsSanitized(DocFactory)(Super);
-  }
-
-  function WithBodySanitizedTo<
-    TSuper extends Constructor,
-    TSafeBody extends ReturnType<TInstance['toObject']>,
-    TDocFactory extends DocumentFactory<any>,
-    TInstance extends ReturnType<TDocFactory>
-  >(Super: TSuper, DocFactory: TDocFactory) {
-    WithBodySanitized(DocFactory)(Super);
-  }
-
-  function WithResponseSanitizedTo<
-    TSuper extends Constructor,
-    TSafeResponse extends ReturnType<TInstance['toObject']>,
-    TDocFactory extends DocumentFactory<any>,
-    TInstance extends ReturnType<TDocFactory>
-  >(Super: TSuper, DocFactory: TDocFactory) {
-    WithResponseSanitized(DocFactory)(Super);
+  function WithPojoToDocument(modelClass: any) {
+    return WithAttached((pojo: any) => Promise.resolve(new modelClass(pojo)));
   }
 
   return {
     WithBodySanitized,
-    WithBodySanitizedFunctional,
-    WithBodySanitizedTo,
     WithParamsSanitized,
-    WithParamsSanitizedFunctional,
-    WithParamsSanitizedTo,
     WithPojoToDocument,
     WithRequestBodyIgnored,
-    WithRequestBodyIgnoredFunctional,
     WithResponseSanitized,
-    WithResponseSanitizedFunctional,
-    WithResponseSanitizedTo,
     WithSaveOnDocument,
-    WithSaveOnDocumentFunctional,
-    WithUpdateByBody,
-    WithUpdateDocumentFunctional,
     documentFactoryFromForRequest,
     documentFactoryFromForResponse,
     dtoSchemaObj,
