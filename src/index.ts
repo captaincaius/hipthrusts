@@ -159,10 +159,18 @@ export function WithFinalAuthTo<
 export function HTPipeAttachData<
   TLeft extends HasAttachData<
     any,
-    Pick<
-      Parameters<TRight['attachData']>[0],
-      keyof PromiseResolveOrSync<ReturnType<TLeft['attachData']>>
-    >
+    TRight extends HasAttachData<any, any>
+      ? Pick<
+          Parameters<TRight['attachData']>[0],
+          keyof PromiseResolveOrSync<
+            ReturnType<
+              TLeft extends HasAttachData<any, any>
+                ? TLeft['attachData']
+                : () => {}
+            >
+          >
+        >
+      : any
   >,
   TRight extends HasAttachData<any, any>,
   TContextInLeft extends Parameters<TLeft['attachData']>[0],
@@ -188,7 +196,13 @@ export function HTPipeAttachData<
     TRight extends HasAttachData<any, any>
       ? Pick<
           Parameters<TRight['attachData']>[0],
-          keyof PromiseResolveOrSync<ReturnType<TLeft['attachData']>>
+          keyof PromiseResolveOrSync<
+            ReturnType<
+              TLeft extends HasAttachData<any, any>
+                ? TLeft['attachData']
+                : () => {}
+            >
+          >
         >
       : any
   >,
