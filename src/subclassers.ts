@@ -9,7 +9,7 @@ import {
 } from './types';
 
 export function WithInit(
-  projector: PromiseResolveOrSync<any>
+  projector: (context: any) => any
 ): HasInitPreContext<any, any> {
   return {
     initPreContext: projector,
