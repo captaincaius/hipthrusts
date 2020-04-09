@@ -1,42 +1,10 @@
 import { isHasAttachData } from './core';
+import { WithFinalAuth, WithPreAuth } from './subclassers';
 import {
-  WithAttached,
-  WithFinalAuth,
-  WithInit,
-  WithPreAuth,
-} from './subclassers';
-import {
-  Constructor,
   HasAttachData,
   OptionallyHasAttachData,
   PromiseResolveOrSync,
 } from './types';
-
-type SyncProjector<TNext, TSource> = (source: TSource) => TNext;
-
-type AnySyncProjector = SyncProjector<any, any>;
-
-type AsyncProjector<TNext, TSource> = (source: TSource) => Promise<TNext>;
-
-interface HasDataAttacher {
-  attachData(): Promise<any>;
-}
-
-interface OptionallyHasDataAttacher {
-  attachData?(): Promise<any>;
-}
-
-type IsFinalAuth<TPrincipal> = (principal: TPrincipal) => Promise<boolean>;
-
-interface OptionallyHasFinalAuth {
-  finalAuthorize?(): Promise<boolean>;
-}
-
-type IsPreAuth<TPrincipal> = (principal: TPrincipal) => boolean;
-
-interface OptionallyHasPreAuth {
-  preAuthorize?(): boolean;
-}
 
 type FunctionTaking<TIn> = (param: TIn) => any;
 

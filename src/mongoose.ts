@@ -1,7 +1,6 @@
 import Boom from '@hapi/boom';
 import { WithAttached } from './subclassers';
 import {
-  Constructor,
   HasDoWork,
   HasSanitizeBody,
   HasSanitizeParams,
@@ -193,12 +192,6 @@ export function htMongooseFactory(mongoose: any) {
     };
   }
 
-  function WithRequestBodyIgnored() {
-    return WithBodySanitized(
-      documentFactoryFromForRequest(dtoSchemaObj({}, ''))
-    );
-  }
-
   function WithResponseSanitized<
     TSafeResponse extends ReturnType<TInstance['toObject']>,
     TDocFactory extends DocumentFactory<any>,
@@ -221,8 +214,8 @@ export function htMongooseFactory(mongoose: any) {
     WithBodySanitized,
     WithParamsSanitized,
     WithPojoToDocument,
-    WithRequestBodyIgnored,
     WithResponseSanitized,
+    WithUpdateDocument,
     WithSaveOnDocument,
     documentFactoryFromForRequest,
     documentFactoryFromForResponse,
