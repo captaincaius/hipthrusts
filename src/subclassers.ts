@@ -8,38 +8,8 @@ import {
   PromiseResolveOrSync,
 } from './types';
 
-// @fixme: redo all these functionally!
-
-type SyncProjector<TNext, TSource> = (source: TSource) => TNext;
-
-type AnySyncProjector = SyncProjector<any, any>;
-
-export interface HasDataAttacher {
-  attachData(): Promise<any>;
-}
-
-interface OptionallyHasDataAttacher {
-  attachData?(): Promise<any>;
-}
-
-type IsFinalAuth<TPrincipal> = (principal: TPrincipal) => Promise<boolean>;
-
-interface OptionallyHasFinalAuth {
-  finalAuthorize?(): Promise<boolean>;
-}
-
-type IsPreAuth<TPrincipal> = (principal: TPrincipal) => boolean;
-
-interface OptionallyHasPreAuth {
-  preAuthorize?(): boolean;
-}
-
-type FunctionTaking<TIn> = (param: TIn) => any;
-
-type HasTypedFunctionOn<T, K extends string> = Record<K, FunctionTaking<T>>;
-
 export function WithInit(
-  projector: AnySyncProjector
+  projector: PromiseResolveOrSync<any>
 ): HasInitPreContext<any, any> {
   return {
     initPreContext: projector,
