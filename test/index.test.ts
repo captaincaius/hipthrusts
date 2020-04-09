@@ -333,6 +333,58 @@ describe('HipThrusTS', () => {
         // @ts-expect-error
         const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
       });
+      it('attaches right sync output instead of left sync output if right output sync transform left output type', () => {
+        const left = {
+          attachData(context: { a: number }) {
+            return { b: 'some string' };
+          },
+        };
+
+        const rightTransformLeftOutputType = {
+          attachData(context: { b: string }) {
+            return { b: 5 };
+          },
+        };
+
+        const pipedAToBStringToBNumber = HTPipeAttachData(
+          left,
+          rightTransformLeftOutputType
+        );
+
+        interface CorrectParam {
+          a: number;
+        }
+        type CorrectReturnValue = PromiseOrSync<{ b: number }>;
+
+        type ParamAssignableToCorrect = CorrectParam extends Parameters<
+          typeof pipedAToBStringToBNumber.attachData
+        >[0]
+          ? true
+          : false;
+        type ParamAssignableFromCorrect = Parameters<
+          typeof pipedAToBStringToBNumber.attachData
+        >[0] extends CorrectParam
+          ? true
+          : false;
+        type ReturnAssignableToCorrect = CorrectReturnValue extends ReturnType<
+          typeof pipedAToBStringToBNumber.attachData
+        >
+          ? true
+          : false;
+        type ReturnAssignableFromCorrect = ReturnType<
+          typeof pipedAToBStringToBNumber.attachData
+        > extends CorrectReturnValue
+          ? true
+          : false;
+        // @ts-expect-error
+        const paramAssignableToCorrectShouldFail: ParamAssignableToCorrect = false;
+        // @ts-expect-error
+        const paramAssignableFromCorrectShouldFail: ParamAssignableFromCorrect = false;
+        // @ts-expect-error
+        const returnAssignableToCorrectShouldFail: ReturnAssignableToCorrect = false;
+        // @ts-expect-error
+        const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
+      });
       it('attaches properly typed data from left sync data attacher and right not fully covered sync data attacher', () => {
         const left = {
           attachData(context: { a: string }) {
@@ -595,6 +647,58 @@ describe('HipThrusTS', () => {
           : false;
         type ReturnAssignableFromCorrect = ReturnType<
           typeof pipedAtoBC.attachData
+        > extends CorrectReturnValue
+          ? true
+          : false;
+        // @ts-expect-error
+        const paramAssignableToCorrectShouldFail: ParamAssignableToCorrect = false;
+        // @ts-expect-error
+        const paramAssignableFromCorrectShouldFail: ParamAssignableFromCorrect = false;
+        // @ts-expect-error
+        const returnAssignableToCorrectShouldFail: ReturnAssignableToCorrect = false;
+        // @ts-expect-error
+        const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
+      });
+      it('attaches right async output instead of left async output if right output async transform left output type', () => {
+        const left = {
+          attachData(context: { a: number }) {
+            return Promise.resolve({ b: 'some string' });
+          },
+        };
+
+        const rightTransformLeftOutputType = {
+          attachData(context: { b: string }) {
+            return Promise.resolve({ b: 5 });
+          },
+        };
+
+        const pipedAToBStringToBNumber = HTPipeAttachData(
+          left,
+          rightTransformLeftOutputType
+        );
+
+        interface CorrectParam {
+          a: number;
+        }
+        type CorrectReturnValue = PromiseOrSync<{ b: number }>;
+
+        type ParamAssignableToCorrect = CorrectParam extends Parameters<
+          typeof pipedAToBStringToBNumber.attachData
+        >[0]
+          ? true
+          : false;
+        type ParamAssignableFromCorrect = Parameters<
+          typeof pipedAToBStringToBNumber.attachData
+        >[0] extends CorrectParam
+          ? true
+          : false;
+        type ReturnAssignableToCorrect = CorrectReturnValue extends ReturnType<
+          typeof pipedAToBStringToBNumber.attachData
+        >
+          ? true
+          : false;
+        type ReturnAssignableFromCorrect = ReturnType<
+          typeof pipedAToBStringToBNumber.attachData
         > extends CorrectReturnValue
           ? true
           : false;
