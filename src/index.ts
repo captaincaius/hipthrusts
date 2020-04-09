@@ -184,7 +184,7 @@ export function HTPipeAttachData<
   right: TRight
 ): HasAttachData<
   TContextInLeft & Omit<TContextInRight, keyof TContextOutLeft>,
-  TContextOutLeft & TContextOutRight
+  TContextOutRight & Omit<TContextOutLeft, keyof TContextOutRight>
 >;
 
 // left has attachData and right does not
