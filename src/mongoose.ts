@@ -1,6 +1,11 @@
 import Boom from '@hapi/boom';
 import { WithAttached } from './subclassers';
-import { Constructor } from './types';
+import {
+  HasDoWork,
+  HasSanitizeBody,
+  HasSanitizeParams,
+  HasSanitizeResponse,
+} from './types';
 // tslint:disable-next-line:no-var-requires
 const mask = require('json-mask');
 
@@ -112,68 +117,56 @@ export function htMongooseFactory(mongoose: any) {
   function WithParamsSanitized<
     TSafeParam extends ReturnType<TInstance['toObject']>,
     TDocFactory extends DocumentFactory<any>,
-    TInstance extends ReturnType<TDocFactory>
-  >(DocFactory: TDocFactory) {
-    // tslint:disable-next-line:only-arrow-functions
-    return function<TSuper extends Constructor>(Super: TSuper) {
-      return class WithSanitizedParams extends Super {
-        constructor(...args: any[]) {
-          super(...args);
+    TInstance extends ReturnType<TDocFactory>,
+    TUnsafeParam
+  >(DocFactory: TDocFactory): HasSanitizeParams<TSafeParam, TUnsafeParam> {
+    return {
+      sanitizeParams: (unsafeParams: TUnsafeParam) => {
+        const doc = DocFactory(unsafeParams);
+        const validateErrors = doc.validateSync();
+        if (validateErrors !== undefined) {
+          throw Boom.badRequest('Params not valid');
         }
-        public sanitizeParams(unsafeParams: any) {
-          const doc = DocFactory(unsafeParams);
-          const validateErrors = doc.validateSync();
-          if (validateErrors !== undefined) {
-            throw Boom.badRequest('Params not valid');
-          }
-          // @tswtf: why do I need to force this?!
-          return doc.toObject({ transform: stripIdTransform }) as TSafeParam;
-        }
-      };
+        // @tswtf: why do I need to force this?!
+        return doc.toObject({ transform: stripIdTransform }) as TSafeParam;
+      },
     };
   }
 
-  function WithSaveOnDocument(docKey: string) {
-    // tslint:disable-next-line:only-arrow-functions
-    return function<TSuper extends Constructor>(Super: TSuper) {
-      return class SaveOnDocument extends Super {
-        constructor(...args: any[]) {
-          super(...args);
-        }
-        public async doWork() {
-          if (Object.keys(this).includes(docKey)) {
-            try {
-              await (this as any)[docKey].save();
-            } catch (err) {
-              throw Boom.badData(
-                'Unable to save. Please check if data sent was valid.'
-              );
-            }
-          } else {
-            throw Boom.badRequest('Resource not found');
+  function WithSaveOnDocument(
+    propertyKeyOfDocument: string
+  ): HasDoWork<any, any> {
+    return {
+      doWork: async (context: any) => {
+        if (context[propertyKeyOfDocument]) {
+          try {
+            return await context[propertyKeyOfDocument].save();
+          } catch (err) {
+            throw Boom.badData(
+              'Unable to save. Please check if data sent was valid.'
+            );
           }
+        } else {
+          throw Boom.badRequest('Resource not found');
         }
-      };
+      },
     };
   }
 
-  function WithUpdateByBody(entityToUpdate: string) {
-    // tslint:disable-next-line:only-arrow-functions
-    return function<TSuper extends Constructor>(Super: TSuper) {
-      return class WithUpdatingBody extends Super {
-        constructor(...args: any[]) {
-          super(...args);
+  function WithUpdateDocument(
+    propertyKeyOfDocument: string,
+    propertyKeyWithNewData: string = 'body'
+  ): HasDoWork<any, any> {
+    return {
+      doWork: async (context: any) => {
+        if (context[propertyKeyOfDocument]) {
+          return await context[propertyKeyOfDocument].set(
+            context[propertyKeyWithNewData]
+          );
+        } else {
+          throw Boom.badRequest('Resource not found');
         }
-        public async doWork() {
-          if (Object.keys(this as any).includes(entityToUpdate)) {
-            // tslint:disable:no-string-literal
-            (this as any)[entityToUpdate].set((this as any).body);
-            await (this as any)[entityToUpdate].save();
-          } else {
-            throw Boom.badRequest('Resource not found');
-          }
-        }
-      };
+      },
     };
   }
 
@@ -181,40 +174,21 @@ export function htMongooseFactory(mongoose: any) {
   function WithBodySanitized<
     TSafeBody extends ReturnType<TInstance['toObject']>,
     TDocFactory extends DocumentFactory<any>,
-    TInstance extends ReturnType<TDocFactory>
-  >(DocFactory: TDocFactory) {
-    // tslint:disable-next-line:only-arrow-functions
-    return function<TSuper extends Constructor>(Super: TSuper) {
-      return class WithSanitizedBody extends Super {
-        constructor(...args: any[]) {
-          super(...args);
+    TInstance extends ReturnType<TDocFactory>,
+    TUnsafeBody
+  >(DocFactory: TDocFactory): HasSanitizeBody<TSafeBody, TUnsafeBody> {
+    return {
+      sanitizeBody: (unsafeBody: TUnsafeBody) => {
+        const doc = DocFactory(unsafeBody);
+        const validateErrors = doc.validateSync(undefined, {
+          validateModifiedOnly: true,
+        });
+        if (validateErrors !== undefined) {
+          throw Boom.badRequest('Body not valid');
         }
-        public sanitizeBody(unsafeBody: any) {
-          const doc = DocFactory(unsafeBody);
-          const validateErrors = doc.validateSync(undefined, {
-            validateModifiedOnly: true,
-          });
-          if (validateErrors !== undefined) {
-            throw Boom.badRequest('Body not valid');
-          }
-          // @tswtf: why do I need to force this?!
-          return doc.toObject({ transform: stripIdTransform }) as TSafeBody;
-        }
-      };
-    };
-  }
-
-  function WithRequestBodyIgnored() {
-    // tslint:disable-next-line:only-arrow-functions
-    return function<TSuper extends Constructor>(Super: TSuper) {
-      return class GetRequestBodyIgnore extends Super {
-        constructor(...args: any[]) {
-          super(...args);
-        }
-        public sanitizeBody() {
-          return {};
-        }
-      };
+        // @tswtf: why do I need to force this?!
+        return doc.toObject({ transform: stripIdTransform }) as TSafeBody;
+      },
     };
   }
 
@@ -222,72 +196,27 @@ export function htMongooseFactory(mongoose: any) {
     TSafeResponse extends ReturnType<TInstance['toObject']>,
     TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>
-  >(DocFactory: TDocFactory) {
-    // tslint:disable-next-line:only-arrow-functions
-    return function<TSuper extends Constructor>(Super: TSuper) {
-      return class WithSanitizedResponse extends Super {
-        constructor(...args: any[]) {
-          super(...args);
-        }
-        public sanitizeResponse(unsafeResponse: any) {
-          const doc = DocFactory(unsafeResponse);
-          // @tswtf: why do I need to force this?!
-          return doc.toObject() as TSafeResponse;
-        }
-      };
+  >(DocFactory: TDocFactory): HasSanitizeResponse<any, any> {
+    return {
+      sanitizeResponse: (unsafeResponse: any) => {
+        const doc = DocFactory(unsafeResponse);
+        // @tswtf: why do I need to force this?!
+        return doc.toObject() as TSafeResponse;
+      },
     };
   }
 
-  function WithPojoToDocument(
-    pojoKey: string,
-    modelClass: any,
-    newDocKey: string
-  ) {
-    return WithAttached(
-      pojoKey,
-      pojo => Promise.resolve(new modelClass(pojo)),
-      newDocKey
-    );
-  }
-
-  function WithParamsSanitizedTo<
-    TSuper extends Constructor,
-    TSafeParam extends ReturnType<TInstance['toObject']>,
-    TDocFactory extends DocumentFactory<any>,
-    TInstance extends ReturnType<TDocFactory>
-  >(Super: TSuper, DocFactory: TDocFactory) {
-    WithParamsSanitized(DocFactory)(Super);
-  }
-
-  function WithBodySanitizedTo<
-    TSuper extends Constructor,
-    TSafeBody extends ReturnType<TInstance['toObject']>,
-    TDocFactory extends DocumentFactory<any>,
-    TInstance extends ReturnType<TDocFactory>
-  >(Super: TSuper, DocFactory: TDocFactory) {
-    WithBodySanitized(DocFactory)(Super);
-  }
-
-  function WithResponseSanitizedTo<
-    TSuper extends Constructor,
-    TSafeResponse extends ReturnType<TInstance['toObject']>,
-    TDocFactory extends DocumentFactory<any>,
-    TInstance extends ReturnType<TDocFactory>
-  >(Super: TSuper, DocFactory: TDocFactory) {
-    WithResponseSanitized(DocFactory)(Super);
+  function WithPojoToDocument(modelClass: any) {
+    return WithAttached((pojo: any) => Promise.resolve(new modelClass(pojo)));
   }
 
   return {
     WithBodySanitized,
-    WithBodySanitizedTo,
     WithParamsSanitized,
-    WithParamsSanitizedTo,
     WithPojoToDocument,
-    WithRequestBodyIgnored,
     WithResponseSanitized,
-    WithResponseSanitizedTo,
+    WithUpdateDocument,
     WithSaveOnDocument,
-    WithUpdateByBody,
     documentFactoryFromForRequest,
     documentFactoryFromForResponse,
     dtoSchemaObj,
