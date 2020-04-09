@@ -247,6 +247,8 @@ export async function executeHipthrustable<
   try {
     // @todo: allow doWork to return more context instead of "true" too.  Anything falsy will be interpreted as an error.  Don't forget || {} after call
     if (requestHandler.doWork) {
+      // to keep executeHipthrustable from being too opinionated, it's doWork's responsibility to handle and throw client errors.
+      // Any un-boom'ed errors here should be interpreted as server errors
       await Promise.resolve(requestHandler.doWork(finalAuthContext));
     }
     const doWorkContext = finalAuthContext;
