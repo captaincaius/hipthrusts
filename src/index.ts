@@ -1,9 +1,4 @@
-import {
-  WithAttached,
-  WithFinalAuth,
-  WithInit,
-  WithPreAuth,
-} from './subclassers';
+import { WithFinalAuth, WithInit, WithPreAuth } from './subclassers';
 import { Constructor } from './types';
 
 type SyncProjector<TNext, TSource> = (source: TSource) => TNext;
@@ -12,7 +7,9 @@ type AnySyncProjector = SyncProjector<any, any>;
 
 type AsyncProjector<TNext, TSource> = (source: TSource) => Promise<TNext>;
 
-interface HasDataAttacher {
+type AnyAsyncProjector = AsyncProjector<any, any>;
+
+export interface HasDataAttacher {
   attachData(): Promise<any>;
 }
 
@@ -52,18 +49,69 @@ export function fromWrappedInstanceMethod<
 }
 
 export function WithNoopPreAuth() {
-  return WithPreAuth('user_user', () => true);
+  return WithPreAuth(() => true);
+}
+
+export function WithPreAuthFrom<
+  TPrincipalKey extends string,
+  TAuthorizer extends IsPreAuth<any>
+>(principalKey: TPrincipalKey, authorizer: TAuthorizer) {
+  return WithPreAuth(requestData => authorizer(requestData[principalKey]));
+}
+
+export function WithFinalAuthFrom<
+  TPrincipalKey extends string,
+  TAuthKey extends string
+>(principalKey: TPrincipalKey, authorizerKey: TAuthKey) {
+  return WithFinalAuth(requestData =>
+    Promise.resolve(requestData[authorizerKey](requestData[principalKey]))
+  );
 }
 
 export function NoopFinalAuth() {
+  return WithFinalAuth(() => Promise.resolve(true));
+}
+
+type PromiseResolveType<T> = T extends Promise<infer R> ? R : never;
+
+export function WithAttachedFrom<
+  TKnown,
+  TSuperConstraint extends Constructor<
+    Record<TWhereToLook, TWhatYoullFind> & TKnown
+  >,
+  TWhereToLook extends string,
+  TWhatYoullFind extends Parameters<TProjector>[0],
+  TProjector extends AsyncProjector<
+    any,
+    TWhereToLook extends keyof TKnown ? TKnown[TWhereToLook] : any
+  >,
+  TNext extends PromiseResolveType<ReturnType<TProjector>>,
+  TWhereToStore extends string
+>(
+  whereToLook: TWhereToLook,
+  projector: TProjector,
+  whereToStore: TWhereToStore
+) {
   // tslint:disable-next-line:only-arrow-functions
-  return function<TSuper extends Constructor>(Super: TSuper) {
-    return class WithFinalAuthorize extends Super {
+  return function<TSuper extends TSuperConstraint>(
+    Super: TSuper
+  ): TSuper & Constructor<Record<TWhereToStore, TNext> & HasDataAttacher> {
+    // @ts-ignore
+    return class WithAttachData extends Super {
+      // do-not-at-ts-ignore
+      // [whereToStore]: TNext;
       constructor(...args: any[]) {
         super(...args);
       }
-      public async finalAuthorize() {
-        return true;
+      public async attachData() {
+        // @todo: MAKE SURE THIS WORKS PROPERLY IF THERE'S GAPS IN THE PROTOTYPE CHAIN
+        // i.e. chain doesn't break or double-call!!
+        if (super.attachData) {
+          await super.attachData();
+        }
+        (this as any)[whereToStore] = await projector(
+          (this as any)[whereToLook]
+        );
       }
     };
   };
@@ -98,10 +146,10 @@ export function WithPreAuthTo<
   principalKey: TPrincipalKey,
   authorizer: IsPreAuth<TPrincipal>
 ) {
-  return WithPreAuth(principalKey, authorizer)(Super);
+  return WithPreAuthFrom(principalKey, authorizer)(Super);
 }
 
-export function WithAttachedTo<
+export function WithAttachedFromTo<
   TWhereToStore extends string,
   TWhereToLook extends string & keyof InstanceType<TSuper>,
   TWhatYoullFind,
@@ -115,7 +163,7 @@ export function WithAttachedTo<
   projector: AsyncProjector<TNext, TWhatYoullFind>,
   whereToStore: TWhereToStore
 ): TSuper & Constructor<{ [k in TWhereToStore]: TNext } & HasDataAttacher>;
-export function WithAttachedTo<
+export function WithAttachedFromTo<
   TWhereToStore extends string,
   TWhereToLook extends string & keyof InstanceType<TSuper>,
   TWhatYoullFind,
@@ -129,20 +177,21 @@ export function WithAttachedTo<
   projector: AsyncProjector<TNext, TWhatYoullFind>,
   whereToStore: TWhereToStore
 ) {
-  return WithAttached(whereToLook, projector, whereToStore)(Super);
+  return WithAttachedFrom(whereToLook, projector, whereToStore)(Super);
 }
 
 export function WithFinalAuthTo<
   TPrincipalKey extends string & keyof InstanceType<TSuper>,
   TPrincipal extends InstanceType<TSuper>[TPrincipalKey],
   TAuthKey extends string,
+  TProjector extends AnyAsyncProjector,
   TSuper extends Constructor<
     Record<TPrincipalKey, any> &
       Record<TAuthKey, IsFinalAuth<TPrincipal>> &
       OptionallyHasFinalAuth
   >
->(Super: TSuper, principalKey: TPrincipalKey, authorizerKey: TAuthKey) {
-  return WithFinalAuth(principalKey, authorizerKey)(Super);
+>(Super: TSuper, projector: TProjector) {
+  return WithFinalAuth(projector)(Super);
 }
 
 type ClassExtender<TClassIn, TClassOut> = (ClassIn: TClassIn) => TClassOut;
