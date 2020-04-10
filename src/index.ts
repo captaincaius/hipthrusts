@@ -1,8 +1,10 @@
-import { isHasAttachData } from './core';
+import { isHasAttachData, isHasPreAuthorize } from './core';
 import { WithFinalAuth, WithPreAuth } from './subclassers';
 import {
   HasAttachData,
+  HasPreAuthorize,
   OptionallyHasAttachData,
+  OptionallyHasPreAuthorize,
   PromiseResolveOrSync,
 } from './types';
 
@@ -179,6 +181,185 @@ export function HTPipeAttachData<
   } else if (isHasAttachData(right)) {
     // return { attachData: (context: TContextInRight) => right.attachData(context) };
     return { attachData: right.attachData };
+  } else {
+    return {};
+  }
+}
+
+// left has preAuthorize and right has preAuthorize
+export function HTPipePreAuthorize<
+  TLeft extends HasPreAuthorize<
+    any,
+    | boolean
+    | (TRight extends HasPreAuthorize<any, any>
+        ? Pick<
+            Parameters<TRight['preAuthorize']>[0],
+            keyof ReturnType<
+              TLeft extends HasPreAuthorize<any, any>
+                ? TLeft['preAuthorize']
+                : () => {}
+            >
+          >
+        : any)
+  >,
+  TRight extends HasPreAuthorize<any, any>,
+  TContextInLeft extends Parameters<TLeft['preAuthorize']>[0],
+  TContextInRight extends Parameters<TRight['preAuthorize']>[0],
+  TContextOutLeft extends ReturnType<TLeft['preAuthorize']>,
+  TContextOutRight extends ReturnType<TRight['preAuthorize']>
+>(
+  left: TLeft,
+  right: TRight
+): HasPreAuthorize<
+  TContextInLeft & Omit<TContextInRight, keyof TContextOutLeft>,
+  TContextOutRight & Omit<TContextOutLeft, keyof TContextOutRight>
+>;
+
+// left has preAuthorize and right does not
+export function HTPipePreAuthorize<
+  TLeft extends HasPreAuthorize<
+    any,
+    | boolean
+    | (TRight extends HasPreAuthorize<any, any>
+        ? Pick<
+            Parameters<TRight['preAuthorize']>[0],
+            keyof ReturnType<
+              TLeft extends HasPreAuthorize<any, any>
+                ? TLeft['preAuthorize']
+                : () => {}
+            >
+          >
+        : any)
+  >,
+  TRight extends OptionallyHasPreAuthorize<any, any>,
+  TContextInLeft extends Parameters<TLeft['preAuthorize']>[0],
+  TContextOutLeft extends ReturnType<TLeft['preAuthorize']>
+>(left: TLeft, right: TRight): HasPreAuthorize<TContextInLeft, TContextOutLeft>;
+
+// right has preAuthorize and left does not
+export function HTPipePreAuthorize<
+  TLeft extends OptionallyHasPreAuthorize<
+    any,
+    | boolean
+    | (TRight extends HasPreAuthorize<any, any>
+        ? Pick<
+            Parameters<TRight['preAuthorize']>[0],
+            keyof ReturnType<
+              TLeft extends HasPreAuthorize<any, any>
+                ? TLeft['preAuthorize']
+                : () => {}
+            >
+          >
+        : any)
+  >,
+  TRight extends HasPreAuthorize<any, any>,
+  TContextInRight extends Parameters<TRight['preAuthorize']>[0],
+  TContextOutRight extends ReturnType<TRight['preAuthorize']>
+>(
+  left: TLeft,
+  right: TRight
+): HasPreAuthorize<TContextInRight, TContextOutRight>;
+
+// right and left doesn't have preAuthorize
+export function HTPipePreAuthorize<
+  TLeft extends OptionallyHasPreAuthorize<
+    any,
+    | boolean
+    | (TRight extends HasPreAuthorize<any, any>
+        ? Pick<
+            Parameters<TRight['preAuthorize']>[0],
+            keyof ReturnType<
+              TLeft extends HasPreAuthorize<any, any>
+                ? TLeft['preAuthorize']
+                : () => {}
+            >
+          >
+        : any)
+  >,
+  TRight extends OptionallyHasPreAuthorize<any, any>
+>(left: TLeft, right: TRight): {};
+
+// main preAuthorize HTPipe
+export function HTPipePreAuthorize<
+  TLeft extends OptionallyHasPreAuthorize<any, any>,
+  TRight extends OptionallyHasPreAuthorize<any, any>,
+  TContextInLeft extends TLeft extends HasPreAuthorize<any, any>
+    ? Parameters<TLeft['preAuthorize']>[0]
+    : never,
+  TContextInRight extends TRight extends HasPreAuthorize<any, any>
+    ? Parameters<TRight['preAuthorize']>[0]
+    : never,
+  TContextOutLeft extends TLeft extends HasPreAuthorize<any, any>
+    ? ReturnType<TLeft['preAuthorize']>
+    : never,
+  TContextOutRight extends TRight extends HasPreAuthorize<any, any>
+    ? ReturnType<TRight['preAuthorize']>
+    : never
+>(left: TLeft, right: TRight) {
+  if (isHasPreAuthorize(left) && isHasPreAuthorize(right)) {
+    return {
+      preAuthorize: (
+        context: TContextOutLeft extends TContextInRight
+          ? TContextInLeft
+          : TContextInRight & TContextInLeft
+      ) => {
+        const leftOut = left.preAuthorize(context);
+        const leftOutIsBoolean = leftOut === true || leftOut === false;
+        if (leftOutIsBoolean) {
+          if (leftOut) {
+            const rightOut = right.preAuthorize(context);
+            const rightOutIsBoolean = rightOut === true || rightOut === false;
+            if (rightOutIsBoolean) {
+              if (rightOut) {
+                return rightOut;
+              } else {
+                return false;
+              }
+            } else {
+              if (Object.keys(rightOut).length > 0) {
+                return rightOut;
+              } else {
+                return false;
+              }
+            }
+          } else {
+            return false;
+          }
+        } else {
+          if (Object.keys(leftOut).length > 0) {
+            const rightIn = {
+              ...context,
+              ...leftOut,
+            };
+            const rightOut = right.preAuthorize(rightIn);
+            const rightOutIsBoolean = rightOut === true || rightOut === false;
+            if (rightOutIsBoolean) {
+              if (rightOut) {
+                return rightOut;
+              } else {
+                return false;
+              }
+            } else {
+              if (Object.keys(rightOut).length > 0) {
+                return rightOut;
+              } else {
+                return false;
+              }
+            }
+          } else {
+            return false;
+          }
+        }
+      },
+    };
+  } else if (isHasPreAuthorize(left)) {
+    return {
+      preAuthorize: left.preAuthorize,
+    };
+  } else if (isHasPreAuthorize(right)) {
+    return {
+      preAuthorize: right.preAuthorize,
+    };
   } else {
     return {};
   }

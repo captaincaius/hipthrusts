@@ -36,6 +36,10 @@ export interface HasPreAuthorize<TContextIn, TContextOut> {
   preAuthorize: (context: TContextIn) => TContextOut;
 }
 
+export interface OptionallyHasPreAuthorize<TContextIn, TContextOut> {
+  preAuthorize?: (context: TContextIn) => TContextOut;
+}
+
 export interface OptionallyHasAttachData<TContextIn, TContextOut> {
   attachData?: (context: TContextIn) => PromiseOrSync<TContextOut>;
 }
