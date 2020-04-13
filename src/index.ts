@@ -331,8 +331,7 @@ export function HTPipePreAuthorize<
           ...leftContextOut,
         };
         const rightOut = right.preAuthorize(rightIn);
-        const rightPassed = authorizationPassed(rightOut);
-        return rightPassed;
+        return rightOut;
       },
     };
   } else if (isHasPreAuthorize(left)) {
