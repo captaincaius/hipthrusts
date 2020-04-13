@@ -3,8 +3,8 @@ import { WithFinalAuth, WithPreAuth } from './subclassers';
 import {
   HasAttachData,
   HasPreAuthorize,
+  MightHavePreAuthorize,
   OptionallyHasAttachData,
-  OptionallyHasPreAuthorize,
   PromiseResolveOrSync,
 } from './types';
 
@@ -211,8 +211,16 @@ export function HTPipePreAuthorize<
   left: TLeft,
   right: TRight
 ): HasPreAuthorize<
-  TContextInLeft & Omit<TContextInRight, keyof TContextOutLeft>,
-  TContextOutRight & Omit<TContextOutLeft, keyof TContextOutRight>
+  TContextInLeft &
+    Omit<
+      TContextInRight,
+      TContextOutLeft extends boolean ? keyof {} : keyof TContextOutLeft
+    >,
+  TContextOutRight &
+    Omit<
+      TContextOutLeft,
+      TContextOutRight extends boolean ? keyof {} : keyof TContextOutRight
+    >
 >;
 
 // left has preAuthorize and right does not
@@ -231,14 +239,14 @@ export function HTPipePreAuthorize<
           >
         : any)
   >,
-  TRight extends OptionallyHasPreAuthorize<any, any>,
+  TRight extends MightHavePreAuthorize<any, any>,
   TContextInLeft extends Parameters<TLeft['preAuthorize']>[0],
   TContextOutLeft extends ReturnType<TLeft['preAuthorize']>
 >(left: TLeft, right: TRight): HasPreAuthorize<TContextInLeft, TContextOutLeft>;
 
 // right has preAuthorize and left does not
 export function HTPipePreAuthorize<
-  TLeft extends OptionallyHasPreAuthorize<
+  TLeft extends MightHavePreAuthorize<
     any,
     | boolean
     | (TRight extends HasPreAuthorize<any, any>
@@ -262,7 +270,7 @@ export function HTPipePreAuthorize<
 
 // right and left doesn't have preAuthorize
 export function HTPipePreAuthorize<
-  TLeft extends OptionallyHasPreAuthorize<
+  TLeft extends MightHavePreAuthorize<
     any,
     | boolean
     | (TRight extends HasPreAuthorize<any, any>
@@ -276,13 +284,13 @@ export function HTPipePreAuthorize<
           >
         : any)
   >,
-  TRight extends OptionallyHasPreAuthorize<any, any>
+  TRight extends MightHavePreAuthorize<any, any>
 >(left: TLeft, right: TRight): {};
 
 // main preAuthorize HTPipe
 export function HTPipePreAuthorize<
-  TLeft extends OptionallyHasPreAuthorize<any, any>,
-  TRight extends OptionallyHasPreAuthorize<any, any>,
+  TLeft extends MightHavePreAuthorize<any, any>,
+  TRight extends MightHavePreAuthorize<any, any>,
   TContextInLeft extends TLeft extends HasPreAuthorize<any, any>
     ? Parameters<TLeft['preAuthorize']>[0]
     : never,
@@ -304,52 +312,26 @@ export function HTPipePreAuthorize<
           : TContextInRight & TContextInLeft
       ) => {
         const leftOut = left.preAuthorize(context);
-        const leftOutIsBoolean = leftOut === true || leftOut === false;
-        if (leftOutIsBoolean) {
-          if (leftOut) {
-            const rightOut = right.preAuthorize(context);
-            const rightOutIsBoolean = rightOut === true || rightOut === false;
-            if (rightOutIsBoolean) {
-              if (rightOut) {
-                return rightOut;
-              } else {
-                return false;
-              }
-            } else {
-              if (Object.keys(rightOut).length > 0) {
-                return rightOut;
-              } else {
-                return false;
-              }
-            }
-          } else {
-            return false;
-          }
-        } else {
-          if (Object.keys(leftOut).length > 0) {
-            const rightIn = {
-              ...context,
-              ...leftOut,
-            };
-            const rightOut = right.preAuthorize(rightIn);
-            const rightOutIsBoolean = rightOut === true || rightOut === false;
-            if (rightOutIsBoolean) {
-              if (rightOut) {
-                return rightOut;
-              } else {
-                return false;
-              }
-            } else {
-              if (Object.keys(rightOut).length > 0) {
-                return rightOut;
-              } else {
-                return false;
-              }
-            }
-          } else {
-            return false;
-          }
+        const leftPassed =
+          leftOut === true ||
+          (leftOut &&
+            typeof leftOut === 'object' &&
+            Object.keys(leftOut).length > 0);
+        if (!leftPassed) {
+          return false;
         }
+        const leftContextOut = leftPassed === true ? {} : leftOut;
+        const rightIn = {
+          ...context,
+          ...leftContextOut,
+        };
+        const rightOut = right.preAuthorize(rightIn);
+        const rightPassed =
+          rightOut === true ||
+          (rightOut &&
+            typeof rightOut === 'object' &&
+            Object.keys(rightOut).length > 0);
+        return rightPassed;
       },
     };
   } else if (isHasPreAuthorize(left)) {

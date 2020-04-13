@@ -19,9 +19,9 @@ import {
   HasUpToDoWorkProperOptionals,
   HasUpToFinalAuthorizeProperOptionals,
   HasUpToRespondProperOptionals,
+  MightHavePreAuthorize,
   OptionallyHasAttachData,
   OptionallyHasDoWork,
-  OptionallyHasPreAuthorize,
   OptionallyHasSanitizeBody,
   OptionallyHasSanitizeParams,
   PromiseOrSync,
@@ -95,7 +95,7 @@ export function isHasAttachData<TContextIn, TContextOut>(
 }
 
 export function isHasPreAuthorize<TContextIn, TContextOut>(
-  thing: OptionallyHasPreAuthorize<TContextIn, TContextOut>
+  thing: MightHavePreAuthorize<TContextIn, TContextOut>
 ): thing is HasPreAuthorize<TContextIn, TContextOut> {
   return !!(thing && thing.preAuthorize);
 }
