@@ -6,6 +6,7 @@ import {
   HasBodyProperOptionals,
   HasDoWork,
   HasDoWorkProperOptionals,
+  HasFinalAuthorize,
   HasFinalAuthorizeProperOptionals,
   HasInitPreContext,
   HasInitPreContextProperOptionals,
@@ -19,6 +20,7 @@ import {
   HasUpToDoWorkProperOptionals,
   HasUpToFinalAuthorizeProperOptionals,
   HasUpToRespondProperOptionals,
+  MightHaveFinalAuthorize,
   MightHavePreAuthorize,
   OptionallyHasAttachData,
   OptionallyHasDoWork,
@@ -92,6 +94,12 @@ export function isHasAttachData<TContextIn, TContextOut>(
   thing: OptionallyHasAttachData<TContextIn, TContextOut>
 ): thing is HasAttachData<TContextIn, TContextOut> {
   return !!(thing && thing.attachData);
+}
+
+export function isHasFinalAuthorize<TContextIn, TContextOut>(
+  thing: MightHaveFinalAuthorize<TContextIn, TContextOut>
+): thing is HasFinalAuthorize<TContextIn, TContextOut> {
+  return !!(thing && thing.finalAuthorize);
 }
 
 export function isHasPreAuthorize<TContextIn, TContextOut>(

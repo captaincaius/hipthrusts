@@ -1,8 +1,14 @@
-import { isHasAttachData, isHasPreAuthorize } from './core';
+import {
+  isHasAttachData,
+  isHasFinalAuthorize,
+  isHasPreAuthorize,
+} from './core';
 import { WithFinalAuth, WithPreAuth } from './subclassers';
 import {
   HasAttachData,
+  HasFinalAuthorize,
   HasPreAuthorize,
+  MightHaveFinalAuthorize,
   MightHavePreAuthorize,
   OptionallyHasAttachData,
   PromiseResolveOrSync,
@@ -342,6 +348,173 @@ export function HTPipePreAuthorize<
     return {
       preAuthorize: right.preAuthorize,
     };
+  } else {
+    return {};
+  }
+}
+
+// left has finalAuthorize and right has finalAuthorize
+export function HTPipeFinalAuthorize<
+  TLeft extends HasFinalAuthorize<
+    any,
+    | boolean
+    | (TRight extends HasFinalAuthorize<any, any>
+        ? Pick<
+            Parameters<TRight['finalAuthorize']>[0],
+            keyof PromiseResolveOrSync<
+              ReturnType<
+                TLeft extends HasFinalAuthorize<any, any>
+                  ? TLeft['finalAuthorize']
+                  : () => {}
+              >
+            >
+          >
+        : any)
+  >,
+  TRight extends HasFinalAuthorize<any, any>,
+  TContextInLeft extends Parameters<TLeft['finalAuthorize']>[0],
+  TContextInRight extends Parameters<TRight['finalAuthorize']>[0],
+  TContextOutLeft extends PromiseResolveOrSync<
+    ReturnType<TLeft['finalAuthorize']>
+  >,
+  TContextOutRight extends PromiseResolveOrSync<
+    ReturnType<TRight['finalAuthorize']>
+  >
+>(
+  left: TLeft,
+  right: TRight
+): HasFinalAuthorize<
+  TContextInLeft &
+    Omit<
+      TContextInRight,
+      TContextOutLeft extends boolean ? keyof {} : keyof TContextOutLeft
+    >,
+  TContextOutRight &
+    Omit<
+      TContextOutLeft,
+      TContextOutRight extends boolean ? keyof {} : keyof TContextOutRight
+    >
+>;
+
+// left has finalAuthorize and right does not
+export function HTPipeFinalAuthorize<
+  TLeft extends HasFinalAuthorize<
+    any,
+    | boolean
+    | (TRight extends HasFinalAuthorize<any, any>
+        ? Pick<
+            Parameters<TRight['finalAuthorize']>[0],
+            keyof PromiseResolveOrSync<
+              ReturnType<
+                TLeft extends HasFinalAuthorize<any, any>
+                  ? TLeft['finalAuthorize']
+                  : () => {}
+              >
+            >
+          >
+        : any)
+  >,
+  TRight extends MightHaveFinalAuthorize<any, any>,
+  TContextInLeft extends Parameters<TLeft['finalAuthorize']>[0],
+  TContextOutLeft extends PromiseResolveOrSync<
+    ReturnType<TLeft['finalAuthorize']>
+  >
+>(
+  left: TLeft,
+  right: TRight
+): HasFinalAuthorize<TContextInLeft, TContextOutLeft>;
+
+// right has finalAuthorize and left does not
+export function HTPipeFinalAuthorize<
+  TLeft extends MightHaveFinalAuthorize<
+    any,
+    | boolean
+    | (TRight extends HasFinalAuthorize<any, any>
+        ? Pick<
+            Parameters<TRight['finalAuthorize']>[0],
+            keyof PromiseResolveOrSync<
+              ReturnType<
+                TLeft extends HasFinalAuthorize<any, any>
+                  ? TLeft['finalAuthorize']
+                  : () => {}
+              >
+            >
+          >
+        : any)
+  >,
+  TRight extends HasFinalAuthorize<any, any>,
+  TContextInRight extends Parameters<TRight['finalAuthorize']>[0],
+  TContextOutRight extends PromiseResolveOrSync<
+    ReturnType<TRight['finalAuthorize']>
+  >
+>(
+  left: TLeft,
+  right: TRight
+): HasFinalAuthorize<TContextInRight, TContextOutRight>;
+
+// right and left doesn't have preAuthorize
+export function HTPipeFinalAuthorize<
+  TLeft extends MightHaveFinalAuthorize<
+    any,
+    | boolean
+    | (TRight extends HasFinalAuthorize<any, any>
+        ? Pick<
+            Parameters<TRight['finalAuthorize']>[0],
+            keyof PromiseResolveOrSync<
+              ReturnType<
+                TLeft extends HasFinalAuthorize<any, any>
+                  ? TLeft['finalAuthorize']
+                  : () => {}
+              >
+            >
+          >
+        : any)
+  >,
+  TRight extends MightHaveFinalAuthorize<any, any>
+>(left: TLeft, right: TRight): {};
+
+// finalAuthorize main function
+export function HTPipeFinalAuthorize<
+  TLeft extends MightHaveFinalAuthorize<any, any>,
+  TRight extends MightHaveFinalAuthorize<any, any>,
+  TContextInLeft extends TLeft extends HasFinalAuthorize<any, any>
+    ? Parameters<TLeft['finalAuthorize']>[0]
+    : never,
+  TContextInRight extends TRight extends HasFinalAuthorize<any, any>
+    ? Parameters<TRight['finalAuthorize']>[0]
+    : never,
+  TContextOutLeft extends TLeft extends HasFinalAuthorize<any, any>
+    ? PromiseResolveOrSync<ReturnType<TLeft['finalAuthorize']>>
+    : never,
+  TContextOutRight extends TRight extends HasFinalAuthorize<any, any>
+    ? PromiseResolveOrSync<ReturnType<TRight['finalAuthorize']>>
+    : never
+>(left: TLeft, right: TRight) {
+  if (isHasFinalAuthorize(left) && isHasFinalAuthorize(right)) {
+    return {
+      finalAuthorize: async (
+        context: TContextOutLeft extends TContextInRight
+          ? TContextInLeft
+          : TContextInRight & TContextInLeft
+      ) => {
+        const leftOut = await Promise.resolve(left.finalAuthorize(context));
+        const leftPassed = authorizationPassed(leftOut);
+        if (!leftPassed) {
+          return false;
+        }
+        const leftContextOut = leftOut === true ? {} : leftOut;
+        const rightIn = {
+          ...context,
+          ...leftContextOut,
+        };
+        const rightOut = await Promise.resolve(right.finalAuthorize(rightIn));
+        return rightOut;
+      },
+    };
+  } else if (isHasFinalAuthorize(left)) {
+    return { finalAuthorize: left.finalAuthorize };
+  } else if (isHasFinalAuthorize(right)) {
+    return { finalAuthorize: right.finalAuthorize };
   } else {
     return {};
   }
