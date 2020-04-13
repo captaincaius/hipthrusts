@@ -92,6 +92,12 @@ export function isHasAttachData<TContextIn, TContextOut>(
   return !!(thing && thing.attachData);
 }
 
+export function isHasDoWork<TContextIn, TContextOut>(
+  thing: OptionallyHasDoWork<TContextIn, TContextOut>
+): thing is HasDoWork<TContextIn, TContextOut> {
+  return !!(thing && thing.doWork);
+}
+
 export class HipRedirectException {
   constructor(
     public readonly redirectUrl: string,

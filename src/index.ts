@@ -1,8 +1,10 @@
-import { isHasAttachData } from './core';
+import { isHasAttachData, isHasDoWork } from './core';
 import { WithFinalAuth, WithPreAuth } from './subclassers';
 import {
   HasAttachData,
+  HasDoWork,
   OptionallyHasAttachData,
+  OptionallyHasDoWork,
   PromiseResolveOrSync,
 } from './types';
 
@@ -181,6 +183,64 @@ export function HTPipeAttachData<
     return { attachData: right.attachData };
   } else {
     return {};
+  }
+}
+
+// left has doWork and right has doWork
+export function HTPipeDoWork<
+  TLeft extends HasDoWork<any, void>,
+  TRight extends HasDoWork<any, void>,
+  TContextInLeft extends Parameters<TLeft['doWork']>[0],
+  TContextInRight extends Parameters<TRight['doWork']>[0]
+>(
+  left: TLeft,
+  right: TRight
+): HasDoWork<TContextInLeft & TContextInRight, void>;
+
+// left has doWork, right doesn't
+export function HTPipeDoWork<
+  TLeft extends HasDoWork<any, void>,
+  TRight extends OptionallyHasDoWork<any, any>,
+  TContextInLeft extends Parameters<TLeft['doWork']>
+>(left: TLeft, right: TRight): HasDoWork<TContextInLeft, void>;
+
+// right has do doWork, left doesn't
+export function HTPipeDoWork<
+  TLeft extends OptionallyHasDoWork<any, void>,
+  TRight extends HasDoWork<any, void>,
+  TContextInRight extends Parameters<TRight['doWork']>
+>(left: TLeft, right: TRight): HasDoWork<TContextInRight, void>;
+
+// right and left doesn't have doWork
+export function HTPipeDoWork<
+  TLeft extends OptionallyHasDoWork<any, void>,
+  TRight extends OptionallyHasDoWork<any, void>
+>(left: TLeft, right: TRight): void;
+
+// main doWork HTPipe
+export function HTPipeDoWork<
+  TLeft extends OptionallyHasDoWork<any, void>,
+  TRight extends OptionallyHasDoWork<any, void>,
+  TContextInLeft extends TLeft extends HasDoWork<any, any>
+    ? Parameters<TLeft['doWork']>[0]
+    : never,
+  TContextInRight extends TRight extends HasDoWork<any, any>
+    ? Parameters<TRight['doWork']>[0]
+    : never
+>(left: TLeft, right: TRight) {
+  if (isHasDoWork(left) && isHasDoWork(right)) {
+    return {
+      doWork: async (context: TContextInRight & TContextInLeft) => {
+        await Promise.resolve(left.doWork(context));
+        await Promise.resolve(right.doWork(context));
+      },
+    };
+  } else if (isHasDoWork(left)) {
+    return { doWork: left.doWork };
+  } else if (isHasDoWork(right)) {
+    return { doWork: right.doWork };
+  } else {
+    return;
   }
 }
 
