@@ -352,8 +352,7 @@ export function HTPipeFinalAuthorize<
         };
         const rightOut =
           (await Promise.resolve(right.finalAuthorize(rightIn))) || false;
-        const rightPassed = authorizationPassed(rightOut);
-        return rightPassed;
+        return rightOut;
       },
     };
   } else if (isHasFinalAuthorize(left)) {
