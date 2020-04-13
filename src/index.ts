@@ -188,39 +188,106 @@ export function HTPipeAttachData<
 
 // left has doWork and right has doWork
 export function HTPipeDoWork<
-  TLeft extends HasDoWork<any, void>,
-  TRight extends HasDoWork<any, void>,
+  TLeft extends HasDoWork<
+    any,
+    | void
+    | (TRight extends HasDoWork<any, any>
+        ? Pick<
+            Parameters<TRight['doWork']>[0],
+            keyof PromiseResolveOrSync<
+              ReturnType<
+                TLeft extends HasDoWork<any, any> ? TLeft['doWork'] : () => {}
+              >
+            >
+          >
+        : any)
+  >,
+  TRight extends HasDoWork<any, any>,
   TContextInLeft extends Parameters<TLeft['doWork']>[0],
-  TContextInRight extends Parameters<TRight['doWork']>[0]
+  TContextInRight extends Parameters<TRight['doWork']>[0],
+  TContextOutLeft extends PromiseResolveOrSync<ReturnType<TLeft['doWork']>>,
+  TContextOutRight extends PromiseResolveOrSync<ReturnType<TLeft['doWork']>>
 >(
   left: TLeft,
   right: TRight
-): HasDoWork<TContextInLeft & TContextInRight, void>;
+): HasDoWork<
+  TContextInLeft &
+    Omit<
+      TContextInRight,
+      TContextOutLeft extends void ? keyof {} : keyof TContextOutLeft
+    >,
+  TContextOutRight &
+    Omit<
+      TContextOutLeft,
+      TContextOutRight extends void ? keyof {} : keyof TContextOutRight
+    >
+>;
 
 // left has doWork, right doesn't
 export function HTPipeDoWork<
-  TLeft extends HasDoWork<any, void>,
+  TLeft extends HasDoWork<
+    any,
+    | void
+    | (TRight extends HasDoWork<any, any>
+        ? Pick<
+            Parameters<TRight['doWork']>[0],
+            keyof PromiseResolveOrSync<
+              ReturnType<
+                TLeft extends HasDoWork<any, any> ? TLeft['doWork'] : () => {}
+              >
+            >
+          >
+        : any)
+  >,
   TRight extends OptionallyHasDoWork<any, any>,
-  TContextInLeft extends Parameters<TLeft['doWork']>
->(left: TLeft, right: TRight): HasDoWork<TContextInLeft, void>;
+  TContextInLeft extends Parameters<TLeft['doWork']>[0],
+  TContextOutLeft extends PromiseResolveOrSync<TLeft['doWork']>
+>(left: TLeft, right: TRight): HasDoWork<TContextInLeft, TContextOutLeft>;
 
 // right has do doWork, left doesn't
 export function HTPipeDoWork<
-  TLeft extends OptionallyHasDoWork<any, void>,
-  TRight extends HasDoWork<any, void>,
-  TContextInRight extends Parameters<TRight['doWork']>
->(left: TLeft, right: TRight): HasDoWork<TContextInRight, void>;
+  TLeft extends OptionallyHasDoWork<
+    any,
+    | void
+    | (TRight extends HasDoWork<any, any>
+        ? Pick<
+            Parameters<TRight['doWork']>[0],
+            keyof PromiseResolveOrSync<
+              ReturnType<
+                TLeft extends HasDoWork<any, any> ? TLeft['doWork'] : () => {}
+              >
+            >
+          >
+        : any)
+  >,
+  TRight extends HasDoWork<any, any>,
+  TContextInRight extends Parameters<TRight['doWork']>[0],
+  TContextOutRight extends PromiseResolveOrSync<ReturnType<TRight['doWork']>>
+>(left: TLeft, right: TRight): HasDoWork<TContextInRight, TContextOutRight>;
 
 // right and left doesn't have doWork
 export function HTPipeDoWork<
-  TLeft extends OptionallyHasDoWork<any, void>,
-  TRight extends OptionallyHasDoWork<any, void>
->(left: TLeft, right: TRight): void;
+  TLeft extends OptionallyHasDoWork<
+    any,
+    | void
+    | (TRight extends HasDoWork<any, any>
+        ? Pick<
+            Parameters<TRight['doWork']>[0],
+            keyof PromiseResolveOrSync<
+              ReturnType<
+                TLeft extends HasDoWork<any, any> ? TLeft['doWork'] : () => {}
+              >
+            >
+          >
+        : any)
+  >,
+  TRight extends OptionallyHasDoWork<any, any>
+>(left: TLeft, right: TRight): {};
 
 // main doWork HTPipe
 export function HTPipeDoWork<
-  TLeft extends OptionallyHasDoWork<any, void>,
-  TRight extends OptionallyHasDoWork<any, void>,
+  TLeft extends OptionallyHasDoWork<any, any>,
+  TRight extends OptionallyHasDoWork<any, any>,
   TContextInLeft extends TLeft extends HasDoWork<any, any>
     ? Parameters<TLeft['doWork']>[0]
     : never,
@@ -231,8 +298,13 @@ export function HTPipeDoWork<
   if (isHasDoWork(left) && isHasDoWork(right)) {
     return {
       doWork: async (context: TContextInRight & TContextInLeft) => {
-        await Promise.resolve(left.doWork(context));
-        await Promise.resolve(right.doWork(context));
+        const leftOut = (await Promise.resolve(left.doWork(context))) || {};
+        const rightIn = {
+          ...context,
+          ...leftOut,
+        };
+        const rightOut = (await Promise.resolve(right.doWork(rightIn))) || {};
+        return { ...leftOut, ...rightOut };
       },
     };
   } else if (isHasDoWork(left)) {
@@ -240,7 +312,7 @@ export function HTPipeDoWork<
   } else if (isHasDoWork(right)) {
     return { doWork: right.doWork };
   } else {
-    return;
+    return {};
   }
 }
 
