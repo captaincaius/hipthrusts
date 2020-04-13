@@ -10,6 +10,7 @@ import {
   HasInitPreContext,
   HasInitPreContextProperOptionals,
   HasParamsProperOptionals,
+  HasPreAuthorize,
   HasPreauthProperOptionals,
   HasRespondProperOptionals,
   HasSanitizeBody,
@@ -18,6 +19,7 @@ import {
   HasUpToDoWorkProperOptionals,
   HasUpToFinalAuthorizeProperOptionals,
   HasUpToRespondProperOptionals,
+  MightHavePreAuthorize,
   OptionallyHasAttachData,
   OptionallyHasDoWork,
   OptionallyHasSanitizeBody,
@@ -90,6 +92,12 @@ export function isHasAttachData<TContextIn, TContextOut>(
   thing: OptionallyHasAttachData<TContextIn, TContextOut>
 ): thing is HasAttachData<TContextIn, TContextOut> {
   return !!(thing && thing.attachData);
+}
+
+export function isHasPreAuthorize<TContextIn, TContextOut>(
+  thing: MightHavePreAuthorize<TContextIn, TContextOut>
+): thing is HasPreAuthorize<TContextIn, TContextOut> {
+  return !!(thing && thing.preAuthorize);
 }
 
 export class HipRedirectException {
