@@ -339,8 +339,7 @@ export function HTPipeFinalAuthorize<
           ? TContextInLeft
           : TContextInRight & TContextInLeft
       ) => {
-        const leftOut =
-          (await Promise.resolve(left.finalAuthorize(context))) || false;
+        const leftOut = await Promise.resolve(left.finalAuthorize(context));
         const leftPassed = authorizationPassed(leftOut);
         if (!leftPassed) {
           return false;
@@ -350,8 +349,7 @@ export function HTPipeFinalAuthorize<
           ...context,
           ...leftContextOut,
         };
-        const rightOut =
-          (await Promise.resolve(right.finalAuthorize(rightIn))) || false;
+        const rightOut = await Promise.resolve(right.finalAuthorize(rightIn));
         return rightOut;
       },
     };
