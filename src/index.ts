@@ -1,14 +1,17 @@
 import {
   isHasAttachData,
   isHasFinalAuthorize,
+  isHasInitPreContext,
   isHasPreAuthorize,
 } from './core';
 import { WithFinalAuth, WithPreAuth } from './subclassers';
 import {
   HasAttachData,
   HasFinalAuthorize,
+  HasInitPreContext,
   HasPreAuthorize,
   MightHaveFinalAuthorize,
+  MightHaveInitPreContext,
   MightHavePreAuthorize,
   OptionallyHasAttachData,
   PromiseResolveOrSync,
@@ -515,6 +518,143 @@ export function HTPipeFinalAuthorize<
     return { finalAuthorize: left.finalAuthorize };
   } else if (isHasFinalAuthorize(right)) {
     return { finalAuthorize: right.finalAuthorize };
+  } else {
+    return {};
+  }
+}
+
+// left has initPreContext and right has initPreContext
+export function HTPipeInitPreContext<
+  TLeft extends HasInitPreContext<
+    any,
+    TRight extends HasAttachData<any, any>
+      ? Pick<
+          Parameters<TRight['attachData']>[0],
+          keyof ReturnType<
+            TLeft extends HasAttachData<any, any>
+              ? TLeft['attachData']
+              : () => {}
+          >
+        >
+      : any
+  >,
+  TRight extends HasInitPreContext<any, any>,
+  TContextInLeft extends Parameters<TLeft['initPreContext']>[0],
+  TContextInRight extends Parameters<TRight['initPreContext']>[0],
+  TContextOutLeft extends ReturnType<TLeft['initPreContext']>,
+  TContextOutRight extends ReturnType<TRight['initPreContext']>
+>(
+  left: TLeft,
+  right: TRight
+): HasInitPreContext<
+  TContextInLeft & Omit<TContextInRight, keyof TContextOutLeft>,
+  TContextOutRight & Omit<TContextOutLeft, keyof TContextOutRight>
+>;
+
+// left has initPreContext and right doesn't
+export function HTPipeInitPreContext<
+  TLeft extends HasInitPreContext<
+    any,
+    TRight extends HasAttachData<any, any>
+      ? Pick<
+          Parameters<TRight['attachData']>[0],
+          keyof ReturnType<
+            TLeft extends HasAttachData<any, any>
+              ? TLeft['attachData']
+              : () => {}
+          >
+        >
+      : any
+  >,
+  TRight extends MightHaveInitPreContext<any, any>,
+  TContextInLeft extends Parameters<TLeft['initPreContext']>[0],
+  TContextOutLeft extends ReturnType<TLeft['initPreContext']>
+>(
+  left: TLeft,
+  right: TRight
+): HasInitPreContext<TContextInLeft, TContextOutLeft>;
+
+// right has initPreContext and left doesn't
+export function HTPipeInitPreContext<
+  TLeft extends MightHaveInitPreContext<
+    any,
+    TRight extends HasAttachData<any, any>
+      ? Pick<
+          Parameters<TRight['attachData']>[0],
+          keyof ReturnType<
+            TLeft extends HasAttachData<any, any>
+              ? TLeft['attachData']
+              : () => {}
+          >
+        >
+      : any
+  >,
+  TRight extends HasInitPreContext<any, any>,
+  TContextInRight extends Parameters<TRight['initPreContext']>[0],
+  TContextOutRight extends ReturnType<TRight['initPreContext']>
+>(
+  left: TLeft,
+  right: TRight
+): HasInitPreContext<TContextInRight, TContextOutRight>;
+
+// right and left doesn't have initPreContext
+export function HTPipeInitPreContext<
+  TLeft extends MightHaveInitPreContext<
+    any,
+    TRight extends HasAttachData<any, any>
+      ? Pick<
+          Parameters<TRight['attachData']>[0],
+          keyof ReturnType<
+            TLeft extends HasAttachData<any, any>
+              ? TLeft['attachData']
+              : () => {}
+          >
+        >
+      : any
+  >,
+  TRight extends MightHaveInitPreContext<any, any>
+>(left: TLeft, right: TRight): {};
+
+// main initPreContext HTPipe function
+export function HTPipeInitPreContext<
+  TLeft extends MightHaveInitPreContext<any, any>,
+  TRight extends MightHaveInitPreContext<any, any>,
+  TContextInLeft extends TLeft extends HasInitPreContext<any, any>
+    ? Parameters<TLeft['initPreContext']>[0]
+    : never,
+  TContextInRight extends TRight extends HasInitPreContext<any, any>
+    ? Parameters<TRight['initPreContext']>[0]
+    : never,
+  TContextOutLeft extends TLeft extends HasInitPreContext<any, any>
+    ? ReturnType<TLeft['initPreContext']>
+    : never,
+  TContextOutRight extends TRight extends HasInitPreContext<any, any>
+    ? ReturnType<TRight['initPreContext']>
+    : never
+>(left: TLeft, right: TRight) {
+  if (isHasInitPreContext(left) && isHasInitPreContext(right)) {
+    return {
+      initPreContext: (
+        context: TContextOutLeft extends TContextInRight
+          ? TContextInLeft
+          : TContextInRight & TContextInLeft
+      ) => {
+        const leftOut = left.initPreContext(context) || {};
+        const rightIn = {
+          ...context,
+          ...leftOut,
+        };
+        const rightOut = right.initPreContext(rightIn) || {};
+        return {
+          ...leftOut,
+          ...rightOut,
+        };
+      },
+    };
+  } else if (isHasInitPreContext(left)) {
+    return { initPreContext: left.initPreContext };
+  } else if (isHasInitPreContext(right)) {
+    return { initPreContext: right.initPreContext };
   } else {
     return {};
   }
