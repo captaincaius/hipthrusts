@@ -186,6 +186,15 @@ export function HTPipeAttachData<
   }
 }
 
+function authorizationPassed<TAuthOut extends boolean | object>(
+  authOut: TAuthOut
+) {
+  return (
+    authOut === true ||
+    (authOut && typeof authOut === 'object' && Object.keys(authOut).length > 0)
+  );
+}
+
 // left has preAuthorize and right has preAuthorize
 export function HTPipePreAuthorize<
   TLeft extends HasPreAuthorize<
@@ -312,11 +321,7 @@ export function HTPipePreAuthorize<
           : TContextInRight & TContextInLeft
       ) => {
         const leftOut = left.preAuthorize(context);
-        const leftPassed =
-          leftOut === true ||
-          (leftOut &&
-            typeof leftOut === 'object' &&
-            Object.keys(leftOut).length > 0);
+        const leftPassed = authorizationPassed(leftOut);
         if (!leftPassed) {
           return false;
         }
@@ -326,11 +331,7 @@ export function HTPipePreAuthorize<
           ...leftContextOut,
         };
         const rightOut = right.preAuthorize(rightIn);
-        const rightPassed =
-          rightOut === true ||
-          (rightOut &&
-            typeof rightOut === 'object' &&
-            Object.keys(rightOut).length > 0);
+        const rightPassed = authorizationPassed(rightOut);
         return rightPassed;
       },
     };
