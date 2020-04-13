@@ -527,12 +527,12 @@ export function HTPipeFinalAuthorize<
 export function HTPipeInitPreContext<
   TLeft extends HasInitPreContext<
     any,
-    TRight extends HasAttachData<any, any>
+    TRight extends HasInitPreContext<any, any>
       ? Pick<
-          Parameters<TRight['attachData']>[0],
+          Parameters<TRight['initPreContext']>[0],
           keyof ReturnType<
-            TLeft extends HasAttachData<any, any>
-              ? TLeft['attachData']
+            TLeft extends HasInitPreContext<any, any>
+              ? TLeft['initPreContext']
               : () => {}
           >
         >
@@ -555,12 +555,12 @@ export function HTPipeInitPreContext<
 export function HTPipeInitPreContext<
   TLeft extends HasInitPreContext<
     any,
-    TRight extends HasAttachData<any, any>
+    TRight extends HasInitPreContext<any, any>
       ? Pick<
-          Parameters<TRight['attachData']>[0],
+          Parameters<TRight['initPreContext']>[0],
           keyof ReturnType<
-            TLeft extends HasAttachData<any, any>
-              ? TLeft['attachData']
+            TLeft extends HasInitPreContext<any, any>
+              ? TLeft['initPreContext']
               : () => {}
           >
         >
@@ -578,12 +578,12 @@ export function HTPipeInitPreContext<
 export function HTPipeInitPreContext<
   TLeft extends MightHaveInitPreContext<
     any,
-    TRight extends HasAttachData<any, any>
+    TRight extends HasInitPreContext<any, any>
       ? Pick<
-          Parameters<TRight['attachData']>[0],
+          Parameters<TRight['initPreContext']>[0],
           keyof ReturnType<
-            TLeft extends HasAttachData<any, any>
-              ? TLeft['attachData']
+            TLeft extends HasInitPreContext<any, any>
+              ? TLeft['initPreContext']
               : () => {}
           >
         >
@@ -601,12 +601,12 @@ export function HTPipeInitPreContext<
 export function HTPipeInitPreContext<
   TLeft extends MightHaveInitPreContext<
     any,
-    TRight extends HasAttachData<any, any>
+    TRight extends HasInitPreContext<any, any>
       ? Pick<
-          Parameters<TRight['attachData']>[0],
+          Parameters<TRight['initPreContext']>[0],
           keyof ReturnType<
-            TLeft extends HasAttachData<any, any>
-              ? TLeft['attachData']
+            TLeft extends HasInitPreContext<any, any>
+              ? TLeft['initPreContext']
               : () => {}
           >
         >
