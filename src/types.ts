@@ -45,6 +45,10 @@ export interface HasAttachData<TContextIn, TContextOut> {
 }
 
 // @todo: should TContextOut be constrained to be object-like or booly?
+export interface MightHaveFinalAuthorize<TContextIn, TContextOut> {
+  finalAuthorize?: (context: TContextIn) => PromiseOrSync<TContextOut>;
+}
+
 export interface HasFinalAuthorize<TContextIn, TContextOut> {
   finalAuthorize: (context: TContextIn) => PromiseOrSync<TContextOut>;
 }
