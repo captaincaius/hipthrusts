@@ -6,10 +6,12 @@ import {
   HasBodyProperOptionals,
   HasDoWork,
   HasDoWorkProperOptionals,
+  HasFinalAuthorize,
   HasFinalAuthorizeProperOptionals,
   HasInitPreContext,
   HasInitPreContextProperOptionals,
   HasParamsProperOptionals,
+  HasPreAuthorize,
   HasPreauthProperOptionals,
   HasRespondProperOptionals,
   HasSanitizeBody,
@@ -18,6 +20,8 @@ import {
   HasUpToDoWorkProperOptionals,
   HasUpToFinalAuthorizeProperOptionals,
   HasUpToRespondProperOptionals,
+  MightHaveFinalAuthorize,
+  MightHavePreAuthorize,
   OptionallyHasAttachData,
   OptionallyHasDoWork,
   OptionallyHasSanitizeBody,
@@ -96,6 +100,18 @@ export function isHasDoWork<TContextIn, TContextOut>(
   thing: OptionallyHasDoWork<TContextIn, TContextOut>
 ): thing is HasDoWork<TContextIn, TContextOut> {
   return !!(thing && thing.doWork);
+}
+
+export function isHasFinalAuthorize<TContextIn, TContextOut>(
+  thing: MightHaveFinalAuthorize<TContextIn, TContextOut>
+): thing is HasFinalAuthorize<TContextIn, TContextOut> {
+  return !!(thing && thing.finalAuthorize);
+}
+
+export function isHasPreAuthorize<TContextIn, TContextOut>(
+  thing: MightHavePreAuthorize<TContextIn, TContextOut>
+): thing is HasPreAuthorize<TContextIn, TContextOut> {
+  return !!(thing && thing.preAuthorize);
 }
 
 export class HipRedirectException {
@@ -253,6 +269,8 @@ export async function executeHipthrustable<
   try {
     // @todo: allow doWork to return more context instead of "true" too.  Anything falsy will be interpreted as an error.  Don't forget || {} after call
     if (requestHandler.doWork) {
+      // to keep executeHipthrustable from being too opinionated, it's doWork's responsibility to handle and throw client errors.
+      // Any un-boom'ed errors here should be interpreted as server errors
       await Promise.resolve(requestHandler.doWork(finalAuthContext));
     }
     const doWorkContext = finalAuthContext;

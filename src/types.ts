@@ -36,6 +36,10 @@ export interface HasPreAuthorize<TContextIn, TContextOut> {
   preAuthorize: (context: TContextIn) => TContextOut;
 }
 
+export interface MightHavePreAuthorize<TContextIn, TContextOut> {
+  preAuthorize?: (context: TContextIn) => TContextOut;
+}
+
 export interface OptionallyHasAttachData<TContextIn, TContextOut> {
   attachData?: (context: TContextIn) => PromiseOrSync<TContextOut>;
 }
@@ -45,6 +49,10 @@ export interface HasAttachData<TContextIn, TContextOut> {
 }
 
 // @todo: should TContextOut be constrained to be object-like or booly?
+export interface MightHaveFinalAuthorize<TContextIn, TContextOut> {
+  finalAuthorize?: (context: TContextIn) => PromiseOrSync<TContextOut>;
+}
+
 export interface HasFinalAuthorize<TContextIn, TContextOut> {
   finalAuthorize: (context: TContextIn) => PromiseOrSync<TContextOut>;
 }
