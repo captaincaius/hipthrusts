@@ -96,6 +96,12 @@ export function isHasAttachData<TContextIn, TContextOut>(
   return !!(thing && thing.attachData);
 }
 
+export function isHasDoWork<TContextIn, TContextOut>(
+  thing: OptionallyHasDoWork<TContextIn, TContextOut>
+): thing is HasDoWork<TContextIn, TContextOut> {
+  return !!(thing && thing.doWork);
+}
+
 export function isHasFinalAuthorize<TContextIn, TContextOut>(
   thing: MightHaveFinalAuthorize<TContextIn, TContextOut>
 ): thing is HasFinalAuthorize<TContextIn, TContextOut> {

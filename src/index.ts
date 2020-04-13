@@ -1,16 +1,19 @@
 import {
   isHasAttachData,
+  isHasDoWork,
   isHasFinalAuthorize,
   isHasPreAuthorize,
 } from './core';
 import { WithFinalAuth, WithPreAuth } from './subclassers';
 import {
   HasAttachData,
+  HasDoWork,
   HasFinalAuthorize,
   HasPreAuthorize,
   MightHaveFinalAuthorize,
   MightHavePreAuthorize,
   OptionallyHasAttachData,
+  OptionallyHasDoWork,
   PromiseResolveOrSync,
 } from './types';
 
@@ -515,6 +518,136 @@ export function HTPipeFinalAuthorize<
     return { finalAuthorize: left.finalAuthorize };
   } else if (isHasFinalAuthorize(right)) {
     return { finalAuthorize: right.finalAuthorize };
+  } else {
+    return {};
+  }
+}
+
+// left has doWork and right has doWork
+export function HTPipeDoWork<
+  TLeft extends HasDoWork<
+    any,
+    | void
+    | (TRight extends HasDoWork<any, any>
+        ? Pick<
+            Parameters<TRight['doWork']>[0],
+            keyof PromiseResolveOrSync<
+              ReturnType<
+                TLeft extends HasDoWork<any, any> ? TLeft['doWork'] : () => {}
+              >
+            >
+          >
+        : any)
+  >,
+  TRight extends HasDoWork<any, any>,
+  TContextInLeft extends Parameters<TLeft['doWork']>[0],
+  TContextInRight extends Parameters<TRight['doWork']>[0],
+  TContextOutLeft extends PromiseResolveOrSync<ReturnType<TLeft['doWork']>>,
+  TContextOutRight extends PromiseResolveOrSync<ReturnType<TLeft['doWork']>>
+>(
+  left: TLeft,
+  right: TRight
+): HasDoWork<
+  TContextInLeft &
+    Omit<
+      TContextInRight,
+      TContextOutLeft extends void ? keyof {} : keyof TContextOutLeft
+    >,
+  TContextOutRight &
+    Omit<
+      TContextOutLeft,
+      TContextOutRight extends void ? keyof {} : keyof TContextOutRight
+    >
+>;
+
+// left has doWork, right doesn't
+export function HTPipeDoWork<
+  TLeft extends HasDoWork<
+    any,
+    | void
+    | (TRight extends HasDoWork<any, any>
+        ? Pick<
+            Parameters<TRight['doWork']>[0],
+            keyof PromiseResolveOrSync<
+              ReturnType<
+                TLeft extends HasDoWork<any, any> ? TLeft['doWork'] : () => {}
+              >
+            >
+          >
+        : any)
+  >,
+  TRight extends OptionallyHasDoWork<any, any>,
+  TContextInLeft extends Parameters<TLeft['doWork']>[0],
+  TContextOutLeft extends PromiseResolveOrSync<TLeft['doWork']>
+>(left: TLeft, right: TRight): HasDoWork<TContextInLeft, TContextOutLeft>;
+
+// right has do doWork, left doesn't
+export function HTPipeDoWork<
+  TLeft extends OptionallyHasDoWork<
+    any,
+    | void
+    | (TRight extends HasDoWork<any, any>
+        ? Pick<
+            Parameters<TRight['doWork']>[0],
+            keyof PromiseResolveOrSync<
+              ReturnType<
+                TLeft extends HasDoWork<any, any> ? TLeft['doWork'] : () => {}
+              >
+            >
+          >
+        : any)
+  >,
+  TRight extends HasDoWork<any, any>,
+  TContextInRight extends Parameters<TRight['doWork']>[0],
+  TContextOutRight extends PromiseResolveOrSync<ReturnType<TRight['doWork']>>
+>(left: TLeft, right: TRight): HasDoWork<TContextInRight, TContextOutRight>;
+
+// right and left doesn't have doWork
+export function HTPipeDoWork<
+  TLeft extends OptionallyHasDoWork<
+    any,
+    | void
+    | (TRight extends HasDoWork<any, any>
+        ? Pick<
+            Parameters<TRight['doWork']>[0],
+            keyof PromiseResolveOrSync<
+              ReturnType<
+                TLeft extends HasDoWork<any, any> ? TLeft['doWork'] : () => {}
+              >
+            >
+          >
+        : any)
+  >,
+  TRight extends OptionallyHasDoWork<any, any>
+>(left: TLeft, right: TRight): {};
+
+// main doWork HTPipe
+export function HTPipeDoWork<
+  TLeft extends OptionallyHasDoWork<any, any>,
+  TRight extends OptionallyHasDoWork<any, any>,
+  TContextInLeft extends TLeft extends HasDoWork<any, any>
+    ? Parameters<TLeft['doWork']>[0]
+    : never,
+  TContextInRight extends TRight extends HasDoWork<any, any>
+    ? Parameters<TRight['doWork']>[0]
+    : never
+>(left: TLeft, right: TRight) {
+  if (isHasDoWork(left) && isHasDoWork(right)) {
+    return {
+      doWork: async (context: TContextInRight & TContextInLeft) => {
+        const leftOut = (await Promise.resolve(left.doWork(context))) || {};
+        const rightIn = {
+          ...context,
+          ...leftOut,
+        };
+        const rightOut = (await Promise.resolve(right.doWork(rightIn))) || {};
+        return { ...leftOut, ...rightOut };
+      },
+    };
+  } else if (isHasDoWork(left)) {
+    return { doWork: left.doWork };
+  } else if (isHasDoWork(right)) {
+    return { doWork: right.doWork };
   } else {
     return {};
   }
