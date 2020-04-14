@@ -73,6 +73,10 @@ export interface HasRespond<TContextIn, TUnsafeResponse> {
   respond: (context: TContextIn) => HipWorkResponse<TUnsafeResponse>;
 }
 
+export interface MightHaveSanitizeResponse<TUnsafeResponse, TResponse> {
+  sanitizeResponse?: (context: TUnsafeResponse) => TResponse;
+}
+
 export interface HasSanitizeResponse<TUnsafeResponse, TResponse> {
   sanitizeResponse: (context: TUnsafeResponse) => TResponse;
 }

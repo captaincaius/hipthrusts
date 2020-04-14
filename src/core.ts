@@ -16,12 +16,14 @@ import {
   HasRespondProperOptionals,
   HasSanitizeBody,
   HasSanitizeParams,
+  HasSanitizeResponse,
   HasUpToAttachDataProperOptionals,
   HasUpToDoWorkProperOptionals,
   HasUpToFinalAuthorizeProperOptionals,
   HasUpToRespondProperOptionals,
   MightHaveFinalAuthorize,
   MightHavePreAuthorize,
+  MightHaveSanitizeResponse,
   OptionallyHasAttachData,
   OptionallyHasDoWork,
   OptionallyHasInitPreContext,
@@ -91,6 +93,12 @@ export function withDefaultImplementations<
   };
 }
 
+export function isHasInitPreContext<TContextIn, TContextOut>(
+  thing: OptionallyHasInitPreContext<TContextIn, TContextOut>
+): thing is HasInitPreContext<TContextIn, TContextOut> {
+  return !!(thing && thing.initPreContext);
+}
+
 export function isHasAttachData<TContextIn, TContextOut>(
   thing: OptionallyHasAttachData<TContextIn, TContextOut>
 ): thing is HasAttachData<TContextIn, TContextOut> {
@@ -115,10 +123,22 @@ export function isHasPreAuthorize<TContextIn, TContextOut>(
   return !!(thing && thing.preAuthorize);
 }
 
-export function isHasInitPreContext<TContextIn, TContextOut>(
-  thing: OptionallyHasInitPreContext<TContextIn, TContextOut>
-): thing is HasInitPreContext<TContextIn, TContextOut> {
-  return !!(thing && thing.initPreContext);
+export function isHasSanitizeParams<TContextIn, TContextOut>(
+  thing: OptionallyHasSanitizeParams<TContextIn, TContextOut>
+): thing is HasSanitizeParams<TContextIn, TContextOut> {
+  return !!(thing && thing.sanitizeParams);
+}
+
+export function isHasSanitizeBody<TContextIn, TContextOut>(
+  thing: OptionallyHasSanitizeBody<TContextIn, TContextOut>
+): thing is HasSanitizeBody<TContextIn, TContextOut> {
+  return !!(thing && thing.sanitizeBody);
+}
+
+export function isHasSanitizeResponse<TContextIn, TContextOut>(
+  thing: MightHaveSanitizeResponse<TContextIn, TContextOut>
+): thing is HasSanitizeResponse<TContextIn, TContextOut> {
+  return !!(thing && thing.sanitizeResponse);
 }
 
 export class HipRedirectException {
