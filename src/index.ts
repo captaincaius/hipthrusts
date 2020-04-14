@@ -340,7 +340,18 @@ export function HTPipePreAuthorize<
           ...leftContextOut,
         };
         const rightOut = right.preAuthorize(rightIn);
-        return rightOut;
+        const rightPassed = authorizationPassed(rightOut);
+        if (!rightPassed) {
+          return false;
+        }
+        if (leftOut === true && rightOut === true) {
+          return true;
+        }
+        const rightContextOut = rightOut === true ? {} : rightOut;
+        return {
+          ...leftContextOut,
+          ...rightContextOut,
+        };
       },
     };
   } else if (isHasPreAuthorize(left)) {
@@ -511,7 +522,18 @@ export function HTPipeFinalAuthorize<
           ...leftContextOut,
         };
         const rightOut = await Promise.resolve(right.finalAuthorize(rightIn));
-        return rightOut;
+        const rightPassed = authorizationPassed(rightOut);
+        if (!rightPassed) {
+          return false;
+        }
+        if (leftOut === true && rightOut === true) {
+          return true;
+        }
+        const rightContextOut = rightOut === true ? {} : rightOut;
+        return {
+          ...leftContextOut,
+          ...rightContextOut,
+        };
       },
     };
   } else if (isHasFinalAuthorize(left)) {
