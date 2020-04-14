@@ -114,6 +114,12 @@ export function isHasPreAuthorize<TContextIn, TContextOut>(
   return !!(thing && thing.preAuthorize);
 }
 
+export function isHasSanitizeParams<TContextIn, TContextOut>(
+  thing: OptionallyHasSanitizeParams<TContextIn, TContextOut>
+): thing is HasSanitizeParams<TContextIn, TContextOut> {
+  return !!(thing && thing.sanitizeParams);
+}
+
 export class HipRedirectException {
   constructor(
     public readonly redirectUrl: string,

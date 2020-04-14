@@ -3,6 +3,7 @@ import {
   isHasDoWork,
   isHasFinalAuthorize,
   isHasPreAuthorize,
+  isHasSanitizeParams,
 } from './core';
 import { WithFinalAuth, WithPreAuth } from './subclassers';
 import {
@@ -10,10 +11,12 @@ import {
   HasDoWork,
   HasFinalAuthorize,
   HasPreAuthorize,
+  HasSanitizeParams,
   MightHaveFinalAuthorize,
   MightHavePreAuthorize,
   OptionallyHasAttachData,
   OptionallyHasDoWork,
+  OptionallyHasSanitizeParams,
   PromiseResolveOrSync,
 } from './types';
 
@@ -680,6 +683,85 @@ export function HTPipeDoWork<
     return { doWork: left.doWork };
   } else if (isHasDoWork(right)) {
     return { doWork: right.doWork };
+  } else {
+    return {};
+  }
+}
+
+// left has sanitizeParams and right has sanitizeParams
+export function HTPipeSanitizeParams<
+  TLeft extends HasSanitizeParams<any, Parameters<TRight['sanitizeParams']>[0]>,
+  TRight extends HasSanitizeParams<any, any>,
+  TContextInLeft extends Parameters<TLeft['sanitizeParams']>[0],
+  TContextOutRight extends ReturnType<TRight['sanitizeParams']>
+>(
+  left: TLeft,
+  right: TRight
+): HasSanitizeParams<TContextInLeft, TContextOutRight>;
+
+// left has sanitizeParams and right doesn't
+export function HTPipeSanitizeParams<
+  TLeft extends HasSanitizeParams<
+    any,
+    TRight extends HasSanitizeParams<any, any>
+      ? Parameters<TRight['sanitizeParams']>[0]
+      : any
+  >,
+  TRight extends OptionallyHasSanitizeParams<any, any>,
+  TContextInLeft extends Parameters<TLeft['sanitizeParams']>[0],
+  TContextOutLeft extends ReturnType<TLeft['sanitizeParams']>
+>(
+  left: TLeft,
+  right: TRight
+): HasSanitizeParams<TContextInLeft, TContextOutLeft>;
+
+// right has sanitizeParams and left doesn't
+export function HTPipeSanitizeParams<
+  TLeft extends OptionallyHasSanitizeParams<
+    any,
+    TRight extends HasSanitizeParams<any, any>
+      ? Parameters<TRight['sanitizeParams']>[0]
+      : any
+  >,
+  TRight extends HasSanitizeParams<any, any>,
+  TContextInRight extends Parameters<TRight['sanitizeParams']>[0],
+  TContextOutRight extends ReturnType<TRight['sanitizeParams']>[0]
+>(
+  left: TLeft,
+  right: TRight
+): HasSanitizeParams<TContextInRight, TContextOutRight>;
+
+// left and right doesn't have sanitizeParams
+export function HTPipeSanitizeParams<
+  TLeft extends OptionallyHasSanitizeParams<
+    any,
+    TRight extends HasSanitizeParams<any, any>
+      ? Parameters<TRight['sanitizeParams']>[0]
+      : any
+  >,
+  TRight extends OptionallyHasSanitizeParams<any, any>
+>(left: TLeft, right: TRight): {};
+
+// main sanitizeParams HTPipe function
+export function HTPipeSanitizeParams<
+  TLeft extends OptionallyHasSanitizeParams<any, any>,
+  TRight extends OptionallyHasSanitizeParams<any, any>,
+  TContextInLeft extends TLeft extends HasSanitizeParams<any, any>
+    ? Parameters<TLeft['sanitizeParams']>[0]
+    : never
+>(left: TLeft, right: TRight) {
+  if (isHasSanitizeParams(left) && isHasSanitizeParams(right)) {
+    return {
+      sanitizeParams: (context: TContextInLeft) => {
+        const leftOut = left.sanitizeParams(context) || {};
+        const rightOut = right.sanitizeParams(leftOut) || {};
+        return rightOut;
+      },
+    };
+  } else if (isHasSanitizeParams(left)) {
+    return { sanitizeParams: left.sanitizeParams };
+  } else if (isHasSanitizeParams(right)) {
+    return { sanitizeParams: right.sanitizeParams };
   } else {
     return {};
   }
