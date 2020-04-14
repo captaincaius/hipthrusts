@@ -5,6 +5,7 @@ import {
   isHasPreAuthorize,
   isHasSanitizeBody,
   isHasSanitizeParams,
+  isHasSanitizeResponse,
 } from './core';
 import { WithFinalAuth, WithPreAuth } from './subclassers';
 import {
@@ -14,8 +15,10 @@ import {
   HasPreAuthorize,
   HasSanitizeBody,
   HasSanitizeParams,
+  HasSanitizeResponse,
   MightHaveFinalAuthorize,
   MightHavePreAuthorize,
+  MightHaveSanitizeResponse,
   OptionallyHasAttachData,
   OptionallyHasDoWork,
   OptionallyHasSanitizeBody,
@@ -851,6 +854,90 @@ export function HTPipeSanitizeBody<
     return { sanitizeBody: left.sanitizeBody };
   } else if (isHasSanitizeBody(right)) {
     return { sanitizeBody: right.sanitizeBody };
+  } else {
+    return {};
+  }
+}
+
+// left has sanitizeResponse and right has sanitizeResponse
+export function HTPipeSanitizeResponse<
+  TLeft extends HasSanitizeResponse<
+    any,
+    TRight extends HasSanitizeResponse<any, any>
+      ? Parameters<TRight['sanitizeResponse']>[0]
+      : any
+  >,
+  TRight extends HasSanitizeResponse<any, any>,
+  TContextInLeft extends Parameters<TLeft['sanitizeResponse']>[0],
+  TContextOutRight extends ReturnType<TRight['sanitizeResponse']>
+>(
+  left: TLeft,
+  right: TRight
+): HasSanitizeResponse<TContextInLeft, TContextOutRight>;
+
+// left has sanitizeResponse and right doesn't
+export function HTPipeSanitizeResponse<
+  TLeft extends HasSanitizeResponse<
+    any,
+    TRight extends HasSanitizeResponse<any, any>
+      ? Parameters<TRight['sanitizeResponse']>[0]
+      : any
+  >,
+  TRight extends MightHaveSanitizeResponse<any, any>,
+  TContextInLeft extends Parameters<TLeft['sanitizeResponse']>[0],
+  TContextOutLeft extends ReturnType<TLeft['sanitizeResponse']>
+>(
+  left: TLeft,
+  right: TRight
+): HasSanitizeResponse<TContextInLeft, TContextOutLeft>;
+
+// right has sanitizeResponse and left doesn't
+export function HTPipeSanitizeResponse<
+  TLeft extends MightHaveSanitizeResponse<
+    any,
+    TRight extends HasSanitizeResponse<any, any>
+      ? Parameters<TRight['sanitizeResponse']>[0]
+      : any
+  >,
+  TRight extends HasSanitizeResponse<any, any>,
+  TContextInRight extends Parameters<TRight['sanitizeResponse']>[0],
+  TContextOutRight extends ReturnType<TRight['sanitizeResponse']>[0]
+>(
+  left: TLeft,
+  right: TRight
+): HasSanitizeResponse<TContextInRight, TContextOutRight>;
+
+// left and right doesn't have sanitizeResponse
+export function HTPipeSanitizeResponse<
+  TLeft extends MightHaveSanitizeResponse<
+    any,
+    TRight extends HasSanitizeResponse<any, any>
+      ? Parameters<TRight['sanitizeResponse']>[0]
+      : any
+  >,
+  TRight extends MightHaveSanitizeResponse<any, any>
+>(left: TLeft, right: TRight): {};
+
+// main sanitizeResponse HTPipe function
+export function HTPipeSanitizeResponse<
+  TLeft extends MightHaveSanitizeResponse<any, any>,
+  TRight extends MightHaveSanitizeResponse<any, any>,
+  TContextInLeft extends TLeft extends HasSanitizeResponse<any, any>
+    ? Parameters<TLeft['sanitizeResponse']>[0]
+    : never
+>(left: TLeft, right: TRight) {
+  if (isHasSanitizeResponse(left) && isHasSanitizeResponse(right)) {
+    return {
+      sanitizeResponse: (context: TContextInLeft) => {
+        const leftOut = left.sanitizeResponse(context) || {};
+        const rightOut = right.sanitizeResponse(leftOut) || {};
+        return rightOut;
+      },
+    };
+  } else if (isHasSanitizeResponse(left)) {
+    return { sanitizeResponse: left.sanitizeResponse };
+  } else if (isHasSanitizeResponse(right)) {
+    return { sanitizeResponse: right.sanitizeResponse };
   } else {
     return {};
   }

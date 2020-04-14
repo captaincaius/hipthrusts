@@ -16,12 +16,14 @@ import {
   HasRespondProperOptionals,
   HasSanitizeBody,
   HasSanitizeParams,
+  HasSanitizeResponse,
   HasUpToAttachDataProperOptionals,
   HasUpToDoWorkProperOptionals,
   HasUpToFinalAuthorizeProperOptionals,
   HasUpToRespondProperOptionals,
   MightHaveFinalAuthorize,
   MightHavePreAuthorize,
+  MightHaveSanitizeResponse,
   OptionallyHasAttachData,
   OptionallyHasDoWork,
   OptionallyHasSanitizeBody,
@@ -124,6 +126,12 @@ export function isHasSanitizeBody<TContextIn, TContextOut>(
   thing: OptionallyHasSanitizeBody<TContextIn, TContextOut>
 ): thing is HasSanitizeBody<TContextIn, TContextOut> {
   return !!(thing && thing.sanitizeBody);
+}
+
+export function isHasSanitizeResponse<TContextIn, TContextOut>(
+  thing: MightHaveSanitizeResponse<TContextIn, TContextOut>
+): thing is HasSanitizeResponse<TContextIn, TContextOut> {
+  return !!(thing && thing.sanitizeResponse);
 }
 
 export class HipRedirectException {
