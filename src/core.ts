@@ -26,6 +26,7 @@ import {
   MightHaveSanitizeResponse,
   OptionallyHasAttachData,
   OptionallyHasDoWork,
+  OptionallyHasInitPreContext,
   OptionallyHasSanitizeBody,
   OptionallyHasSanitizeParams,
   PromiseOrSync,
@@ -90,6 +91,12 @@ export function withDefaultImplementations<
       ? TStrategy['doWork']
       : () => {},
   };
+}
+
+export function isHasInitPreContext<TContextIn, TContextOut>(
+  thing: OptionallyHasInitPreContext<TContextIn, TContextOut>
+): thing is HasInitPreContext<TContextIn, TContextOut> {
+  return !!(thing && thing.initPreContext);
 }
 
 export function isHasAttachData<TContextIn, TContextOut>(

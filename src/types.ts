@@ -8,6 +8,10 @@ export interface HipWorkResponse<ResponseShape> {
   status?: number;
 }
 
+export interface OptionallyHasInitPreContext<TUnsafe, TContextInit> {
+  initPreContext?: (unsafe: TUnsafe) => TContextInit;
+}
+
 // @todo: maybe this needs some rework to ensure it's not express-biased
 export interface HasInitPreContext<TUnsafe, TContextInit> {
   initPreContext: (unsafe: TUnsafe) => TContextInit;
