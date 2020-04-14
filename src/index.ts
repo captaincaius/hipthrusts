@@ -690,7 +690,12 @@ export function HTPipeDoWork<
 
 // left has sanitizeBody and right has sanitizeBody
 export function HTPipeSanitizeBody<
-  TLeft extends HasSanitizeBody<any, Parameters<TRight['sanitizeBody']>[0]>,
+  TLeft extends HasSanitizeBody<
+    any,
+    TRight extends HasSanitizeBody<any, any>
+      ? Parameters<TRight['sanitizeBody']>[0]
+      : any
+  >,
   TRight extends HasSanitizeBody<any, any>,
   TContextInLeft extends Parameters<TLeft['sanitizeBody']>[0],
   TContextOutRight extends ReturnType<TRight['sanitizeBody']>
