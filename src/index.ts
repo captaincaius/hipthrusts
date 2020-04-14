@@ -13,10 +13,10 @@ import {
   HasInitPreContext,
   HasPreAuthorize,
   MightHaveFinalAuthorize,
-  MightHaveInitPreContext,
   MightHavePreAuthorize,
   OptionallyHasAttachData,
   OptionallyHasDoWork,
+  OptionallyHasInitPreContext,
   PromiseResolveOrSync,
 } from './types';
 
@@ -569,7 +569,7 @@ export function HTPipeInitPreContext<
         >
       : any
   >,
-  TRight extends MightHaveInitPreContext<any, any>,
+  TRight extends OptionallyHasInitPreContext<any, any>,
   TContextInLeft extends Parameters<TLeft['initPreContext']>[0],
   TContextOutLeft extends ReturnType<TLeft['initPreContext']>
 >(
@@ -579,7 +579,7 @@ export function HTPipeInitPreContext<
 
 // right has initPreContext and left doesn't
 export function HTPipeInitPreContext<
-  TLeft extends MightHaveInitPreContext<
+  TLeft extends OptionallyHasInitPreContext<
     any,
     TRight extends HasInitPreContext<any, any>
       ? Pick<
@@ -602,7 +602,7 @@ export function HTPipeInitPreContext<
 
 // right and left doesn't have initPreContext
 export function HTPipeInitPreContext<
-  TLeft extends MightHaveInitPreContext<
+  TLeft extends OptionallyHasInitPreContext<
     any,
     TRight extends HasInitPreContext<any, any>
       ? Pick<
@@ -615,13 +615,13 @@ export function HTPipeInitPreContext<
         >
       : any
   >,
-  TRight extends MightHaveInitPreContext<any, any>
+  TRight extends OptionallyHasInitPreContext<any, any>
 >(left: TLeft, right: TRight): {};
 
 // main initPreContext HTPipe function
 export function HTPipeInitPreContext<
-  TLeft extends MightHaveInitPreContext<any, any>,
-  TRight extends MightHaveInitPreContext<any, any>,
+  TLeft extends OptionallyHasInitPreContext<any, any>,
+  TRight extends OptionallyHasInitPreContext<any, any>,
   TContextInLeft extends TLeft extends HasInitPreContext<any, any>
     ? Parameters<TLeft['initPreContext']>[0]
     : never,

@@ -21,10 +21,10 @@ import {
   HasUpToFinalAuthorizeProperOptionals,
   HasUpToRespondProperOptionals,
   MightHaveFinalAuthorize,
-  MightHaveInitPreContext,
   MightHavePreAuthorize,
   OptionallyHasAttachData,
   OptionallyHasDoWork,
+  OptionallyHasInitPreContext,
   OptionallyHasSanitizeBody,
   OptionallyHasSanitizeParams,
   PromiseOrSync,
@@ -116,7 +116,7 @@ export function isHasPreAuthorize<TContextIn, TContextOut>(
 }
 
 export function isHasInitPreContext<TContextIn, TContextOut>(
-  thing: MightHaveInitPreContext<TContextIn, TContextOut>
+  thing: OptionallyHasInitPreContext<TContextIn, TContextOut>
 ): thing is HasInitPreContext<TContextIn, TContextOut> {
   return !!(thing && thing.initPreContext);
 }

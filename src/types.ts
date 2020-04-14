@@ -8,7 +8,7 @@ export interface HipWorkResponse<ResponseShape> {
   status?: number;
 }
 
-export interface MightHaveInitPreContext<TUnsafe, TContextInit> {
+export interface OptionallyHasInitPreContext<TUnsafe, TContextInit> {
   initPreContext?: (unsafe: TUnsafe) => TContextInit;
 }
 
