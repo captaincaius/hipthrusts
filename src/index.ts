@@ -341,23 +341,17 @@ export function HTPipePreAuthorize<
         };
         const rightOut = right.preAuthorize(rightIn);
         const rightPassed = authorizationPassed(rightOut);
-        if (rightPassed) {
-          const rigthContextOut = rightOut === true ? {} : rightOut;
-          if (
-            Object.keys(leftOut).length <= 0 &&
-            Object.keys(rightOut).length <= 0
-          ) {
-            return true;
-          } else {
-            const preAuthorizeContextOut = {
-              ...leftContextOut,
-              ...rigthContextOut,
-            };
-            return preAuthorizeContextOut;
-          }
-        } else {
+        if (!rightPassed) {
           return false;
         }
+        if (leftOut === true && rightOut === true) {
+          return true;
+        }
+        const rigthContextOut = rightOut === true ? {} : leftOut;
+        return {
+          ...leftContextOut,
+          ...rigthContextOut,
+        };
       },
     };
   } else if (isHasPreAuthorize(left)) {
@@ -529,23 +523,17 @@ export function HTPipeFinalAuthorize<
         };
         const rightOut = await Promise.resolve(right.finalAuthorize(rightIn));
         const rightPassed = authorizationPassed(rightOut);
-        if (rightPassed) {
-          const rigthContextOut = rightOut === true ? {} : leftOut;
-          if (
-            Object.keys(leftContextOut).length <= 0 &&
-            Object.keys(rigthContextOut).length <= 0
-          ) {
-            return true;
-          } else {
-            const finalAuthorizeContextOut = {
-              ...leftContextOut,
-              ...rigthContextOut,
-            };
-            return finalAuthorizeContextOut;
-          }
-        } else {
+        if (!rightPassed) {
           return false;
         }
+        if (leftOut === true && rightOut === true) {
+          return true;
+        }
+        const rigthContextOut = rightOut === true ? {} : leftOut;
+        return {
+          ...leftContextOut,
+          ...rigthContextOut,
+        };
       },
     };
   } else if (isHasFinalAuthorize(left)) {
