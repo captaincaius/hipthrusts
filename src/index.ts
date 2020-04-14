@@ -347,10 +347,10 @@ export function HTPipePreAuthorize<
         if (leftOut === true && rightOut === true) {
           return true;
         }
-        const rigthContextOut = rightOut === true ? {} : leftOut;
+        const rightContextOut = rightOut === true ? {} : rightOut;
         return {
           ...leftContextOut,
-          ...rigthContextOut,
+          ...rightContextOut,
         };
       },
     };
@@ -529,10 +529,10 @@ export function HTPipeFinalAuthorize<
         if (leftOut === true && rightOut === true) {
           return true;
         }
-        const rigthContextOut = rightOut === true ? {} : leftOut;
+        const rightContextOut = rightOut === true ? {} : rightOut;
         return {
           ...leftContextOut,
-          ...rigthContextOut,
+          ...rightContextOut,
         };
       },
     };
