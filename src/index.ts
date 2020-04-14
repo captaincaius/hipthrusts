@@ -630,11 +630,21 @@ export function HTPipeDoWork<
     : never,
   TContextInRight extends TRight extends HasDoWork<any, any>
     ? Parameters<TRight['doWork']>[0]
+    : never,
+  TContextOutLeft extends TLeft extends HasDoWork<any, any>
+    ? PromiseResolveOrSync<ReturnType<TLeft['doWork']>>
+    : never,
+  TContextOutRight extends TRight extends HasDoWork<any, any>
+    ? PromiseResolveOrSync<ReturnType<TRight['doWork']>>
     : never
 >(left: TLeft, right: TRight) {
   if (isHasDoWork(left) && isHasDoWork(right)) {
     return {
-      doWork: async (context: TContextInRight & TContextInLeft) => {
+      doWork: async (
+        context: TContextOutLeft extends TContextInRight
+          ? TContextInLeft
+          : TContextInRight & TContextInLeft
+      ) => {
         const leftOut = (await Promise.resolve(left.doWork(context))) || {};
         const rightIn = {
           ...context,
