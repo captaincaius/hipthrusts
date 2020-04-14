@@ -3,6 +3,8 @@ import {
   isHasDoWork,
   isHasFinalAuthorize,
   isHasPreAuthorize,
+  isHasSanitizeBody,
+  isHasSanitizeParams,
   isHasSanitizeResponse,
 } from './core';
 import { WithFinalAuth, WithPreAuth } from './subclassers';
@@ -11,12 +13,16 @@ import {
   HasDoWork,
   HasFinalAuthorize,
   HasPreAuthorize,
+  HasSanitizeBody,
+  HasSanitizeParams,
   HasSanitizeResponse,
   MightHaveFinalAuthorize,
   MightHavePreAuthorize,
   MightHaveSanitizeResponse,
   OptionallyHasAttachData,
   OptionallyHasDoWork,
+  OptionallyHasSanitizeBody,
+  OptionallyHasSanitizeParams,
   PromiseResolveOrSync,
 } from './types';
 
@@ -683,6 +689,171 @@ export function HTPipeDoWork<
     return { doWork: left.doWork };
   } else if (isHasDoWork(right)) {
     return { doWork: right.doWork };
+  } else {
+    return {};
+  }
+}
+
+// left has sanitizeParams and right has sanitizeParams
+export function HTPipeSanitizeParams<
+  TLeft extends HasSanitizeParams<
+    any,
+    TRight extends HasSanitizeParams<any, any>
+      ? Parameters<TRight['sanitizeParams']>[0]
+      : any
+  >,
+  TRight extends HasSanitizeParams<any, any>,
+  TContextInLeft extends Parameters<TLeft['sanitizeParams']>[0],
+  TContextOutRight extends ReturnType<TRight['sanitizeParams']>
+>(
+  left: TLeft,
+  right: TRight
+): HasSanitizeParams<TContextInLeft, TContextOutRight>;
+
+// left has sanitizeParams and right doesn't
+export function HTPipeSanitizeParams<
+  TLeft extends HasSanitizeParams<
+    any,
+    TRight extends HasSanitizeParams<any, any>
+      ? Parameters<TRight['sanitizeParams']>[0]
+      : any
+  >,
+  TRight extends OptionallyHasSanitizeParams<any, any>,
+  TContextInLeft extends Parameters<TLeft['sanitizeParams']>[0],
+  TContextOutLeft extends ReturnType<TLeft['sanitizeParams']>
+>(
+  left: TLeft,
+  right: TRight
+): HasSanitizeParams<TContextInLeft, TContextOutLeft>;
+
+// right has sanitizeParams and left doesn't
+export function HTPipeSanitizeParams<
+  TLeft extends OptionallyHasSanitizeParams<
+    any,
+    TRight extends HasSanitizeParams<any, any>
+      ? Parameters<TRight['sanitizeParams']>[0]
+      : any
+  >,
+  TRight extends HasSanitizeParams<any, any>,
+  TContextInRight extends Parameters<TRight['sanitizeParams']>[0],
+  TContextOutRight extends ReturnType<TRight['sanitizeParams']>[0]
+>(
+  left: TLeft,
+  right: TRight
+): HasSanitizeParams<TContextInRight, TContextOutRight>;
+
+// left and right doesn't have sanitizeParams
+export function HTPipeSanitizeParams<
+  TLeft extends OptionallyHasSanitizeParams<
+    any,
+    TRight extends HasSanitizeParams<any, any>
+      ? Parameters<TRight['sanitizeParams']>[0]
+      : any
+  >,
+  TRight extends OptionallyHasSanitizeParams<any, any>
+>(left: TLeft, right: TRight): {};
+
+// main sanitizeParams HTPipe function
+export function HTPipeSanitizeParams<
+  TLeft extends OptionallyHasSanitizeParams<any, any>,
+  TRight extends OptionallyHasSanitizeParams<any, any>,
+  TContextInLeft extends TLeft extends HasSanitizeParams<any, any>
+    ? Parameters<TLeft['sanitizeParams']>[0]
+    : never
+>(left: TLeft, right: TRight) {
+  if (isHasSanitizeParams(left) && isHasSanitizeParams(right)) {
+    return {
+      sanitizeParams: (context: TContextInLeft) => {
+        const leftOut = left.sanitizeParams(context) || {};
+        const rightOut = right.sanitizeParams(leftOut) || {};
+        return rightOut;
+      },
+    };
+  } else if (isHasSanitizeParams(left)) {
+    return { sanitizeParams: left.sanitizeParams };
+  } else if (isHasSanitizeParams(right)) {
+    return { sanitizeParams: right.sanitizeParams };
+  } else {
+    return {};
+  }
+}
+
+// left has sanitizeBody and right has sanitizeBody
+export function HTPipeSanitizeBody<
+  TLeft extends HasSanitizeBody<
+    any,
+    TRight extends HasSanitizeBody<any, any>
+      ? Parameters<TRight['sanitizeBody']>[0]
+      : any
+  >,
+  TRight extends HasSanitizeBody<any, any>,
+  TContextInLeft extends Parameters<TLeft['sanitizeBody']>[0],
+  TContextOutRight extends ReturnType<TRight['sanitizeBody']>
+>(
+  left: TLeft,
+  right: TRight
+): HasSanitizeBody<TContextInLeft, TContextOutRight>;
+
+// left has sanitizeBody and right doesn't
+export function HTPipeSanitizeBody<
+  TLeft extends HasSanitizeBody<
+    any,
+    TRight extends HasSanitizeBody<any, any>
+      ? Parameters<TRight['sanitizeBody']>[0]
+      : any
+  >,
+  TRight extends OptionallyHasSanitizeBody<any, any>,
+  TContextInLeft extends Parameters<TLeft['sanitizeBody']>[0],
+  TContextOutLeft extends ReturnType<TLeft['sanitizeBody']>
+>(left: TLeft, right: TRight): HasSanitizeBody<TContextInLeft, TContextOutLeft>;
+
+// right has sanitizeBody and left doesn't
+export function HTPipeSanitizeBody<
+  TLeft extends OptionallyHasSanitizeBody<
+    any,
+    TRight extends HasSanitizeBody<any, any>
+      ? Parameters<TRight['sanitizeBody']>[0]
+      : any
+  >,
+  TRight extends HasSanitizeBody<any, any>,
+  TContextInRight extends Parameters<TRight['sanitizeBody']>[0],
+  TContextOutRight extends ReturnType<TRight['sanitizeBody']>[0]
+>(
+  left: TLeft,
+  right: TRight
+): HasSanitizeBody<TContextInRight, TContextOutRight>;
+
+// left and right doesn't have sanitizeBody
+export function HTPipeSanitizeBody<
+  TLeft extends OptionallyHasSanitizeBody<
+    any,
+    TRight extends HasSanitizeBody<any, any>
+      ? Parameters<TRight['sanitizeBody']>[0]
+      : any
+  >,
+  TRight extends OptionallyHasSanitizeBody<any, any>
+>(left: TLeft, right: TRight): {};
+
+// main sanitizeBody HTPipe function
+export function HTPipeSanitizeBody<
+  TLeft extends OptionallyHasSanitizeBody<any, any>,
+  TRight extends OptionallyHasSanitizeBody<any, any>,
+  TContextInLeft extends TLeft extends HasSanitizeBody<any, any>
+    ? Parameters<TLeft['sanitizeBody']>[0]
+    : never
+>(left: TLeft, right: TRight) {
+  if (isHasSanitizeBody(left) && isHasSanitizeBody(right)) {
+    return {
+      sanitizeBody: (context: TContextInLeft) => {
+        const leftOut = left.sanitizeBody(context) || {};
+        const rightOut = right.sanitizeBody(leftOut) || {};
+        return rightOut;
+      },
+    };
+  } else if (isHasSanitizeBody(left)) {
+    return { sanitizeBody: left.sanitizeBody };
+  } else if (isHasSanitizeBody(right)) {
+    return { sanitizeBody: right.sanitizeBody };
   } else {
     return {};
   }
