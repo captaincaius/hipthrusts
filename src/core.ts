@@ -120,6 +120,12 @@ export function isHasSanitizeParams<TContextIn, TContextOut>(
   return !!(thing && thing.sanitizeParams);
 }
 
+export function isHasSanitizeBody<TContextIn, TContextOut>(
+  thing: OptionallyHasSanitizeBody<TContextIn, TContextOut>
+): thing is HasSanitizeBody<TContextIn, TContextOut> {
+  return !!(thing && thing.sanitizeBody);
+}
+
 export class HipRedirectException {
   constructor(
     public readonly redirectUrl: string,
