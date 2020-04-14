@@ -340,7 +340,24 @@ export function HTPipePreAuthorize<
           ...leftContextOut,
         };
         const rightOut = right.preAuthorize(rightIn);
-        return rightOut;
+        const rightPassed = authorizationPassed(rightOut);
+        if (rightPassed) {
+          const rigthContextOut = rightOut === true ? {} : rightOut;
+          if (
+            Object.keys(leftOut).length <= 0 &&
+            Object.keys(rightOut).length <= 0
+          ) {
+            return true;
+          } else {
+            const preAuthorizeContextOut = {
+              ...leftContextOut,
+              ...rigthContextOut,
+            };
+            return preAuthorizeContextOut;
+          }
+        } else {
+          return false;
+        }
       },
     };
   } else if (isHasPreAuthorize(left)) {
@@ -511,7 +528,24 @@ export function HTPipeFinalAuthorize<
           ...leftContextOut,
         };
         const rightOut = await Promise.resolve(right.finalAuthorize(rightIn));
-        return rightOut;
+        const rightPassed = authorizationPassed(rightOut);
+        if (rightPassed) {
+          const rigthContextOut = rightOut === true ? {} : leftOut;
+          if (
+            Object.keys(leftContextOut).length <= 0 &&
+            Object.keys(rigthContextOut).length <= 0
+          ) {
+            return true;
+          } else {
+            const finalAuthorizeContextOut = {
+              ...leftContextOut,
+              ...rigthContextOut,
+            };
+            return finalAuthorizeContextOut;
+          }
+        } else {
+          return false;
+        }
       },
     };
   } else if (isHasFinalAuthorize(left)) {
