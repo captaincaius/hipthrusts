@@ -894,11 +894,8 @@ export function HTPipeRespond<
         const rightOut = right.respond(leftOut.unsafeResponse);
         return {
           unsafeResponse: rightOut.unsafeResponse,
-          status: rightOut.status
-            ? rightOut.status
-            : leftOut.status
-            ? leftOut.status
-            : null,
+          status:
+            rightOut.status === undefined ? leftOut.status : rightOut.status,
         };
       },
     };
