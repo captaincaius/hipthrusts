@@ -69,6 +69,10 @@ export interface HasDoWork<TContextIn, TContextOut> {
   doWork: (context: TContextIn) => PromiseOrSync<TContextOut>;
 }
 
+export interface MightHaveRespond<TContextIn, TUnsafeResponse> {
+  respond?: (context: TContextIn) => HipWorkResponse<TUnsafeResponse>;
+}
+
 export interface HasRespond<TContextIn, TUnsafeResponse> {
   respond: (context: TContextIn) => HipWorkResponse<TUnsafeResponse>;
 }

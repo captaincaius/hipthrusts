@@ -48,7 +48,7 @@ export function WithAttached(
   };
 }
 
-export function WithResponseFunctional<TWhereToLook extends string>(
+export function WithResponse<TWhereToLook extends string>(
   whereToLook: TWhereToLook,
   successStatusCode: number
 ): HasRespond<any, any> {
