@@ -4,6 +4,7 @@ import {
   isHasFinalAuthorize,
   isHasInitPreContext,
   isHasPreAuthorize,
+  isHasRespond,
   isHasSanitizeBody,
   isHasSanitizeParams,
   isHasSanitizeResponse,
@@ -15,11 +16,13 @@ import {
   HasFinalAuthorize,
   HasInitPreContext,
   HasPreAuthorize,
+  HasRespond,
   HasSanitizeBody,
   HasSanitizeParams,
   HasSanitizeResponse,
   MightHaveFinalAuthorize,
   MightHavePreAuthorize,
+  MightHaveRespond,
   MightHaveSanitizeResponse,
   OptionallyHasAttachData,
   OptionallyHasDoWork,
@@ -829,6 +832,80 @@ export function HTPipeDoWork<
     return { doWork: left.doWork };
   } else if (isHasDoWork(right)) {
     return { doWork: right.doWork };
+  } else {
+    return {};
+  }
+}
+
+// left has respond and right has respond
+export function HTPipeRespond<
+  TLeft extends HasRespond<
+    any,
+    TRight extends HasRespond<any, any> ? Parameters<TRight['respond']>[0] : any
+  >,
+  TRight extends HasRespond<any, any>,
+  TContextInLeft extends Parameters<TLeft['respond']>[0],
+  TContextOutRight extends ReturnType<TRight['respond']>
+>(left: TLeft, right: TRight): HasRespond<TContextInLeft, TContextOutRight>;
+
+// left has respond and right doesn't
+export function HTPipeRespond<
+  TLeft extends HasRespond<
+    any,
+    TRight extends HasRespond<any, any> ? Parameters<TRight['respond']>[0] : any
+  >,
+  TRight extends MightHaveRespond<any, any>,
+  TContextInLeft extends Parameters<TLeft['respond']>[0],
+  TContextOutLeft extends ReturnType<TLeft['respond']>
+>(left: TLeft, right: TRight): HasRespond<TContextInLeft, TContextOutLeft>;
+
+// right has respond and left doesn't
+export function HTPipeRespond<
+  TLeft extends MightHaveRespond<
+    any,
+    TRight extends HasRespond<any, any> ? Parameters<TRight['respond']>[0] : any
+  >,
+  TRight extends HasRespond<any, any>,
+  TContextInRight extends Parameters<TRight['respond']>[0],
+  TContextOutRight extends ReturnType<TRight['respond']>
+>(left: TLeft, right: TRight): HasRespond<TContextInRight, TContextOutRight>;
+
+// right and left doesn't have respond
+export function HTPipeRespond<
+  TLeft extends MightHaveRespond<
+    any,
+    TRight extends HasRespond<any, any> ? Parameters<TRight['respond']>[0] : any
+  >,
+  TRight extends MightHaveRespond<any, any>
+>(left: TLeft, right: TRight): {};
+
+// main respond HTPipe function
+export function HTPipeRespond<
+  TLeft extends MightHaveRespond<any, any>,
+  TRight extends MightHaveRespond<any, any>,
+  TContextInLeft extends TLeft extends HasRespond<any, any>
+    ? Parameters<TLeft['respond']>[0]
+    : never
+>(left: TLeft, right: TRight) {
+  if (isHasRespond(left) && isHasRespond(right)) {
+    return {
+      respond: (context: TContextInLeft) => {
+        const leftOut = left.respond(context);
+        const rightOut = right.respond(leftOut.unsafeResponse);
+        return {
+          unsafeResponse: rightOut.unsafeResponse,
+          status: rightOut.status
+            ? rightOut.status
+            : leftOut.status
+            ? leftOut.status
+            : null,
+        };
+      },
+    };
+  } else if (isHasRespond(left)) {
+    return { respond: left.respond };
+  } else if (isHasRespond(right)) {
+    return { respond: right.respond };
   } else {
     return {};
   }
