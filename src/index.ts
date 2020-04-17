@@ -63,6 +63,128 @@ export function NoopFinalAuth() {
 // i.e. can return bool vs not, possibly async vs sync only, mandatory vs not mandatory...
 // then the final master HTPipe will just build an object out of all the sub-HTPipe*'s
 
+export function HTPipe2<
+  TLeft extends OptionallyHasInitPreContext<
+    any,
+    TRight extends HasInitPreContext<any, any>
+      ? Pick<
+          Parameters<TRight['initPreContext']>[0],
+          keyof PromiseResolveOrSync<
+            ReturnType<
+              TLeft extends HasInitPreContext<any, any>
+                ? TLeft['initPreContext']
+                : () => {}
+            >
+          >
+        >
+      : any
+  > &
+    OptionallyHasAttachData<
+      any,
+      TRight extends HasAttachData<any, any>
+        ? Pick<
+            Parameters<TRight['attachData']>[0],
+            keyof PromiseResolveOrSync<
+              ReturnType<
+                TLeft extends HasAttachData<any, any>
+                  ? TLeft['attachData']
+                  : () => {}
+              >
+            >
+          >
+        : any
+    >,
+  TRight extends OptionallyHasInitPreContext<any, any> &
+    OptionallyHasAttachData<any, any>
+>(left: TLeft, right: TRight) {
+  type TLeftInitPreContextIn = TLeft extends HasInitPreContext<any, any>
+    ? Parameters<TLeft['initPreContext']>[0]
+    : never;
+  type TRightInitPreContextIn = TRight extends HasInitPreContext<any, any>
+    ? Parameters<TRight['initPreContext']>[0]
+    : never;
+  type TLeftInitPreContextOut = TLeft extends HasInitPreContext<any, any>
+    ? PromiseResolveOrSync<ReturnType<TLeft['initPreContext']>>
+    : never;
+  type TRightInitPreContextOut = TRight extends HasInitPreContext<any, any>
+    ? PromiseResolveOrSync<ReturnType<TRight['initPreContext']>>
+    : never;
+  type TLeftAttachDataIn = TLeft extends HasAttachData<any, any>
+    ? Parameters<TLeft['attachData']>[0]
+    : never;
+  type TRightAttachDataIn = TRight extends HasAttachData<any, any>
+    ? Parameters<TRight['attachData']>[0]
+    : never;
+  type TLeftAttachDataOut = TLeft extends HasAttachData<any, any>
+    ? PromiseResolveOrSync<ReturnType<TLeft['attachData']>>
+    : never;
+  type TRightAttachDataOut = TRight extends HasAttachData<any, any>
+    ? PromiseResolveOrSync<ReturnType<TRight['attachData']>>
+    : never;
+  return {
+    ...((isHasInitPreContext(left) && isHasInitPreContext(right)
+      ? {
+          attachData: async () => {
+            const leftOut =
+              (await Promise.resolve(left.initPreContext(context))) || {};
+            const rightIn = {
+              ...context,
+              ...leftOut,
+            };
+            const rightOut =
+              (await Promise.resolve(right.initPreContext(rightIn))) || {};
+            return { ...leftOut, ...rightOut };
+          },
+        }
+      : isHasInitPreContext(left)
+      ? { initPreContext: left.initPreContext }
+      : isHasInitPreContext(right)
+      ? { initPreContext: left.initPreContext }
+      : {}) as TLeft extends HasInitPreContext<any, any>
+      ? TRight extends HasInitPreContext<any, any>
+        ? HasInitPreContext<
+            TLeftInitPreContextIn &
+              Omit<TRightInitPreContextIn, keyof TLeftInitPreContextOut>,
+            TRightInitPreContextOut &
+              Omit<TLeftInitPreContextOut, keyof TRightInitPreContextOut>
+          >
+        : { initPreContext: TLeft['initPreContext'] }
+      : TRight extends HasInitPreContext<any, any>
+      ? { initPreContext: TRight['initPreContext'] }
+      : {}),
+    ...((isHasAttachData(left) && isHasAttachData(right)
+      ? {
+          attachData: async () => {
+            const leftOut =
+              (await Promise.resolve(left.attachData(context))) || {};
+            const rightIn = {
+              ...context,
+              ...leftOut,
+            };
+            const rightOut =
+              (await Promise.resolve(right.attachData(rightIn))) || {};
+            return { ...leftOut, ...rightOut };
+          },
+        }
+      : isHasAttachData(left)
+      ? { attachData: left.attachData }
+      : isHasAttachData(right)
+      ? { attachData: left.attachData }
+      : {}) as TLeft extends HasAttachData<any, any>
+      ? TRight extends HasAttachData<any, any>
+        ? HasAttachData<
+            TLeftAttachDataIn &
+              Omit<TRightAttachDataIn, keyof TLeftAttachDataOut>,
+            TRightAttachDataOut &
+              Omit<TLeftAttachDataOut, keyof TRightAttachDataOut>
+          >
+        : { attachData: TLeft['attachData'] }
+      : TRight extends HasAttachData<any, any>
+      ? { attachData: TRight['attachData'] }
+      : {}),
+  };
+}
+
 // left has attachData AND right has attachData AND left's return keys that exist in right's parameters are assignable to right's correspondingly
 export function HTPipeAttachData<
   TLeft extends HasAttachData<

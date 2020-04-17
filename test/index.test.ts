@@ -2,7 +2,7 @@ import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import 'mocha';
 
-import { HTPipe, HTPipeAttachData, WithAttached, WithInit } from '../src';
+import { HTPipe, HTPipe2, WithAttached, WithInit } from '../src';
 import { PromiseOrSync } from '../src/types';
 
 use(chaiAsPromised);
@@ -286,7 +286,7 @@ describe('HipThrusTS', () => {
   });
 */
   describe('Hipthrusts functional only', () => {
-    describe('HTPipeAttachData', () => {
+    describe('HTPipe2', () => {
       it('attaches properly typed data from left and right sync data attacher', () => {
         const left = {
           attachData(context: { a: string }) {
@@ -300,7 +300,7 @@ describe('HipThrusTS', () => {
           },
         };
 
-        const pipedAtoBC = HTPipeAttachData(left, rightFullyCovered);
+        const pipedAtoBC = HTPipe2(left, rightFullyCovered);
 
         interface CorrectParam {
           a: string;
@@ -348,7 +348,7 @@ describe('HipThrusTS', () => {
           },
         };
 
-        const pipedAToBStringToBNumber = HTPipeAttachData(
+        const pipedAToBStringToBNumber = HTPipe2(
           left,
           rightTransformLeftOutputType
         );
@@ -400,7 +400,7 @@ describe('HipThrusTS', () => {
           },
         };
 
-        const pipedAOtoBC1 = HTPipeAttachData(left, rightPartiallyCovered);
+        const pipedAOtoBC1 = HTPipe2(left, rightPartiallyCovered);
 
         interface CorrectParam {
           a: string;
@@ -448,7 +448,7 @@ describe('HipThrusTS', () => {
           },
         };
 
-        const pipedNotCoveredError = HTPipeAttachData(left, rightNotCovered);
+        const pipedNotCoveredError = HTPipe2(left, rightNotCovered);
 
         interface CorrectParam {
           a: string;
@@ -491,12 +491,14 @@ describe('HipThrusTS', () => {
           },
         };
 
-        const pipedLeftOnly = HTPipeAttachData(left, {});
+        const pipedLeftOnly = HTPipe2(left, {});
 
         interface CorrectParam {
           a: string;
         }
-        type CorrectReturnValue = PromiseOrSync<{ b: number }>;
+        interface CorrectReturnValue {
+          b: number;
+        }
         type ParamAssignableToCorrect = CorrectParam extends Parameters<
           typeof pipedLeftOnly.attachData
         >[0]
@@ -533,13 +535,15 @@ describe('HipThrusTS', () => {
           },
         };
 
-        const pipedRightOnly = HTPipeAttachData({}, rightPartiallyCovered);
+        const pipedRightOnly = HTPipe2({}, rightPartiallyCovered);
 
         interface CorrectParam {
           b: number;
           other: string;
         }
-        type CorrectReturnValue = PromiseOrSync<{ c: number }>;
+        interface CorrectReturnValue {
+          c: number;
+        }
         type ParamAssignableToCorrect = CorrectParam extends Parameters<
           typeof pipedRightOnly.attachData
         >[0]
@@ -570,7 +574,7 @@ describe('HipThrusTS', () => {
         const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
       });
       it('no attaches data when left and right is empty objects', () => {
-        const pipedWithEmptyObjectsOnly = HTPipeAttachData({}, {});
+        const pipedWithEmptyObjectsOnly = HTPipe2({}, {});
 
         type ParamAssignableToCorrect = {} extends typeof pipedWithEmptyObjectsOnly
           ? true
@@ -605,9 +609,9 @@ describe('HipThrusTS', () => {
           },
         };
 
-        function expectErrorWithHTPipeAttachData() {
+        function expectErrorWithHTPipe2() {
           // @ts-expect-error
-          const pipedError = HTPipeAttachData(leftBad, rightFullyCovered);
+          const pipedError = HTPipe2(leftBad, rightFullyCovered);
         }
       });
 
@@ -626,7 +630,7 @@ describe('HipThrusTS', () => {
           },
         };
 
-        const pipedAtoBC = HTPipeAttachData(left, rightFullyCovered);
+        const pipedAtoBC = HTPipe2(left, rightFullyCovered);
 
         interface CorrectParam {
           a: string;
@@ -674,7 +678,7 @@ describe('HipThrusTS', () => {
           },
         };
 
-        const pipedAToBStringToBNumber = HTPipeAttachData(
+        const pipedAToBStringToBNumber = HTPipe2(
           left,
           rightTransformLeftOutputType
         );
@@ -724,7 +728,7 @@ describe('HipThrusTS', () => {
             return Promise.resolve({ c: 4 });
           },
         };
-        const pipedAOtoBC1 = HTPipeAttachData(left, rightPartiallyCovered);
+        const pipedAOtoBC1 = HTPipe2(left, rightPartiallyCovered);
 
         interface CorrectParam {
           a: string;
@@ -772,7 +776,7 @@ describe('HipThrusTS', () => {
           },
         };
 
-        const pipedNotCoveredError = HTPipeAttachData(left, rightNotCovered);
+        const pipedNotCoveredError = HTPipe2(left, rightNotCovered);
 
         interface CorrectParam {
           a: string;
@@ -815,12 +819,12 @@ describe('HipThrusTS', () => {
           },
         };
 
-        const pipedLeftOnly = HTPipeAttachData(left, {});
+        const pipedLeftOnly = HTPipe2(left, {});
 
         interface CorrectParam {
           a: string;
         }
-        type CorrectReturnValue = PromiseOrSync<{ b: number }>;
+        type CorrectReturnValue = Promise<{ b: number }>;
         type ParamAssignableToCorrect = CorrectParam extends Parameters<
           typeof pipedLeftOnly.attachData
         >[0]
@@ -857,13 +861,13 @@ describe('HipThrusTS', () => {
           },
         };
 
-        const pipedRightOnly = HTPipeAttachData({}, rightPartiallyCovered);
+        const pipedRightOnly = HTPipe2({}, rightPartiallyCovered);
 
         interface CorrectParam {
           b: number;
           other: string;
         }
-        type CorrectReturnValue = PromiseOrSync<{ c: number }>;
+        type CorrectReturnValue = Promise<{ c: number }>;
         type ParamAssignableToCorrect = CorrectParam extends Parameters<
           typeof pipedRightOnly.attachData
         >[0]
@@ -905,9 +909,9 @@ describe('HipThrusTS', () => {
           },
         };
 
-        function expectErrorWithHTPipeAttachData() {
+        function expectErrorWithHTPipe2() {
           // @ts-expect-error
-          const pipedError = HTPipeAttachData(leftBad, rightFullyCovered);
+          const pipedError = HTPipe2(leftBad, rightFullyCovered);
         }
       });
     });
