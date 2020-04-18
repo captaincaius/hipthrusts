@@ -287,6 +287,7 @@ describe('HipThrusTS', () => {
 */
   describe('Hipthrusts functional only', () => {
     // @todo: add test coverage for javascript side functionality too!
+    // @todo: add test coverage for non-explicit-type-specification too!
     // @todo: add test coverage for SINGLE-OPERATOR and ZERO-OPERATOR pipes
     // @todo: add test coverage for TRIPLE-OPERATOR pipes
     // @todo: add test coverage for QUADRUPLE-AND-MORE-OPERATOR pipes (use empty objects)
