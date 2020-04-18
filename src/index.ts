@@ -63,126 +63,221 @@ export function NoopFinalAuth() {
 // i.e. can return bool vs not, possibly async vs sync only, mandatory vs not mandatory...
 // then the final master HTPipe will just build an object out of all the sub-HTPipe*'s
 
-export function HTPipe2<
-  TLeft extends OptionallyHasInitPreContext<
-    any,
-    TRight extends HasInitPreContext<any, any>
-      ? Pick<
-          Parameters<TRight['initPreContext']>[0],
-          keyof PromiseResolveOrSync<
-            ReturnType<
-              TLeft extends HasInitPreContext<any, any>
-                ? TLeft['initPreContext']
-                : () => {}
-            >
+type InitPreContextIn<T> = T extends HasInitPreContext<any, any>
+  ? Parameters<T['initPreContext']>[0]
+  : never;
+type InitPreContextOut<T> = T extends HasInitPreContext<any, any>
+  ? PromiseResolveOrSync<ReturnType<T['initPreContext']>>
+  : never;
+
+type AttachDataIn<T> = T extends HasAttachData<any, any>
+  ? Parameters<T['attachData']>[0]
+  : never;
+type AttachDataOut<T> = T extends HasAttachData<any, any>
+  ? PromiseResolveOrSync<ReturnType<T['attachData']>>
+  : never;
+
+type PipedPreContext<TLeft, TRight> = TLeft extends HasInitPreContext<any, any>
+  ? TRight extends HasInitPreContext<any, any>
+    ? HasInitPreContext<
+        InitPreContextIn<TLeft> &
+          Omit<InitPreContextIn<TRight>, keyof InitPreContextOut<TLeft>>,
+        InitPreContextOut<TRight> &
+          Omit<InitPreContextOut<TLeft>, keyof InitPreContextOut<TRight>>
+      >
+    : { initPreContext: TLeft['initPreContext'] }
+  : TRight extends HasInitPreContext<any, any>
+  ? { initPreContext: TRight['initPreContext'] }
+  : {};
+
+type PipedAttachData<TLeft, TRight> = TLeft extends HasAttachData<any, any>
+  ? TRight extends HasAttachData<any, any>
+    ? HasAttachData<
+        AttachDataIn<TLeft> &
+          Omit<AttachDataIn<TRight>, keyof AttachDataOut<TLeft>>,
+        AttachDataOut<TRight> &
+          Omit<AttachDataOut<TLeft>, keyof AttachDataOut<TRight>>
+      >
+    : { attachData: TLeft['attachData'] }
+  : TRight extends HasAttachData<any, any>
+  ? { attachData: TRight['attachData'] }
+  : {};
+
+type ClashlessInitPreContext<TLeft, TRight> = OptionallyHasInitPreContext<
+  any,
+  TRight extends HasInitPreContext<any, any>
+    ? Pick<
+        Parameters<TRight['initPreContext']>[0],
+        keyof PromiseResolveOrSync<
+          ReturnType<
+            TLeft extends HasInitPreContext<any, any>
+              ? TLeft['initPreContext']
+              : () => {}
           >
         >
-      : any
-  > &
-    OptionallyHasAttachData<
-      any,
-      TRight extends HasAttachData<any, any>
-        ? Pick<
-            Parameters<TRight['attachData']>[0],
-            keyof PromiseResolveOrSync<
-              ReturnType<
-                TLeft extends HasAttachData<any, any>
-                  ? TLeft['attachData']
-                  : () => {}
-              >
-            >
+      >
+    : any
+>;
+
+type ClashlessAttachData<TLeft, TRight> = OptionallyHasAttachData<
+  any,
+  TRight extends HasAttachData<any, any>
+    ? Pick<
+        Parameters<TRight['attachData']>[0],
+        keyof PromiseResolveOrSync<
+          ReturnType<
+            TLeft extends HasAttachData<any, any>
+              ? TLeft['attachData']
+              : () => {}
           >
-        : any
-    >,
+        >
+      >
+    : any
+>;
+
+// no parameter - returns empty object
+export function HTPipe(): {};
+
+// one parameter - returns a new object with all the valid lifecycle stages of the parameter
+export function HTPipe<
+  T extends OptionallyHasInitPreContext<any, any> &
+    OptionallyHasAttachData<any, any>
+  // @fixme: refactor - export a union type in types.ts for this
+>(obj: T): Pick<T, 'initPreContext' | 'attachData'>;
+
+// two parameters with automatic type guessing or right - all or nothing!
+// @todo: add the ability for each stage to get outputs of previous stages too!
+export function HTPipe<
+  TLeft extends OptionallyHasInitPreContext<any, any> &
+    OptionallyHasAttachData<any, any>,
+  TRight extends (TLeft extends HasInitPreContext<any, any>
+    ? OptionallyHasInitPreContext<ReturnType<TLeft['initPreContext']>, any>
+    : {}) &
+    (TLeft extends HasAttachData<any, any>
+      ? OptionallyHasAttachData<
+          PromiseResolveOrSync<ReturnType<TLeft['attachData']>>,
+          any
+        >
+      : {})
+>(
+  left: TLeft,
+  right: TRight
+): PipedPreContext<TLeft, TRight> & PipedAttachData<TLeft, TRight>;
+
+// two parameters with possibly added inputs
+export function HTPipe<
+  TLeft extends ClashlessInitPreContext<TLeft, TRight> &
+    ClashlessAttachData<TLeft, TRight>,
   TRight extends OptionallyHasInitPreContext<any, any> &
     OptionallyHasAttachData<any, any>
->(left: TLeft, right: TRight) {
-  type TLeftInitPreContextIn = TLeft extends HasInitPreContext<any, any>
-    ? Parameters<TLeft['initPreContext']>[0]
-    : never;
-  type TRightInitPreContextIn = TRight extends HasInitPreContext<any, any>
-    ? Parameters<TRight['initPreContext']>[0]
-    : never;
-  type TLeftInitPreContextOut = TLeft extends HasInitPreContext<any, any>
-    ? PromiseResolveOrSync<ReturnType<TLeft['initPreContext']>>
-    : never;
-  type TRightInitPreContextOut = TRight extends HasInitPreContext<any, any>
-    ? PromiseResolveOrSync<ReturnType<TRight['initPreContext']>>
-    : never;
-  type TLeftAttachDataIn = TLeft extends HasAttachData<any, any>
-    ? Parameters<TLeft['attachData']>[0]
-    : never;
-  type TRightAttachDataIn = TRight extends HasAttachData<any, any>
-    ? Parameters<TRight['attachData']>[0]
-    : never;
-  type TLeftAttachDataOut = TLeft extends HasAttachData<any, any>
-    ? PromiseResolveOrSync<ReturnType<TLeft['attachData']>>
-    : never;
-  type TRightAttachDataOut = TRight extends HasAttachData<any, any>
-    ? PromiseResolveOrSync<ReturnType<TRight['attachData']>>
-    : never;
-  return {
-    ...((isHasInitPreContext(left) && isHasInitPreContext(right)
-      ? {
-          attachData: async () => {
-            const leftOut =
-              (await Promise.resolve(left.initPreContext(context))) || {};
-            const rightIn = {
-              ...context,
-              ...leftOut,
-            };
-            const rightOut =
-              (await Promise.resolve(right.initPreContext(rightIn))) || {};
-            return { ...leftOut, ...rightOut };
-          },
-        }
-      : isHasInitPreContext(left)
-      ? { initPreContext: left.initPreContext }
-      : isHasInitPreContext(right)
-      ? { initPreContext: left.initPreContext }
-      : {}) as TLeft extends HasInitPreContext<any, any>
-      ? TRight extends HasInitPreContext<any, any>
-        ? HasInitPreContext<
-            TLeftInitPreContextIn &
-              Omit<TRightInitPreContextIn, keyof TLeftInitPreContextOut>,
-            TRightInitPreContextOut &
-              Omit<TLeftInitPreContextOut, keyof TRightInitPreContextOut>
-          >
-        : { initPreContext: TLeft['initPreContext'] }
-      : TRight extends HasInitPreContext<any, any>
-      ? { initPreContext: TRight['initPreContext'] }
-      : {}),
-    ...((isHasAttachData(left) && isHasAttachData(right)
-      ? {
-          attachData: async () => {
-            const leftOut =
-              (await Promise.resolve(left.attachData(context))) || {};
-            const rightIn = {
-              ...context,
-              ...leftOut,
-            };
-            const rightOut =
-              (await Promise.resolve(right.attachData(rightIn))) || {};
-            return { ...leftOut, ...rightOut };
-          },
-        }
-      : isHasAttachData(left)
-      ? { attachData: left.attachData }
-      : isHasAttachData(right)
-      ? { attachData: left.attachData }
-      : {}) as TLeft extends HasAttachData<any, any>
-      ? TRight extends HasAttachData<any, any>
-        ? HasAttachData<
-            TLeftAttachDataIn &
-              Omit<TRightAttachDataIn, keyof TLeftAttachDataOut>,
-            TRightAttachDataOut &
-              Omit<TLeftAttachDataOut, keyof TRightAttachDataOut>
-          >
-        : { attachData: TLeft['attachData'] }
-      : TRight extends HasAttachData<any, any>
-      ? { attachData: TRight['attachData'] }
-      : {}),
-  };
+>(
+  left: TLeft,
+  right: TRight
+): PipedPreContext<TLeft, TRight> & PipedAttachData<TLeft, TRight>;
+
+// three parameters with possibly added inputs
+export function HTPipe<
+  T3 extends ClashlessInitPreContext<T3, PipedPreContext<T2, T1>> &
+    ClashlessAttachData<T3, PipedAttachData<T2, T1>>,
+  T2 extends ClashlessInitPreContext<T2, T1> & ClashlessAttachData<T2, T1>,
+  T1 extends OptionallyHasInitPreContext<any, any> &
+    OptionallyHasAttachData<any, any>
+>(
+  obj3: T3,
+  obj2: T2,
+  obj1: T1
+): PipedPreContext<T3, PipedPreContext<T2, T1>> &
+  PipedAttachData<T3, PipedAttachData<T2, T1>>;
+
+// four parameters with possibly added inputs
+export function HTPipe<
+  T4 extends ClashlessInitPreContext<
+    T4,
+    PipedPreContext<T3, PipedPreContext<T2, T1>>
+  > &
+    ClashlessAttachData<T4, PipedAttachData<T3, PipedAttachData<T2, T1>>>,
+  T3 extends ClashlessInitPreContext<T3, PipedPreContext<T2, T1>> &
+    ClashlessAttachData<T3, PipedAttachData<T2, T1>>,
+  T2 extends ClashlessInitPreContext<T2, T1> & ClashlessAttachData<T2, T1>,
+  T1 extends OptionallyHasInitPreContext<any, any> &
+    OptionallyHasAttachData<any, any>
+>(
+  obj4: T4,
+  obj3: T3,
+  obj2: T2,
+  obj1: T1
+): PipedPreContext<T4, PipedPreContext<T3, PipedPreContext<T2, T1>>> &
+  PipedAttachData<T4, PipedAttachData<T3, PipedAttachData<T2, T1>>>;
+
+export function HTPipe(...objs: any[]) {
+  if (objs.length === 0) {
+    return {};
+  }
+  if (objs.length === 1) {
+    // @todo: consider removing this explicitness and repetition by calling HTPipe(obj[0], {}) instead
+    return {
+      initPreContext: objs[0].initPreContext,
+      attachData: objs[0].attachData,
+    };
+  }
+  if (objs.length === 2) {
+    const left = objs[0];
+    const right = objs[1];
+    return {
+      ...((isHasInitPreContext(left) && isHasInitPreContext(right)
+        ? {
+            initPreContext: async () => {
+              const leftOut =
+                (await Promise.resolve(left.initPreContext(context))) || {};
+              const rightIn = {
+                ...context,
+                // ...leftOut,
+                ...(leftOut as {}),
+              };
+              const rightOut =
+                (await Promise.resolve(right.initPreContext(rightIn))) || {};
+              return {
+                // ...leftOut,
+                ...(leftOut as {}),
+                // ...rightOut
+                ...(rightOut as {}),
+              };
+            },
+          }
+        : isHasInitPreContext(left)
+        ? { initPreContext: left.initPreContext }
+        : isHasInitPreContext(right)
+        ? { initPreContext: left.initPreContext }
+        : {}) as PipedPreContext<any, any>),
+      ...((isHasAttachData(left) && isHasAttachData(right)
+        ? {
+            attachData: async () => {
+              const leftOut =
+                (await Promise.resolve(left.attachData(context))) || {};
+              const rightIn = {
+                ...context,
+                // ...leftOut
+                ...(leftOut as {}),
+              };
+              const rightOut =
+                (await Promise.resolve(right.attachData(rightIn))) || {};
+              return {
+                // ...leftOut,
+                ...(leftOut as {}),
+                // ...rightOut
+                ...(rightOut as {}),
+              };
+            },
+          }
+        : isHasAttachData(left)
+        ? { attachData: left.attachData }
+        : isHasAttachData(right)
+        ? { attachData: left.attachData }
+        : {}) as PipedAttachData<any, any>),
+    };
+  }
+
+  return objs.reduce((prev: any, curr: any) => HTPipe(prev, curr), {});
 }
 
 // left has attachData AND right has attachData AND left's return keys that exist in right's parameters are assignable to right's correspondingly
@@ -1283,33 +1378,33 @@ type ClassExtender<TClassIn, TClassOut> = (ClassIn: TClassIn) => TClassOut;
 
 // todo: Add an htMix too b/c this REQUIRES that a param has been provided
 // by one of the previous subclassers in the pipe
-export function HTPipe<ClassIn>(): ClassExtender<ClassIn, ClassIn>;
-export function HTPipe<ClassIn, A>(
+export function HTPipeOld<ClassIn>(): ClassExtender<ClassIn, ClassIn>;
+export function HTPipeOld<ClassIn, A>(
   fn1: ClassExtender<ClassIn, A>
 ): ClassExtender<ClassIn, A>;
-export function HTPipe<ClassIn, A, B>(
+export function HTPipeOld<ClassIn, A, B>(
   fn1: ClassExtender<ClassIn, A>,
   fn2: ClassExtender<A, B>
 ): ClassExtender<ClassIn, B>;
-export function HTPipe<ClassIn, A, B, C>(
+export function HTPipeOld<ClassIn, A, B, C>(
   fn1: ClassExtender<ClassIn, A>,
   fn2: ClassExtender<A, B>,
   fn3: ClassExtender<B, C>
 ): ClassExtender<ClassIn, C>;
-export function HTPipe<ClassIn, A, B, C, D>(
+export function HTPipeOld<ClassIn, A, B, C, D>(
   fn1: ClassExtender<ClassIn, A>,
   fn2: ClassExtender<A, B>,
   fn3: ClassExtender<B, C>,
   fn4: ClassExtender<C, D>
 ): ClassExtender<ClassIn, D>;
-export function HTPipe<ClassIn, A, B, C, D, E>(
+export function HTPipeOld<ClassIn, A, B, C, D, E>(
   fn1: ClassExtender<ClassIn, A>,
   fn2: ClassExtender<A, B>,
   fn3: ClassExtender<B, C>,
   fn4: ClassExtender<C, D>,
   fn5: ClassExtender<D, E>
 ): ClassExtender<ClassIn, E>;
-export function HTPipe<ClassIn, A, B, C, D, E, F>(
+export function HTPipeOld<ClassIn, A, B, C, D, E, F>(
   fn1: ClassExtender<ClassIn, A>,
   fn2: ClassExtender<A, B>,
   fn3: ClassExtender<B, C>,
@@ -1317,7 +1412,7 @@ export function HTPipe<ClassIn, A, B, C, D, E, F>(
   fn5: ClassExtender<D, E>,
   fn6: ClassExtender<E, F>
 ): ClassExtender<ClassIn, F>;
-export function HTPipe<ClassIn, A, B, C, D, E, F, G>(
+export function HTPipeOld<ClassIn, A, B, C, D, E, F, G>(
   fn1: ClassExtender<ClassIn, A>,
   fn2: ClassExtender<A, B>,
   fn3: ClassExtender<B, C>,
@@ -1326,7 +1421,7 @@ export function HTPipe<ClassIn, A, B, C, D, E, F, G>(
   fn6: ClassExtender<E, F>,
   fn7: ClassExtender<F, G>
 ): ClassExtender<ClassIn, G>;
-export function HTPipe<ClassIn, A, B, C, D, E, F, G, H>(
+export function HTPipeOld<ClassIn, A, B, C, D, E, F, G, H>(
   fn1: ClassExtender<ClassIn, A>,
   fn2: ClassExtender<A, B>,
   fn3: ClassExtender<B, C>,
@@ -1336,7 +1431,7 @@ export function HTPipe<ClassIn, A, B, C, D, E, F, G, H>(
   fn7: ClassExtender<F, G>,
   fn8: ClassExtender<G, H>
 ): ClassExtender<ClassIn, H>;
-export function HTPipe<ClassIn, A, B, C, D, E, F, G, H, I>(
+export function HTPipeOld<ClassIn, A, B, C, D, E, F, G, H, I>(
   fn1: ClassExtender<ClassIn, A>,
   fn2: ClassExtender<A, B>,
   fn3: ClassExtender<B, C>,
@@ -1347,7 +1442,7 @@ export function HTPipe<ClassIn, A, B, C, D, E, F, G, H, I>(
   fn8: ClassExtender<G, H>,
   fn9: ClassExtender<H, I>
 ): ClassExtender<ClassIn, I>;
-export function HTPipe<ClassIn, A, B, C, D, E, F, G, H, I>(
+export function HTPipeOld<ClassIn, A, B, C, D, E, F, G, H, I>(
   fn1: ClassExtender<ClassIn, A>,
   fn2: ClassExtender<A, B>,
   fn3: ClassExtender<B, C>,
@@ -1360,7 +1455,7 @@ export function HTPipe<ClassIn, A, B, C, D, E, F, G, H, I>(
   ...fns: Array<ClassExtender<any, any>>
 ): ClassExtender<ClassIn, {}>;
 
-export function HTPipe(...fns: Array<ClassExtender<any, any>>) {
+export function HTPipeOld(...fns: Array<ClassExtender<any, any>>) {
   if (!fns) {
     return (inClass: any) => inClass;
   }
