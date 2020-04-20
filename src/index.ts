@@ -272,7 +272,7 @@ export function HTPipe(...objs: any[]) {
         : isHasAttachData(left)
         ? { attachData: left.attachData }
         : isHasAttachData(right)
-        ? { attachData: left.attachData }
+        ? { attachData: right.attachData }
         : {}) as PipedAttachData<any, any>),
     };
   }
