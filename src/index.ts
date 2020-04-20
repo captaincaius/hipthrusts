@@ -103,6 +103,7 @@ type PipedSanitizeParams<TLeft, TRight> = TLeft extends HasSanitizeParams<
 >
   ? TRight extends HasSanitizeParams<any, any>
     ? HasSanitizeParams<
+        // @todo replace SanitizeParamsContextIn<TLeft> with Parameters<TLeft['sanitizeParams']>[0] and SanitizeParamsContextOut<TRight> with ReturnType<TRight['sanitizeParams']>
         SanitizeParamsContextIn<TLeft>,
         SanitizeParamsContextOut<TRight>
       >
@@ -170,7 +171,7 @@ export function HTPipe<
     OptionallyHasSanitizeParams<any, any> &
     OptionallyHasAttachData<any, any>
   // @fixme: refactor - export a union type in types.ts for this
->(obj: T): Pick<T, 'initPreContext' | 'attachData'>;
+>(obj: T): Pick<T, 'initPreContext' | 'sanitizeParams' | 'attachData'>;
 
 // two parameters with automatic type guessing or right - all or nothing!
 // @todo: add the ability for each stage to get outputs of previous stages too!
@@ -189,7 +190,9 @@ export function HTPipe<
 >(
   left: TLeft,
   right: TRight
-): PipedPreContext<TLeft, TRight> & PipedAttachData<TLeft, TRight>;
+): PipedPreContext<TLeft, TRight> &
+  PipedSanitizeParams<TLeft, TRight> &
+  PipedAttachData<TLeft, TRight>;
 
 // two parameters with possibly added inputs
 export function HTPipe<
@@ -237,7 +240,7 @@ export function HTPipe<
     > &
     ClashlessAttachData<T4, PipedAttachData<T3, PipedAttachData<T2, T1>>>,
   T3 extends ClashlessInitPreContext<T3, PipedPreContext<T2, T1>> &
-    ClashlessSanitizeParams<T3, PipedAttachData<T2, T1>> &
+    ClashlessSanitizeParams<T3, PipedSanitizeParams<T2, T1>> &
     ClashlessAttachData<T3, PipedAttachData<T2, T1>>,
   T2 extends ClashlessInitPreContext<T2, T1> &
     ClashlessSanitizeParams<T2, T1> &
@@ -299,9 +302,7 @@ export function HTPipe(...objs: any[]) {
         ? {
             sanitizeParams: (context: any) => {
               const leftOut = left.sanitizeParams(context) || {};
-              const rightIn = {
-                ...(leftOut as {}),
-              };
+              const rightIn = leftOut;
               const rightOut = right.sanitizeParams(rightIn) || {};
               return rightOut as {};
             },
