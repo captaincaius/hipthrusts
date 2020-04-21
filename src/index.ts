@@ -181,6 +181,9 @@ export function HTPipe<
   TRight extends (TLeft extends HasInitPreContext<any, any>
     ? OptionallyHasInitPreContext<ReturnType<TLeft['initPreContext']>, any>
     : {}) &
+    (TLeft extends HasSanitizeParams<any, any>
+      ? OptionallyHasSanitizeParams<ReturnType<TLeft['sanitizeParams']>, any>
+      : {}) &
     (TLeft extends HasAttachData<any, any>
       ? OptionallyHasAttachData<
           PromiseResolveOrSync<ReturnType<TLeft['attachData']>>,
