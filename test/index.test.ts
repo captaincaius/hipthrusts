@@ -314,39 +314,20 @@ describe('HipThrusTS', () => {
 
         const triple = HTPipe(left, midNotCovered, rightFullyCovered);
       });
-      it('return correct attachData values from left and right sync data attacher', async () => {
+      it('attaches properly typed data from left and right sync data attacher', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 4;
+
         const left = {
           attachData(context: { a: string }) {
+            expect(context.a).to.be.equal(aPassedIn);
             return { b: 4 };
           },
         };
 
         const rightFullyCovered = {
           attachData(context: { b: number }) {
-            return { c: 4 };
-          },
-        };
-
-        const pipedAtoBC = HTPipe(left, rightFullyCovered);
-
-        const pipedAtoBCAttachDataReturnValues = await pipedAtoBC.attachData({
-          a: 'some string',
-        });
-
-        expect(pipedAtoBCAttachDataReturnValues).to.has.property('b');
-        expect(pipedAtoBCAttachDataReturnValues.b).to.be.equal(4);
-        expect(pipedAtoBCAttachDataReturnValues).to.has.property('c');
-        expect(pipedAtoBCAttachDataReturnValues.c).to.be.equal(4);
-      });
-      it('attaches properly typed data from left and right sync data attacher', () => {
-        const left = {
-          attachData(context: { a: string }) {
-            return { b: 4 };
-          },
-        };
-
-        const rightFullyCovered = {
-          attachData(context: { b: number }) {
+            expect(context.b).to.be.equal(bPassedIn);
             return { c: 4 };
           },
         };
@@ -385,43 +366,29 @@ describe('HipThrusTS', () => {
         const returnAssignableToCorrectShouldFail: ReturnAssignableToCorrect = false;
         // @ts-expect-error
         const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
+
+        const pipedAtoBCAttachDataReturnValues = await pipedAtoBC.attachData({
+          a: aPassedIn,
+        });
+
+        expect(pipedAtoBCAttachDataReturnValues).to.has.property('b');
+        expect(pipedAtoBCAttachDataReturnValues.b).to.be.equal(4);
+        expect(pipedAtoBCAttachDataReturnValues).to.has.property('c');
+        expect(pipedAtoBCAttachDataReturnValues.c).to.be.equal(4);
       });
-      it('return correct attachData values right sync output instead of left sync output if right output sync transform left output type', async () => {
+      it('attaches right sync output instead of left sync output if right output sync transform left output type', async () => {
+        const aPassedIn = 5;
+        const bPassedIn = 'some string';
         const left = {
           attachData(context: { a: number }) {
+            expect(context.a).to.be.equal(aPassedIn);
             return { b: 'some string' };
           },
         };
 
         const rightTransformLeftOutputType = {
           attachData(context: { b: string }) {
-            return { b: 5 };
-          },
-        };
-
-        const pipedAToBStringToBNumber = HTPipe(
-          left,
-          rightTransformLeftOutputType
-        );
-
-        const pipedAToBStringToBNumberAttachDataReturnValues = await pipedAToBStringToBNumber.attachData(
-          { a: 5 }
-        );
-
-        expect(pipedAToBStringToBNumberAttachDataReturnValues).to.has.property(
-          'b'
-        );
-        expect(pipedAToBStringToBNumberAttachDataReturnValues.b).to.be.equal(5);
-      });
-      it('attaches right sync output instead of left sync output if right output sync transform left output type', () => {
-        const left = {
-          attachData(context: { a: number }) {
-            return { b: 'some string' };
-          },
-        };
-
-        const rightTransformLeftOutputType = {
-          attachData(context: { b: string }) {
+            expect(context.b).to.be.equal(bPassedIn);
             return { b: 5 };
           },
         };
@@ -464,24 +431,74 @@ describe('HipThrusTS', () => {
         const returnAssignableToCorrectShouldFail: ReturnAssignableToCorrect = false;
         // @ts-expect-error
         const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
+
+        const pipedAToBStringToBNumberAttachDataReturnValues = await pipedAToBStringToBNumber.attachData(
+          { a: aPassedIn }
+        );
+
+        expect(pipedAToBStringToBNumberAttachDataReturnValues).to.has.property(
+          'b'
+        );
+        expect(pipedAToBStringToBNumberAttachDataReturnValues.b).to.be.equal(5);
       });
-      it('correct return attachData value from left sync data attacher and right not fully covered sync data attacher', async () => {
+      it('attaches properly typed data from left sync data attacher and right not fully covered sync data attacher', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 4;
+        const otherPassedIn = 'other string';
+
         const left = {
           attachData(context: { a: string }) {
+            expect(context.a).to.be.equal(aPassedIn);
             return { b: 4 };
           },
         };
 
         const rightPartiallyCovered = {
           attachData(context: { b: number; other: string }) {
+            expect(context.other).to.be.equal(otherPassedIn);
+            expect(context.b).to.be.equal(bPassedIn);
             return { c: 4 };
           },
         };
 
         const pipedAOtoBC1 = HTPipe(left, rightPartiallyCovered);
 
+        interface CorrectParam {
+          a: string;
+          other: string;
+        }
+        type CorrectReturnValue = PromiseOrSync<{ b: number; c: number }>;
+        type ParamAssignableToCorrect = CorrectParam extends Parameters<
+          typeof pipedAOtoBC1.attachData
+        >[0]
+          ? true
+          : false;
+        type ParamAssignableFromCorrect = Parameters<
+          typeof pipedAOtoBC1.attachData
+        >[0] extends CorrectParam
+          ? true
+          : false;
+        type ReturnAssignableToCorrect = CorrectReturnValue extends ReturnType<
+          typeof pipedAOtoBC1.attachData
+        >
+          ? true
+          : false;
+        type ReturnAssignableFromCorrect = ReturnType<
+          typeof pipedAOtoBC1.attachData
+        > extends CorrectReturnValue
+          ? true
+          : false;
+        // @ts-expect-error
+        const paramAssignableToCorrectShouldFail: ParamAssignableToCorrect = false;
+        // @ts-expect-error
+        const paramAssignableFromCorrectShouldFail: ParamAssignableFromCorrect = false;
+        // @ts-expect-error
+        const returnAssignableToCorrectShouldFail: ReturnAssignableToCorrect = false;
+        // @ts-expect-error
+        const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
+
         const pipedAOtoBC1AttachDataReturnValues = await pipedAOtoBC1.attachData(
-          { a: 'some', other: 'st' }
+          { a: aPassedIn, other: otherPassedIn }
         );
 
         expect(pipedAOtoBC1AttachDataReturnValues).to.has.property('b');
@@ -489,20 +506,23 @@ describe('HipThrusTS', () => {
         expect(pipedAOtoBC1AttachDataReturnValues).to.has.property('c');
         expect(pipedAOtoBC1AttachDataReturnValues.c).to.be.equal(4);
       });
-      it('attaches properly typed data from left sync data attacher and right not fully covered sync data attacher', () => {
+      it('attaches data from left sync data attached and right not covered sync data attacher', async () => {
+        const aPassedIn = 'some string';
+        const otherPassedIn = 'other string';
         const left = {
           attachData(context: { a: string }) {
+            expect(context.a).to.be.equal(aPassedIn);
             return { b: 4 };
           },
         };
-
-        const rightPartiallyCovered = {
-          attachData(context: { b: number; other: string }) {
+        const rightNotCovered = {
+          attachData(context: { other: string }) {
+            expect(context.other).to.be.equal(otherPassedIn);
             return { c: 4 };
           },
         };
 
-        const pipedAOtoBC1 = HTPipe(left, rightPartiallyCovered);
+        const pipedNotCovered = HTPipe(left, rightNotCovered);
 
         interface CorrectParam {
           a: string;
@@ -510,22 +530,22 @@ describe('HipThrusTS', () => {
         }
         type CorrectReturnValue = PromiseOrSync<{ b: number; c: number }>;
         type ParamAssignableToCorrect = CorrectParam extends Parameters<
-          typeof pipedAOtoBC1.attachData
+          typeof pipedNotCovered.attachData
         >[0]
           ? true
           : false;
         type ParamAssignableFromCorrect = Parameters<
-          typeof pipedAOtoBC1.attachData
+          typeof pipedNotCovered.attachData
         >[0] extends CorrectParam
           ? true
           : false;
         type ReturnAssignableToCorrect = CorrectReturnValue extends ReturnType<
-          typeof pipedAOtoBC1.attachData
+          typeof pipedNotCovered.attachData
         >
           ? true
           : false;
         type ReturnAssignableFromCorrect = ReturnType<
-          typeof pipedAOtoBC1.attachData
+          typeof pipedNotCovered.attachData
         > extends CorrectReturnValue
           ? true
           : false;
@@ -537,23 +557,9 @@ describe('HipThrusTS', () => {
         const returnAssignableToCorrectShouldFail: ReturnAssignableToCorrect = false;
         // @ts-expect-error
         const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
-      });
-      it('correct return attachData value from left sync data attached and right not covered sync data attacher', async () => {
-        const left = {
-          attachData(context: { a: string }) {
-            return { b: 4 };
-          },
-        };
-        const rightNotCovered = {
-          attachData(context: { other: string }) {
-            return { c: 4 };
-          },
-        };
-
-        const pipedNotCovered = HTPipe(left, rightNotCovered);
 
         const pipedNotCoveredAttachDataReturnValues = await pipedNotCovered.attachData(
-          { a: 'some', other: 'sd' }
+          { a: aPassedIn, other: otherPassedIn }
         );
 
         expect(pipedNotCoveredAttachDataReturnValues).to.has.property('b');
@@ -561,73 +567,11 @@ describe('HipThrusTS', () => {
         expect(pipedNotCoveredAttachDataReturnValues).to.has.property('c');
         expect(pipedNotCoveredAttachDataReturnValues.c).to.be.equal(4);
       });
-      it('attaches data from left sync data attached and right not covered sync data attacher', () => {
+      it('attaches properly typed data from left sync data attacher only', async () => {
+        const aPassedIn = 'some string';
         const left = {
           attachData(context: { a: string }) {
-            return { b: 4 };
-          },
-        };
-        const rightNotCovered = {
-          attachData(context: { other: string }) {
-            return { c: 4 };
-          },
-        };
-
-        const pipedNotCovered = HTPipe(left, rightNotCovered);
-
-        interface CorrectParam {
-          a: string;
-          other: string;
-        }
-        type CorrectReturnValue = PromiseOrSync<{ b: number; c: number }>;
-        type ParamAssignableToCorrect = CorrectParam extends Parameters<
-          typeof pipedNotCovered.attachData
-        >[0]
-          ? true
-          : false;
-        type ParamAssignableFromCorrect = Parameters<
-          typeof pipedNotCovered.attachData
-        >[0] extends CorrectParam
-          ? true
-          : false;
-        type ReturnAssignableToCorrect = CorrectReturnValue extends ReturnType<
-          typeof pipedNotCovered.attachData
-        >
-          ? true
-          : false;
-        type ReturnAssignableFromCorrect = ReturnType<
-          typeof pipedNotCovered.attachData
-        > extends CorrectReturnValue
-          ? true
-          : false;
-        // @ts-expect-error
-        const paramAssignableToCorrectShouldFail: ParamAssignableToCorrect = false;
-        // @ts-expect-error
-        const paramAssignableFromCorrectShouldFail: ParamAssignableFromCorrect = false;
-        // @ts-expect-error
-        const returnAssignableToCorrectShouldFail: ReturnAssignableToCorrect = false;
-        // @ts-expect-error
-        const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
-      });
-      it('correct return attachData value from left sync data attacher only', async () => {
-        const left = {
-          attachData(context: { a: string }) {
-            return { b: 4 };
-          },
-        };
-
-        const pipedLeftOnly = HTPipe(left, {});
-
-        const pipedLeftOnlyAttachDataReturnValues = await pipedLeftOnly.attachData(
-          { a: 'some string' }
-        );
-
-        expect(pipedLeftOnlyAttachDataReturnValues).to.has.property('b');
-        expect(pipedLeftOnlyAttachDataReturnValues.b).to.be.equal(4);
-      });
-      it('attaches properly typed data from left sync data attacher only', () => {
-        const left = {
-          attachData(context: { a: string }) {
+            expect(context.a).to.be.equals(aPassedIn);
             return { b: 4 };
           },
         };
@@ -668,26 +612,22 @@ describe('HipThrusTS', () => {
         const returnAssignableToCorrectShouldFail: ReturnAssignableToCorrect = false;
         // @ts-expect-error
         const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
-      });
-      it('correct return attachData value from right sync data attacher only', async () => {
-        const rightPartiallyCovered = {
-          attachData(context: { b: number; other: string }) {
-            return { c: 4 };
-          },
-        };
 
-        const pipedRightOnly = HTPipe({}, rightPartiallyCovered);
-
-        const pipedRightOnlyAttachDataReturnValues = await pipedRightOnly.attachData(
-          { b: 6, other: 'some string' }
+        const pipedLeftOnlyAttachDataReturnValues = await pipedLeftOnly.attachData(
+          { a: aPassedIn }
         );
 
-        expect(pipedRightOnlyAttachDataReturnValues).to.has.property('c');
-        expect(pipedRightOnlyAttachDataReturnValues.c).to.be.equal(4);
+        expect(pipedLeftOnlyAttachDataReturnValues).to.has.property('b');
+        expect(pipedLeftOnlyAttachDataReturnValues.b).to.be.equal(4);
       });
-      it('attaches properly typed data from right sync data attacher only', () => {
+      it('attaches properly typed data from right sync data attacher only', async () => {
+        const bPassedIn = 5;
+        const otherPassedIn = 'other string';
+
         const rightPartiallyCovered = {
           attachData(context: { b: number; other: string }) {
+            expect(context.b).to.be.equal(bPassedIn);
+            expect(context.other).to.be.equal(otherPassedIn);
             return { c: 4 };
           },
         };
@@ -729,11 +669,13 @@ describe('HipThrusTS', () => {
         const returnAssignableToCorrectShouldFail: ReturnAssignableToCorrect = false;
         // @ts-expect-error
         const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
-      });
-      it('return attachData value is empty object when left and right is empty objects', () => {
-        const pipedWithEmptyObjectsOnly = HTPipe({}, {});
 
-        expect(pipedWithEmptyObjectsOnly).to.be.eql({});
+        const pipedRightOnlyAttachDataReturnValues = await pipedRightOnly.attachData(
+          { b: bPassedIn, other: otherPassedIn }
+        );
+
+        expect(pipedRightOnlyAttachDataReturnValues).to.has.property('c');
+        expect(pipedRightOnlyAttachDataReturnValues.c).to.be.equal(4);
       });
       it('no attaches data when left and right is empty objects', () => {
         const pipedWithEmptyObjectsOnly = HTPipe({}, {});
@@ -758,6 +700,8 @@ describe('HipThrusTS', () => {
         const returnAssignableToCorrectShouldFail: ReturnAssignableToCorrect = false;
         // @ts-expect-error
         const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
+
+        expect(pipedWithEmptyObjectsOnly).to.be.eql({});
       });
       it('no attaches data when left sync outputs have type mismatch with right inputs', () => {
         const leftBad = {
@@ -779,39 +723,19 @@ describe('HipThrusTS', () => {
 
       // async paths
 
-      it('return correct attachData values from left and right async data attacher', async () => {
+      it('attaches properly typed data from left and right async data attacher', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 4;
         const left = {
           attachData(context: { a: string }) {
+            expect(context.a).to.be.equal(aPassedIn);
             return Promise.resolve({ b: 4 });
           },
         };
 
         const rightFullyCovered = {
           attachData(context: { b: number }) {
-            return Promise.resolve({ c: 4 });
-          },
-        };
-
-        const pipedAtoBC = HTPipe(left, rightFullyCovered);
-
-        const pipedAtoBCAttachDataReturnValues = await pipedAtoBC.attachData({
-          a: 'some string',
-        });
-
-        expect(pipedAtoBCAttachDataReturnValues).to.has.property('b');
-        expect(pipedAtoBCAttachDataReturnValues.b).to.be.equal(4);
-        expect(pipedAtoBCAttachDataReturnValues).to.has.property('c');
-        expect(pipedAtoBCAttachDataReturnValues.c).to.be.equal(4);
-      });
-      it('attaches properly typed data from left and right async data attacher', () => {
-        const left = {
-          attachData(context: { a: string }) {
-            return Promise.resolve({ b: 4 });
-          },
-        };
-
-        const rightFullyCovered = {
-          attachData(context: { b: number }) {
+            expect(context.b).to.be.equal(bPassedIn);
             return Promise.resolve({ c: 4 });
           },
         };
@@ -850,43 +774,30 @@ describe('HipThrusTS', () => {
         const returnAssignableToCorrectShouldFail: ReturnAssignableToCorrect = false;
         // @ts-expect-error
         const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
+
+        const pipedAtoBCAttachDataReturnValues = await pipedAtoBC.attachData({
+          a: aPassedIn,
+        });
+
+        expect(pipedAtoBCAttachDataReturnValues).to.has.property('b');
+        expect(pipedAtoBCAttachDataReturnValues.b).to.be.equal(4);
+        expect(pipedAtoBCAttachDataReturnValues).to.has.property('c');
+        expect(pipedAtoBCAttachDataReturnValues.c).to.be.equal(4);
       });
-      it('return correct attachData values right async output instead of left async output if right output async transform left output type', async () => {
+      it('attaches right async output instead of left async output if right output async transform left output type', async () => {
+        const aPassedIn = 5;
+        const bPassedIn = 'some string';
+
         const left = {
           attachData(context: { a: number }) {
+            expect(context.a).to.be.equal(aPassedIn);
             return Promise.resolve({ b: 'some string' });
           },
         };
 
         const rightTransformLeftOutputType = {
           attachData(context: { b: string }) {
-            return Promise.resolve({ b: 5 });
-          },
-        };
-
-        const pipedAToBStringToBNumber = HTPipe(
-          left,
-          rightTransformLeftOutputType
-        );
-
-        const pipedAToBStringToBNumberAttachDataReturnValues = await pipedAToBStringToBNumber.attachData(
-          { a: 5 }
-        );
-
-        expect(pipedAToBStringToBNumberAttachDataReturnValues).to.has.property(
-          'b'
-        );
-        expect(pipedAToBStringToBNumberAttachDataReturnValues.b).to.be.equal(5);
-      });
-      it('attaches right async output instead of left async output if right output async transform left output type', () => {
-        const left = {
-          attachData(context: { a: number }) {
-            return Promise.resolve({ b: 'some string' });
-          },
-        };
-
-        const rightTransformLeftOutputType = {
-          attachData(context: { b: string }) {
+            expect(context.b).to.be.equal(bPassedIn);
             return Promise.resolve({ b: 5 });
           },
         };
@@ -929,22 +840,72 @@ describe('HipThrusTS', () => {
         const returnAssignableToCorrectShouldFail: ReturnAssignableToCorrect = false;
         // @ts-expect-error
         const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
+
+        const pipedAToBStringToBNumberAttachDataReturnValues = await pipedAToBStringToBNumber.attachData(
+          { a: aPassedIn }
+        );
+
+        expect(pipedAToBStringToBNumberAttachDataReturnValues).to.has.property(
+          'b'
+        );
+        expect(pipedAToBStringToBNumberAttachDataReturnValues.b).to.be.equal(5);
       });
-      it('correct return attachData value from left async data attacher and right not fully covered async data attacher', async () => {
+      it('attaches properly typed data from left async data attacher and right not fully covered async data attacher', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 4;
+        const otherPassedIn = 'other string';
+
         const left = {
           attachData(context: { a: string }) {
+            expect(context.a).to.be.equal(aPassedIn);
             return Promise.resolve({ b: 4 });
           },
         };
         const rightPartiallyCovered = {
           attachData(context: { b: number; other: string }) {
+            expect(context.b).to.be.equal(bPassedIn);
+            expect(context.other).to.be.equal(otherPassedIn);
             return Promise.resolve({ c: 4 });
           },
         };
         const pipedAOtoBC1 = HTPipe(left, rightPartiallyCovered);
 
+        interface CorrectParam {
+          a: string;
+          other: string;
+        }
+        type CorrectReturnValue = PromiseOrSync<{ b: number; c: number }>;
+        type ParamAssignableToCorrect = CorrectParam extends Parameters<
+          typeof pipedAOtoBC1.attachData
+        >[0]
+          ? true
+          : false;
+        type ParamAssignableFromCorrect = Parameters<
+          typeof pipedAOtoBC1.attachData
+        >[0] extends CorrectParam
+          ? true
+          : false;
+        type ReturnAssignableToCorrect = CorrectReturnValue extends ReturnType<
+          typeof pipedAOtoBC1.attachData
+        >
+          ? true
+          : false;
+        type ReturnAssignableFromCorrect = ReturnType<
+          typeof pipedAOtoBC1.attachData
+        > extends CorrectReturnValue
+          ? true
+          : false;
+        // @ts-expect-error
+        const paramAssignableToCorrectShouldFail: ParamAssignableToCorrect = false;
+        // @ts-expect-error
+        const paramAssignableFromCorrectShouldFail: ParamAssignableFromCorrect = false;
+        // @ts-expect-error
+        const returnAssignableToCorrectShouldFail: ReturnAssignableToCorrect = false;
+        // @ts-expect-error
+        const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
+
         const pipedAOtoBC1AttachDataReturnValues = await pipedAOtoBC1.attachData(
-          { a: 'some', other: 'st' }
+          { a: aPassedIn, other: otherPassedIn }
         );
 
         expect(pipedAOtoBC1AttachDataReturnValues).to.has.property('b');
@@ -952,18 +913,24 @@ describe('HipThrusTS', () => {
         expect(pipedAOtoBC1AttachDataReturnValues).to.has.property('c');
         expect(pipedAOtoBC1AttachDataReturnValues.c).to.be.equal(4);
       });
-      it('attaches properly typed data from left async data attacher and right not fully covered async data attacher', () => {
+      it('attaches data from left async data attached and right not covered async data attacher', async () => {
+        const aPassedIn = 'some string';
+        const otherPassedIn = 'other string';
+
         const left = {
           attachData(context: { a: string }) {
+            expect(context.a).to.be.equal(aPassedIn);
             return Promise.resolve({ b: 4 });
           },
         };
-        const rightPartiallyCovered = {
-          attachData(context: { b: number; other: string }) {
+        const rightNotCovered = {
+          attachData(context: { other: string }) {
+            expect(context.other).to.be.equal(otherPassedIn);
             return Promise.resolve({ c: 4 });
           },
         };
-        const pipedAOtoBC1 = HTPipe(left, rightPartiallyCovered);
+
+        const pipedNotCovered = HTPipe(left, rightNotCovered);
 
         interface CorrectParam {
           a: string;
@@ -971,22 +938,22 @@ describe('HipThrusTS', () => {
         }
         type CorrectReturnValue = PromiseOrSync<{ b: number; c: number }>;
         type ParamAssignableToCorrect = CorrectParam extends Parameters<
-          typeof pipedAOtoBC1.attachData
+          typeof pipedNotCovered.attachData
         >[0]
           ? true
           : false;
         type ParamAssignableFromCorrect = Parameters<
-          typeof pipedAOtoBC1.attachData
+          typeof pipedNotCovered.attachData
         >[0] extends CorrectParam
           ? true
           : false;
         type ReturnAssignableToCorrect = CorrectReturnValue extends ReturnType<
-          typeof pipedAOtoBC1.attachData
+          typeof pipedNotCovered.attachData
         >
           ? true
           : false;
         type ReturnAssignableFromCorrect = ReturnType<
-          typeof pipedAOtoBC1.attachData
+          typeof pipedNotCovered.attachData
         > extends CorrectReturnValue
           ? true
           : false;
@@ -998,23 +965,9 @@ describe('HipThrusTS', () => {
         const returnAssignableToCorrectShouldFail: ReturnAssignableToCorrect = false;
         // @ts-expect-error
         const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
-      });
-      it('correct return attachData value from left async data attached and right not covered async data attacher', async () => {
-        const left = {
-          attachData(context: { a: string }) {
-            return Promise.resolve({ b: 4 });
-          },
-        };
-        const rightNotCovered = {
-          attachData(context: { other: string }) {
-            return Promise.resolve({ c: 4 });
-          },
-        };
-
-        const pipedNotCovered = HTPipe(left, rightNotCovered);
 
         const pipedNotCoveredAttachDataReturnValues = await pipedNotCovered.attachData(
-          { a: 'some', other: 'sd' }
+          { a: aPassedIn, other: otherPassedIn }
         );
 
         expect(pipedNotCoveredAttachDataReturnValues).to.has.property('b');
@@ -1022,73 +975,12 @@ describe('HipThrusTS', () => {
         expect(pipedNotCoveredAttachDataReturnValues).to.has.property('c');
         expect(pipedNotCoveredAttachDataReturnValues.c).to.be.equal(4);
       });
-      it('attaches data from left async data attached and right not covered async data attacher', () => {
+      it('attaches properly typed data from left async data attacher only', async () => {
+        const aPassedIn = 'some string';
+
         const left = {
           attachData(context: { a: string }) {
-            return Promise.resolve({ b: 4 });
-          },
-        };
-        const rightNotCovered = {
-          attachData(context: { other: string }) {
-            return Promise.resolve({ c: 4 });
-          },
-        };
-
-        const pipedNotCovered = HTPipe(left, rightNotCovered);
-
-        interface CorrectParam {
-          a: string;
-          other: string;
-        }
-        type CorrectReturnValue = PromiseOrSync<{ b: number; c: number }>;
-        type ParamAssignableToCorrect = CorrectParam extends Parameters<
-          typeof pipedNotCovered.attachData
-        >[0]
-          ? true
-          : false;
-        type ParamAssignableFromCorrect = Parameters<
-          typeof pipedNotCovered.attachData
-        >[0] extends CorrectParam
-          ? true
-          : false;
-        type ReturnAssignableToCorrect = CorrectReturnValue extends ReturnType<
-          typeof pipedNotCovered.attachData
-        >
-          ? true
-          : false;
-        type ReturnAssignableFromCorrect = ReturnType<
-          typeof pipedNotCovered.attachData
-        > extends CorrectReturnValue
-          ? true
-          : false;
-        // @ts-expect-error
-        const paramAssignableToCorrectShouldFail: ParamAssignableToCorrect = false;
-        // @ts-expect-error
-        const paramAssignableFromCorrectShouldFail: ParamAssignableFromCorrect = false;
-        // @ts-expect-error
-        const returnAssignableToCorrectShouldFail: ReturnAssignableToCorrect = false;
-        // @ts-expect-error
-        const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
-      });
-      it('correct return attachData value from left async data attacher only', async () => {
-        const left = {
-          attachData(context: { a: string }) {
-            return Promise.resolve({ b: 4 });
-          },
-        };
-
-        const pipedLeftOnly = HTPipe(left, {});
-
-        const pipedLeftOnlyAttachDataReturnValues = await pipedLeftOnly.attachData(
-          { a: 'some string' }
-        );
-
-        expect(pipedLeftOnlyAttachDataReturnValues).to.has.property('b');
-        expect(pipedLeftOnlyAttachDataReturnValues.b).to.be.equal(4);
-      });
-      it('attaches properly typed data from left async data attacher only', () => {
-        const left = {
-          attachData(context: { a: string }) {
+            expect(context.a).to.be.equal(aPassedIn);
             return Promise.resolve({ b: 4 });
           },
         };
@@ -1127,26 +1019,22 @@ describe('HipThrusTS', () => {
         const returnAssignableToCorrectShouldFail: ReturnAssignableToCorrect = false;
         // @ts-expect-error
         const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
-      });
-      it('correct return attachData value from right async data attacher only', async () => {
-        const rightPartiallyCovered = {
-          attachData(context: { b: number; other: string }) {
-            return Promise.resolve({ c: 4 });
-          },
-        };
 
-        const pipedRightOnly = HTPipe({}, rightPartiallyCovered);
-
-        const pipedRightOnlyAttachDataReturnValues = await pipedRightOnly.attachData(
-          { b: 6, other: 'some string' }
+        const pipedLeftOnlyAttachDataReturnValues = await pipedLeftOnly.attachData(
+          { a: aPassedIn }
         );
 
-        expect(pipedRightOnlyAttachDataReturnValues).to.has.property('c');
-        expect(pipedRightOnlyAttachDataReturnValues.c).to.be.equal(4);
+        expect(pipedLeftOnlyAttachDataReturnValues).to.has.property('b');
+        expect(pipedLeftOnlyAttachDataReturnValues.b).to.be.equal(4);
       });
-      it('attaches properly typed data from right async data attacher only', () => {
+      it('attaches properly typed data from right async data attacher only', async () => {
+        const bPassedIn = 6;
+        const otherPassedIn = 'other string';
+
         const rightPartiallyCovered = {
           attachData(context: { b: number; other: string }) {
+            expect(context.b).to.be.equal(bPassedIn);
+            expect(context.other).to.be.equal(otherPassedIn);
             return Promise.resolve({ c: 4 });
           },
         };
@@ -1186,6 +1074,13 @@ describe('HipThrusTS', () => {
         const returnAssignableToCorrectShouldFail: ReturnAssignableToCorrect = false;
         // @ts-expect-error
         const returnAssignableFromCorrectShouldFail: ReturnAssignableFromCorrect = false;
+
+        const pipedRightOnlyAttachDataReturnValues = await pipedRightOnly.attachData(
+          { b: bPassedIn, other: otherPassedIn }
+        );
+
+        expect(pipedRightOnlyAttachDataReturnValues).to.has.property('c');
+        expect(pipedRightOnlyAttachDataReturnValues.c).to.be.equal(4);
       });
       it('no attaches data when left async outputs have type mismatch with right inputs', () => {
         const leftBad = {

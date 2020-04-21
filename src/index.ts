@@ -251,7 +251,7 @@ export function HTPipe(...objs: any[]) {
         : {}) as PipedPreContext<any, any>),
       ...((isHasAttachData(left) && isHasAttachData(right)
         ? {
-            attachData: async () => {
+            attachData: async (context: any) => {
               const leftOut =
                 (await Promise.resolve(left.attachData(context))) || {};
               const rightIn = {
