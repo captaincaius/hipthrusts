@@ -1,6 +1,8 @@
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import 'mocha';
+
+// tslint:disable-next-line:no-var-requires
+const { describe, it } = require('mocha');
 
 import { HTPipe, HTPipeOld, WithAttached, WithInit } from '../src';
 import { PromiseOrSync } from '../src/types';

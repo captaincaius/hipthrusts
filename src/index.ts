@@ -67,7 +67,14 @@ type InitPreContextIn<T> = T extends HasInitPreContext<any, any>
   ? Parameters<T['initPreContext']>[0]
   : never;
 type InitPreContextOut<T> = T extends HasInitPreContext<any, any>
-  ? PromiseResolveOrSync<ReturnType<T['initPreContext']>>
+  ? ReturnType<T['initPreContext']>
+  : never;
+
+type SanitizeParamsContextIn<T> = T extends HasSanitizeParams<any, any>
+  ? Parameters<T['sanitizeParams']>[0]
+  : never;
+type SanitizeParamsContextOut<T> = T extends HasSanitizeParams<any, any>
+  ? ReturnType<T['sanitizeParams']>
   : never;
 
 type AttachDataIn<T> = T extends HasAttachData<any, any>
@@ -90,6 +97,21 @@ type PipedPreContext<TLeft, TRight> = TLeft extends HasInitPreContext<any, any>
   ? { initPreContext: TRight['initPreContext'] }
   : {};
 
+type PipedSanitizeParams<TLeft, TRight> = TLeft extends HasSanitizeParams<
+  any,
+  any
+>
+  ? TRight extends HasSanitizeParams<any, any>
+    ? HasSanitizeParams<
+        // @todo replace SanitizeParamsContextIn<TLeft> with Parameters<TLeft['sanitizeParams']>[0] and SanitizeParamsContextOut<TRight> with ReturnType<TRight['sanitizeParams']>
+        SanitizeParamsContextIn<TLeft>,
+        SanitizeParamsContextOut<TRight>
+      >
+    : { sanitizeParams: TLeft['sanitizeParams'] }
+  : TRight extends HasSanitizeParams<any, any>
+  ? { sanitizeParams: TRight['sanitizeParams'] }
+  : {};
+
 type PipedAttachData<TLeft, TRight> = TLeft extends HasAttachData<any, any>
   ? TRight extends HasAttachData<any, any>
     ? HasAttachData<
@@ -108,14 +130,19 @@ type ClashlessInitPreContext<TLeft, TRight> = OptionallyHasInitPreContext<
   TRight extends HasInitPreContext<any, any>
     ? Pick<
         Parameters<TRight['initPreContext']>[0],
-        keyof PromiseResolveOrSync<
-          ReturnType<
-            TLeft extends HasInitPreContext<any, any>
-              ? TLeft['initPreContext']
-              : () => {}
-          >
+        keyof ReturnType<
+          TLeft extends HasInitPreContext<any, any>
+            ? TLeft['initPreContext']
+            : () => {}
         >
       >
+    : any
+>;
+
+type ClashlessSanitizeParams<TLeft, TRight> = OptionallyHasSanitizeParams<
+  any,
+  TRight extends HasSanitizeParams<any, any>
+    ? Parameters<TRight['sanitizeParams']>[0]
     : any
 >;
 
@@ -141,9 +168,10 @@ export function HTPipe(): {};
 // one parameter - returns a new object with all the valid lifecycle stages of the parameter
 export function HTPipe<
   T extends OptionallyHasInitPreContext<any, any> &
+    OptionallyHasSanitizeParams<any, any> &
     OptionallyHasAttachData<any, any>
   // @fixme: refactor - export a union type in types.ts for this
->(obj: T): Pick<T, 'initPreContext' | 'attachData'>;
+>(obj: T): Pick<T, 'initPreContext' | 'sanitizeParams' | 'attachData'>;
 
 // two parameters with automatic type guessing or right - all or nothing!
 // @todo: add the ability for each stage to get outputs of previous stages too!
@@ -153,6 +181,9 @@ export function HTPipe<
   TRight extends (TLeft extends HasInitPreContext<any, any>
     ? OptionallyHasInitPreContext<ReturnType<TLeft['initPreContext']>, any>
     : {}) &
+    (TLeft extends HasSanitizeParams<any, any>
+      ? OptionallyHasSanitizeParams<ReturnType<TLeft['sanitizeParams']>, any>
+      : {}) &
     (TLeft extends HasAttachData<any, any>
       ? OptionallyHasAttachData<
           PromiseResolveOrSync<ReturnType<TLeft['attachData']>>,
@@ -162,31 +193,42 @@ export function HTPipe<
 >(
   left: TLeft,
   right: TRight
-): PipedPreContext<TLeft, TRight> & PipedAttachData<TLeft, TRight>;
+): PipedPreContext<TLeft, TRight> &
+  PipedSanitizeParams<TLeft, TRight> &
+  PipedAttachData<TLeft, TRight>;
 
 // two parameters with possibly added inputs
 export function HTPipe<
   TLeft extends ClashlessInitPreContext<TLeft, TRight> &
+    ClashlessSanitizeParams<TLeft, TRight> &
     ClashlessAttachData<TLeft, TRight>,
   TRight extends OptionallyHasInitPreContext<any, any> &
+    OptionallyHasSanitizeParams<any, any> &
     OptionallyHasAttachData<any, any>
 >(
   left: TLeft,
   right: TRight
-): PipedPreContext<TLeft, TRight> & PipedAttachData<TLeft, TRight>;
+): PipedPreContext<TLeft, TRight> &
+  PipedSanitizeParams<TLeft, TRight> &
+  PipedAttachData<TLeft, TRight>;
 
 // three parameters with possibly added inputs
 export function HTPipe<
   T3 extends ClashlessInitPreContext<T3, PipedPreContext<T2, T1>> &
+    ClashlessSanitizeParams<T3, PipedSanitizeParams<T2, T1>> &
     ClashlessAttachData<T3, PipedAttachData<T2, T1>>,
-  T2 extends ClashlessInitPreContext<T2, T1> & ClashlessAttachData<T2, T1>,
+  T2 extends ClashlessInitPreContext<T2, T1> &
+    ClashlessSanitizeParams<T2, T1> &
+    ClashlessAttachData<T2, T1>,
   T1 extends OptionallyHasInitPreContext<any, any> &
+    OptionallyHasSanitizeParams<any, any> &
     OptionallyHasAttachData<any, any>
 >(
   obj3: T3,
   obj2: T2,
   obj1: T1
 ): PipedPreContext<T3, PipedPreContext<T2, T1>> &
+  PipedSanitizeParams<T3, PipedSanitizeParams<T2, T1>> &
   PipedAttachData<T3, PipedAttachData<T2, T1>>;
 
 // four parameters with possibly added inputs
@@ -195,11 +237,19 @@ export function HTPipe<
     T4,
     PipedPreContext<T3, PipedPreContext<T2, T1>>
   > &
+    ClashlessSanitizeParams<
+      T4,
+      PipedSanitizeParams<T3, PipedSanitizeParams<T2, T1>>
+    > &
     ClashlessAttachData<T4, PipedAttachData<T3, PipedAttachData<T2, T1>>>,
   T3 extends ClashlessInitPreContext<T3, PipedPreContext<T2, T1>> &
+    ClashlessSanitizeParams<T3, PipedSanitizeParams<T2, T1>> &
     ClashlessAttachData<T3, PipedAttachData<T2, T1>>,
-  T2 extends ClashlessInitPreContext<T2, T1> & ClashlessAttachData<T2, T1>,
+  T2 extends ClashlessInitPreContext<T2, T1> &
+    ClashlessSanitizeParams<T2, T1> &
+    ClashlessAttachData<T2, T1>,
   T1 extends OptionallyHasInitPreContext<any, any> &
+    OptionallyHasSanitizeParams<any, any> &
     OptionallyHasAttachData<any, any>
 >(
   obj4: T4,
@@ -207,6 +257,10 @@ export function HTPipe<
   obj2: T2,
   obj1: T1
 ): PipedPreContext<T4, PipedPreContext<T3, PipedPreContext<T2, T1>>> &
+  PipedSanitizeParams<
+    T4,
+    PipedSanitizeParams<T3, PipedSanitizeParams<T2, T1>>
+  > &
   PipedAttachData<T4, PipedAttachData<T3, PipedAttachData<T2, T1>>>;
 
 export function HTPipe(...objs: any[]) {
@@ -226,16 +280,14 @@ export function HTPipe(...objs: any[]) {
     return {
       ...((isHasInitPreContext(left) && isHasInitPreContext(right)
         ? {
-            initPreContext: async () => {
-              const leftOut =
-                (await Promise.resolve(left.initPreContext(context))) || {};
+            initPreContext: (context: any) => {
+              const leftOut = left.initPreContext(context) || {};
               const rightIn = {
                 ...context,
                 // ...leftOut,
                 ...(leftOut as {}),
               };
-              const rightOut =
-                (await Promise.resolve(right.initPreContext(rightIn))) || {};
+              const rightOut = right.initPreContext(rightIn) || {};
               return {
                 // ...leftOut,
                 ...(leftOut as {}),
@@ -249,6 +301,20 @@ export function HTPipe(...objs: any[]) {
         : isHasInitPreContext(right)
         ? { initPreContext: left.initPreContext }
         : {}) as PipedPreContext<any, any>),
+      ...((isHasSanitizeParams(left) && isHasSanitizeParams(right)
+        ? {
+            sanitizeParams: (context: any) => {
+              const leftOut = left.sanitizeParams(context) || {};
+              const rightIn = leftOut;
+              const rightOut = right.sanitizeParams(rightIn) || {};
+              return rightOut as {};
+            },
+          }
+        : isHasSanitizeParams(left)
+        ? { sanitizeParams: left.sanitizeParams }
+        : isHasSanitizeParams(right)
+        ? { sanitizeParams: right.sanitizeParams }
+        : {}) as PipedSanitizeParams<any, any>),
       ...((isHasAttachData(left) && isHasAttachData(right)
         ? {
             attachData: async (context: any) => {
