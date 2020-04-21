@@ -319,18 +319,18 @@ describe('HipThrusTS', () => {
       it('attaches properly typed data from left and right sync data attacher', async () => {
         const aPassedIn = 'some string';
         const bPassedIn = 4;
-
+        const cReturned = 4;
         const left = {
           attachData(context: { a: string }) {
             expect(context.a).to.be.equal(aPassedIn);
-            return { b: 4 };
+            return { b: bPassedIn };
           },
         };
 
         const rightFullyCovered = {
           attachData(context: { b: number }) {
             expect(context.b).to.be.equal(bPassedIn);
-            return { c: 4 };
+            return { c: cReturned };
           },
         };
 
@@ -374,24 +374,26 @@ describe('HipThrusTS', () => {
         });
 
         expect(pipedAtoBCAttachDataReturnValues).to.has.property('b');
-        expect(pipedAtoBCAttachDataReturnValues.b).to.be.equal(4);
+        expect(pipedAtoBCAttachDataReturnValues.b).to.be.equal(bPassedIn);
         expect(pipedAtoBCAttachDataReturnValues).to.has.property('c');
-        expect(pipedAtoBCAttachDataReturnValues.c).to.be.equal(4);
+        expect(pipedAtoBCAttachDataReturnValues.c).to.be.equal(cReturned);
       });
       it('attaches right sync output instead of left sync output if right output sync transform left output type', async () => {
         const aPassedIn = 5;
         const bPassedIn = 'some string';
+        const bReturned = 5;
+
         const left = {
           attachData(context: { a: number }) {
             expect(context.a).to.be.equal(aPassedIn);
-            return { b: 'some string' };
+            return { b: bPassedIn };
           },
         };
 
         const rightTransformLeftOutputType = {
           attachData(context: { b: string }) {
             expect(context.b).to.be.equal(bPassedIn);
-            return { b: 5 };
+            return { b: bReturned };
           },
         };
 
@@ -441,25 +443,28 @@ describe('HipThrusTS', () => {
         expect(pipedAToBStringToBNumberAttachDataReturnValues).to.has.property(
           'b'
         );
-        expect(pipedAToBStringToBNumberAttachDataReturnValues.b).to.be.equal(5);
+        expect(pipedAToBStringToBNumberAttachDataReturnValues.b).to.be.equal(
+          bReturned
+        );
       });
       it('attaches properly typed data from left sync data attacher and right not fully covered sync data attacher', async () => {
         const aPassedIn = 'some string';
-        const bPassedIn = 4;
+        const bReturned = 4;
         const otherPassedIn = 'other string';
+        const cReturned = 4;
 
         const left = {
           attachData(context: { a: string }) {
             expect(context.a).to.be.equal(aPassedIn);
-            return { b: 4 };
+            return { b: bReturned };
           },
         };
 
         const rightPartiallyCovered = {
           attachData(context: { b: number; other: string }) {
             expect(context.other).to.be.equal(otherPassedIn);
-            expect(context.b).to.be.equal(bPassedIn);
-            return { c: 4 };
+            expect(context.b).to.be.equal(bReturned);
+            return { c: cReturned };
           },
         };
 
@@ -504,23 +509,26 @@ describe('HipThrusTS', () => {
         );
 
         expect(pipedAOtoBC1AttachDataReturnValues).to.has.property('b');
-        expect(pipedAOtoBC1AttachDataReturnValues.b).to.be.equal(4);
+        expect(pipedAOtoBC1AttachDataReturnValues.b).to.be.equal(bReturned);
         expect(pipedAOtoBC1AttachDataReturnValues).to.has.property('c');
-        expect(pipedAOtoBC1AttachDataReturnValues.c).to.be.equal(4);
+        expect(pipedAOtoBC1AttachDataReturnValues.c).to.be.equal(cReturned);
       });
       it('attaches data from left sync data attached and right not covered sync data attacher', async () => {
         const aPassedIn = 'some string';
         const otherPassedIn = 'other string';
+        const bReturned = 4;
+        const cReturned = 4;
+
         const left = {
           attachData(context: { a: string }) {
             expect(context.a).to.be.equal(aPassedIn);
-            return { b: 4 };
+            return { b: bReturned };
           },
         };
         const rightNotCovered = {
           attachData(context: { other: string }) {
             expect(context.other).to.be.equal(otherPassedIn);
-            return { c: 4 };
+            return { c: cReturned };
           },
         };
 
@@ -565,16 +573,18 @@ describe('HipThrusTS', () => {
         );
 
         expect(pipedNotCoveredAttachDataReturnValues).to.has.property('b');
-        expect(pipedNotCoveredAttachDataReturnValues.b).to.be.equal(4);
+        expect(pipedNotCoveredAttachDataReturnValues.b).to.be.equal(bReturned);
         expect(pipedNotCoveredAttachDataReturnValues).to.has.property('c');
-        expect(pipedNotCoveredAttachDataReturnValues.c).to.be.equal(4);
+        expect(pipedNotCoveredAttachDataReturnValues.c).to.be.equal(cReturned);
       });
       it('attaches properly typed data from left sync data attacher only', async () => {
         const aPassedIn = 'some string';
+        const bReturned = 4;
+
         const left = {
           attachData(context: { a: string }) {
             expect(context.a).to.be.equals(aPassedIn);
-            return { b: 4 };
+            return { b: bReturned };
           },
         };
 
@@ -620,17 +630,18 @@ describe('HipThrusTS', () => {
         );
 
         expect(pipedLeftOnlyAttachDataReturnValues).to.has.property('b');
-        expect(pipedLeftOnlyAttachDataReturnValues.b).to.be.equal(4);
+        expect(pipedLeftOnlyAttachDataReturnValues.b).to.be.equal(bReturned);
       });
       it('attaches properly typed data from right sync data attacher only', async () => {
         const bPassedIn = 5;
         const otherPassedIn = 'other string';
+        const cReturned = 4;
 
         const rightPartiallyCovered = {
           attachData(context: { b: number; other: string }) {
             expect(context.b).to.be.equal(bPassedIn);
             expect(context.other).to.be.equal(otherPassedIn);
-            return { c: 4 };
+            return { c: cReturned };
           },
         };
 
@@ -677,7 +688,7 @@ describe('HipThrusTS', () => {
         );
 
         expect(pipedRightOnlyAttachDataReturnValues).to.has.property('c');
-        expect(pipedRightOnlyAttachDataReturnValues.c).to.be.equal(4);
+        expect(pipedRightOnlyAttachDataReturnValues.c).to.be.equal(cReturned);
       });
       it('no attaches data when left and right is empty objects', () => {
         const pipedWithEmptyObjectsOnly = HTPipe({}, {});
@@ -728,17 +739,19 @@ describe('HipThrusTS', () => {
       it('attaches properly typed data from left and right async data attacher', async () => {
         const aPassedIn = 'some string';
         const bPassedIn = 4;
+        const cReturned = 4;
+
         const left = {
           attachData(context: { a: string }) {
             expect(context.a).to.be.equal(aPassedIn);
-            return Promise.resolve({ b: 4 });
+            return Promise.resolve({ b: bPassedIn });
           },
         };
 
         const rightFullyCovered = {
           attachData(context: { b: number }) {
             expect(context.b).to.be.equal(bPassedIn);
-            return Promise.resolve({ c: 4 });
+            return Promise.resolve({ c: cReturned });
           },
         };
 
@@ -782,13 +795,14 @@ describe('HipThrusTS', () => {
         });
 
         expect(pipedAtoBCAttachDataReturnValues).to.has.property('b');
-        expect(pipedAtoBCAttachDataReturnValues.b).to.be.equal(4);
+        expect(pipedAtoBCAttachDataReturnValues.b).to.be.equal(bPassedIn);
         expect(pipedAtoBCAttachDataReturnValues).to.has.property('c');
-        expect(pipedAtoBCAttachDataReturnValues.c).to.be.equal(4);
+        expect(pipedAtoBCAttachDataReturnValues.c).to.be.equal(cReturned);
       });
       it('attaches right async output instead of left async output if right output async transform left output type', async () => {
         const aPassedIn = 5;
         const bPassedIn = 'some string';
+        const bReturned = 5;
 
         const left = {
           attachData(context: { a: number }) {
@@ -800,7 +814,7 @@ describe('HipThrusTS', () => {
         const rightTransformLeftOutputType = {
           attachData(context: { b: string }) {
             expect(context.b).to.be.equal(bPassedIn);
-            return Promise.resolve({ b: 5 });
+            return Promise.resolve({ b: bReturned });
           },
         };
 
@@ -850,24 +864,27 @@ describe('HipThrusTS', () => {
         expect(pipedAToBStringToBNumberAttachDataReturnValues).to.has.property(
           'b'
         );
-        expect(pipedAToBStringToBNumberAttachDataReturnValues.b).to.be.equal(5);
+        expect(pipedAToBStringToBNumberAttachDataReturnValues.b).to.be.equal(
+          bReturned
+        );
       });
       it('attaches properly typed data from left async data attacher and right not fully covered async data attacher', async () => {
         const aPassedIn = 'some string';
         const bPassedIn = 4;
         const otherPassedIn = 'other string';
+        const cReturned = 4;
 
         const left = {
           attachData(context: { a: string }) {
             expect(context.a).to.be.equal(aPassedIn);
-            return Promise.resolve({ b: 4 });
+            return Promise.resolve({ b: bPassedIn });
           },
         };
         const rightPartiallyCovered = {
           attachData(context: { b: number; other: string }) {
             expect(context.b).to.be.equal(bPassedIn);
             expect(context.other).to.be.equal(otherPassedIn);
-            return Promise.resolve({ c: 4 });
+            return Promise.resolve({ c: cReturned });
           },
         };
         const pipedAOtoBC1 = HTPipe(left, rightPartiallyCovered);
@@ -911,24 +928,26 @@ describe('HipThrusTS', () => {
         );
 
         expect(pipedAOtoBC1AttachDataReturnValues).to.has.property('b');
-        expect(pipedAOtoBC1AttachDataReturnValues.b).to.be.equal(4);
+        expect(pipedAOtoBC1AttachDataReturnValues.b).to.be.equal(bPassedIn);
         expect(pipedAOtoBC1AttachDataReturnValues).to.has.property('c');
-        expect(pipedAOtoBC1AttachDataReturnValues.c).to.be.equal(4);
+        expect(pipedAOtoBC1AttachDataReturnValues.c).to.be.equal(cReturned);
       });
       it('attaches data from left async data attached and right not covered async data attacher', async () => {
         const aPassedIn = 'some string';
         const otherPassedIn = 'other string';
+        const bReturned = 4;
+        const cReturned = 4;
 
         const left = {
           attachData(context: { a: string }) {
             expect(context.a).to.be.equal(aPassedIn);
-            return Promise.resolve({ b: 4 });
+            return Promise.resolve({ b: bReturned });
           },
         };
         const rightNotCovered = {
           attachData(context: { other: string }) {
             expect(context.other).to.be.equal(otherPassedIn);
-            return Promise.resolve({ c: 4 });
+            return Promise.resolve({ c: cReturned });
           },
         };
 
@@ -973,17 +992,18 @@ describe('HipThrusTS', () => {
         );
 
         expect(pipedNotCoveredAttachDataReturnValues).to.has.property('b');
-        expect(pipedNotCoveredAttachDataReturnValues.b).to.be.equal(4);
+        expect(pipedNotCoveredAttachDataReturnValues.b).to.be.equal(bReturned);
         expect(pipedNotCoveredAttachDataReturnValues).to.has.property('c');
-        expect(pipedNotCoveredAttachDataReturnValues.c).to.be.equal(4);
+        expect(pipedNotCoveredAttachDataReturnValues.c).to.be.equal(cReturned);
       });
       it('attaches properly typed data from left async data attacher only', async () => {
         const aPassedIn = 'some string';
+        const bReturned = 4;
 
         const left = {
           attachData(context: { a: string }) {
             expect(context.a).to.be.equal(aPassedIn);
-            return Promise.resolve({ b: 4 });
+            return Promise.resolve({ b: bReturned });
           },
         };
 
@@ -1027,17 +1047,18 @@ describe('HipThrusTS', () => {
         );
 
         expect(pipedLeftOnlyAttachDataReturnValues).to.has.property('b');
-        expect(pipedLeftOnlyAttachDataReturnValues.b).to.be.equal(4);
+        expect(pipedLeftOnlyAttachDataReturnValues.b).to.be.equal(bReturned);
       });
       it('attaches properly typed data from right async data attacher only', async () => {
         const bPassedIn = 6;
         const otherPassedIn = 'other string';
+        const cReturned = 4;
 
         const rightPartiallyCovered = {
           attachData(context: { b: number; other: string }) {
             expect(context.b).to.be.equal(bPassedIn);
             expect(context.other).to.be.equal(otherPassedIn);
-            return Promise.resolve({ c: 4 });
+            return Promise.resolve({ c: cReturned });
           },
         };
 
@@ -1082,7 +1103,7 @@ describe('HipThrusTS', () => {
         );
 
         expect(pipedRightOnlyAttachDataReturnValues).to.has.property('c');
-        expect(pipedRightOnlyAttachDataReturnValues.c).to.be.equal(4);
+        expect(pipedRightOnlyAttachDataReturnValues.c).to.be.equal(cReturned);
       });
       it('no attaches data when left async outputs have type mismatch with right inputs', () => {
         const leftBad = {
