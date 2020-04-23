@@ -70,13 +70,6 @@ type InitPreContextOut<T> = T extends HasInitPreContext<any, any>
   ? ReturnType<T['initPreContext']>
   : never;
 
-type SanitizeParamsContextIn<T> = T extends HasSanitizeParams<any, any>
-  ? Parameters<T['sanitizeParams']>[0]
-  : never;
-type SanitizeParamsContextOut<T> = T extends HasSanitizeParams<any, any>
-  ? ReturnType<T['sanitizeParams']>
-  : never;
-
 type AttachDataIn<T> = T extends HasAttachData<any, any>
   ? Parameters<T['attachData']>[0]
   : never;
@@ -84,8 +77,10 @@ type AttachDataOut<T> = T extends HasAttachData<any, any>
   ? PromiseResolveOrSync<ReturnType<T['attachData']>>
   : never;
 
-type PipedPreContext<TLeft, TRight> = TLeft extends HasInitPreContext<any, any>
-  ? TRight extends HasInitPreContext<any, any>
+type PipedPreContext<TLeft, TRight> = [TLeft] extends [
+  HasInitPreContext<any, any>
+]
+  ? [TRight] extends [HasInitPreContext<any, any>]
     ? HasInitPreContext<
         InitPreContextIn<TLeft> &
           Omit<InitPreContextIn<TRight>, keyof InitPreContextOut<TLeft>>,
@@ -97,23 +92,34 @@ type PipedPreContext<TLeft, TRight> = TLeft extends HasInitPreContext<any, any>
   ? { initPreContext: TRight['initPreContext'] }
   : {};
 
-type PipedSanitizeParams<TLeft, TRight> = TLeft extends HasSanitizeParams<
-  any,
-  any
->
-  ? TRight extends HasSanitizeParams<any, any>
+type PipedSanitizeParams<TLeft, TRight> = [TLeft] extends [
+  HasSanitizeParams<any, any>
+]
+  ? [TRight] extends [HasSanitizeParams<any, any>]
     ? HasSanitizeParams<
-        // @todo replace SanitizeParamsContextIn<TLeft> with Parameters<TLeft['sanitizeParams']>[0] and SanitizeParamsContextOut<TRight> with ReturnType<TRight['sanitizeParams']>
-        SanitizeParamsContextIn<TLeft>,
-        SanitizeParamsContextOut<TRight>
+        Parameters<TLeft['sanitizeParams']>[0],
+        ReturnType<TRight['sanitizeParams']>
       >
     : { sanitizeParams: TLeft['sanitizeParams'] }
   : TRight extends HasSanitizeParams<any, any>
   ? { sanitizeParams: TRight['sanitizeParams'] }
   : {};
 
-type PipedAttachData<TLeft, TRight> = TLeft extends HasAttachData<any, any>
-  ? TRight extends HasAttachData<any, any>
+type PipedSanitizeBody<TLeft, TRight> = [TLeft] extends [
+  HasSanitizeBody<any, any>
+]
+  ? [TRight] extends [HasSanitizeBody<any, any>]
+    ? HasSanitizeBody<
+        Parameters<TLeft['sanitizeBody']>[0],
+        ReturnType<TRight['sanitizeBody']>
+      >
+    : { sanitizeBody: TLeft['sanitizeBody'] }
+  : TRight extends HasSanitizeBody<any, any>
+  ? { sanitizeBody: TRight['sanitizeBody'] }
+  : {};
+
+type PipedAttachData<TLeft, TRight> = [TLeft] extends [HasAttachData<any, any>]
+  ? [TRight] extends [HasAttachData<any, any>]
     ? HasAttachData<
         AttachDataIn<TLeft> &
           Omit<AttachDataIn<TRight>, keyof AttachDataOut<TLeft>>,
@@ -123,6 +129,27 @@ type PipedAttachData<TLeft, TRight> = TLeft extends HasAttachData<any, any>
     : { attachData: TLeft['attachData'] }
   : TRight extends HasAttachData<any, any>
   ? { attachData: TRight['attachData'] }
+  : {};
+
+type PipedRespond<TLeft, TRight> = [TLeft] extends [HasRespond<any, any>]
+  ? [TRight] extends [HasRespond<any, any>]
+    ? HasRespond<Parameters<TLeft['respond']>[0], ReturnType<TRight['respond']>>
+    : { respond: TLeft['respond'] }
+  : TRight extends HasRespond<any, any>
+  ? { respond: TRight['respond'] }
+  : {};
+
+type PipedSanitizeResponse<TLeft, TRight> = [TLeft] extends [
+  HasSanitizeResponse<any, any>
+]
+  ? [TRight] extends [HasSanitizeResponse<any, any>]
+    ? HasSanitizeResponse<
+        Parameters<TLeft['sanitizeResponse']>[0],
+        ReturnType<TRight['sanitizeResponse']>
+      >
+    : { sanitizeResponse: TLeft['sanitizeResponse'] }
+  : TRight extends HasSanitizeResponse<any, any>
+  ? { sanitizeResponse: TRight['sanitizeResponse'] }
   : {};
 
 type ClashlessInitPreContext<TLeft, TRight> = OptionallyHasInitPreContext<
@@ -146,6 +173,13 @@ type ClashlessSanitizeParams<TLeft, TRight> = OptionallyHasSanitizeParams<
     : any
 >;
 
+type ClashlessSanitizeBody<TLeft, TRight> = OptionallyHasSanitizeBody<
+  any,
+  TRight extends HasSanitizeBody<any, any>
+    ? Parameters<TRight['sanitizeBody']>[0]
+    : any
+>;
+
 type ClashlessAttachData<TLeft, TRight> = OptionallyHasAttachData<
   any,
   TRight extends HasAttachData<any, any>
@@ -162,6 +196,18 @@ type ClashlessAttachData<TLeft, TRight> = OptionallyHasAttachData<
     : any
 >;
 
+type ClashlessRespond<TLeft, TRight> = MightHaveRespond<
+  any,
+  TRight extends HasRespond<any, any> ? Parameters<TRight['respond']>[0] : any
+>;
+
+type ClashlessSanitizeResponse<TLeft, TRight> = MightHaveSanitizeResponse<
+  any,
+  TRight extends HasSanitizeResponse<any, any>
+    ? Parameters<TRight['sanitizeResponse']>[0]
+    : any
+>;
+
 // no parameter - returns empty object
 export function HTPipe(): {};
 
@@ -169,67 +215,117 @@ export function HTPipe(): {};
 export function HTPipe<
   T extends OptionallyHasInitPreContext<any, any> &
     OptionallyHasSanitizeParams<any, any> &
-    OptionallyHasAttachData<any, any>
+    OptionallyHasSanitizeBody<any, any> &
+    OptionallyHasAttachData<any, any> &
+    MightHaveRespond<any, any> &
+    MightHaveSanitizeResponse<any, any>
   // @fixme: refactor - export a union type in types.ts for this
->(obj: T): Pick<T, 'initPreContext' | 'sanitizeParams' | 'attachData'>;
+>(
+  obj: T
+): Pick<
+  T,
+  | 'initPreContext'
+  | 'sanitizeParams'
+  | 'sanitizeBody'
+  | 'attachData'
+  | 'respond'
+  | 'sanitizeResponse'
+>;
 
 // two parameters with automatic type guessing or right - all or nothing!
 // @todo: add the ability for each stage to get outputs of previous stages too!
 export function HTPipe<
   TLeft extends OptionallyHasInitPreContext<any, any> &
-    OptionallyHasAttachData<any, any>,
+    OptionallyHasSanitizeParams<any, any> &
+    OptionallyHasSanitizeBody<any, any> &
+    OptionallyHasAttachData<any, any> &
+    MightHaveRespond<any, any> &
+    MightHaveSanitizeResponse<any, any>,
   TRight extends (TLeft extends HasInitPreContext<any, any>
     ? OptionallyHasInitPreContext<ReturnType<TLeft['initPreContext']>, any>
     : {}) &
     (TLeft extends HasSanitizeParams<any, any>
       ? OptionallyHasSanitizeParams<ReturnType<TLeft['sanitizeParams']>, any>
       : {}) &
+    (TLeft extends HasSanitizeBody<any, any>
+      ? OptionallyHasSanitizeBody<ReturnType<TLeft['sanitizeBody']>, any>
+      : {}) &
     (TLeft extends HasAttachData<any, any>
       ? OptionallyHasAttachData<
           PromiseResolveOrSync<ReturnType<TLeft['attachData']>>,
           any
         >
+      : {}) &
+    (TLeft extends HasRespond<any, any>
+      ? MightHaveRespond<ReturnType<TLeft['respond']>, any>
+      : {}) &
+    (TLeft extends HasSanitizeResponse<any, any>
+      ? MightHaveSanitizeResponse<ReturnType<TLeft['sanitizeResponse']>, any>
       : {})
 >(
   left: TLeft,
   right: TRight
 ): PipedPreContext<TLeft, TRight> &
   PipedSanitizeParams<TLeft, TRight> &
-  PipedAttachData<TLeft, TRight>;
+  PipedSanitizeBody<TLeft, TRight> &
+  PipedAttachData<TLeft, TRight> &
+  PipedRespond<TLeft, TRight> &
+  PipedSanitizeResponse<TLeft, TRight>;
 
 // two parameters with possibly added inputs
 export function HTPipe<
   TLeft extends ClashlessInitPreContext<TLeft, TRight> &
     ClashlessSanitizeParams<TLeft, TRight> &
-    ClashlessAttachData<TLeft, TRight>,
+    ClashlessSanitizeBody<TLeft, TRight> &
+    ClashlessAttachData<TLeft, TRight> &
+    ClashlessRespond<TLeft, TRight> &
+    ClashlessSanitizeResponse<TLeft, TRight>,
   TRight extends OptionallyHasInitPreContext<any, any> &
     OptionallyHasSanitizeParams<any, any> &
-    OptionallyHasAttachData<any, any>
+    OptionallyHasSanitizeBody<any, any> &
+    OptionallyHasAttachData<any, any> &
+    MightHaveRespond<any, any> &
+    MightHaveSanitizeResponse<any, any>
 >(
   left: TLeft,
   right: TRight
 ): PipedPreContext<TLeft, TRight> &
   PipedSanitizeParams<TLeft, TRight> &
-  PipedAttachData<TLeft, TRight>;
+  PipedSanitizeBody<TLeft, TRight> &
+  PipedAttachData<TLeft, TRight> &
+  PipedRespond<TLeft, TRight> &
+  PipedSanitizeResponse<TLeft, TRight>;
 
 // three parameters with possibly added inputs
 export function HTPipe<
   T3 extends ClashlessInitPreContext<T3, PipedPreContext<T2, T1>> &
     ClashlessSanitizeParams<T3, PipedSanitizeParams<T2, T1>> &
-    ClashlessAttachData<T3, PipedAttachData<T2, T1>>,
+    ClashlessSanitizeBody<T3, PipedSanitizeBody<T2, T1>> &
+    ClashlessAttachData<T3, PipedAttachData<T2, T1>> &
+    ClashlessRespond<T3, PipedRespond<T2, T1>> &
+    ClashlessSanitizeResponse<T3, PipedSanitizeResponse<T2, T1>>,
   T2 extends ClashlessInitPreContext<T2, T1> &
     ClashlessSanitizeParams<T2, T1> &
-    ClashlessAttachData<T2, T1>,
+    ClashlessSanitizeBody<T2, T1> &
+    ClashlessAttachData<T2, T1> &
+    ClashlessRespond<T2, T1> &
+    ClashlessSanitizeResponse<T2, T1>,
   T1 extends OptionallyHasInitPreContext<any, any> &
     OptionallyHasSanitizeParams<any, any> &
-    OptionallyHasAttachData<any, any>
+    OptionallyHasSanitizeBody<any, any> &
+    OptionallyHasAttachData<any, any> &
+    MightHaveRespond<any, any> &
+    MightHaveSanitizeResponse<any, any>
 >(
   obj3: T3,
   obj2: T2,
   obj1: T1
 ): PipedPreContext<T3, PipedPreContext<T2, T1>> &
   PipedSanitizeParams<T3, PipedSanitizeParams<T2, T1>> &
-  PipedAttachData<T3, PipedAttachData<T2, T1>>;
+  PipedSanitizeBody<T3, PipedSanitizeBody<T2, T1>> &
+  PipedAttachData<T3, PipedAttachData<T2, T1>> &
+  PipedRespond<T3, PipedRespond<T2, T1>> &
+  PipedSanitizeResponse<T3, PipedSanitizeResponse<T2, T1>>;
 
 // four parameters with possibly added inputs
 export function HTPipe<
@@ -241,16 +337,34 @@ export function HTPipe<
       T4,
       PipedSanitizeParams<T3, PipedSanitizeParams<T2, T1>>
     > &
-    ClashlessAttachData<T4, PipedAttachData<T3, PipedAttachData<T2, T1>>>,
+    ClashlessSanitizeBody<
+      T4,
+      PipedSanitizeBody<T3, PipedSanitizeBody<T2, T1>>
+    > &
+    ClashlessAttachData<T4, PipedAttachData<T3, PipedAttachData<T2, T1>>> &
+    ClashlessRespond<T4, PipedRespond<T3, PipedRespond<T2, T1>>> &
+    ClashlessSanitizeResponse<
+      T4,
+      PipedSanitizeResponse<T3, PipedSanitizeResponse<T2, T1>>
+    >,
   T3 extends ClashlessInitPreContext<T3, PipedPreContext<T2, T1>> &
     ClashlessSanitizeParams<T3, PipedSanitizeParams<T2, T1>> &
-    ClashlessAttachData<T3, PipedAttachData<T2, T1>>,
+    ClashlessSanitizeBody<T3, PipedSanitizeBody<T2, T1>> &
+    ClashlessAttachData<T3, PipedAttachData<T2, T1>> &
+    ClashlessRespond<T3, PipedRespond<T2, T1>> &
+    ClashlessSanitizeResponse<T3, PipedSanitizeResponse<T2, T1>>,
   T2 extends ClashlessInitPreContext<T2, T1> &
     ClashlessSanitizeParams<T2, T1> &
-    ClashlessAttachData<T2, T1>,
+    ClashlessSanitizeBody<T2, T1> &
+    ClashlessAttachData<T2, T1> &
+    ClashlessRespond<T2, T1> &
+    ClashlessSanitizeResponse<T2, T1>,
   T1 extends OptionallyHasInitPreContext<any, any> &
     OptionallyHasSanitizeParams<any, any> &
-    OptionallyHasAttachData<any, any>
+    OptionallyHasSanitizeBody<any, any> &
+    OptionallyHasAttachData<any, any> &
+    MightHaveRespond<any, any> &
+    MightHaveSanitizeResponse<any, any>
 >(
   obj4: T4,
   obj3: T3,
@@ -261,7 +375,13 @@ export function HTPipe<
     T4,
     PipedSanitizeParams<T3, PipedSanitizeParams<T2, T1>>
   > &
-  PipedAttachData<T4, PipedAttachData<T3, PipedAttachData<T2, T1>>>;
+  PipedSanitizeBody<T4, PipedSanitizeBody<T3, PipedSanitizeBody<T2, T1>>> &
+  PipedAttachData<T4, PipedAttachData<T3, PipedAttachData<T2, T1>>> &
+  PipedRespond<T4, PipedRespond<T3, PipedRespond<T2, T1>>> &
+  PipedSanitizeResponse<
+    T4,
+    PipedSanitizeResponse<T3, PipedSanitizeResponse<T2, T1>>
+  >;
 
 export function HTPipe(...objs: any[]) {
   if (objs.length === 0) {
@@ -315,6 +435,20 @@ export function HTPipe(...objs: any[]) {
         : isHasSanitizeParams(right)
         ? { sanitizeParams: right.sanitizeParams }
         : {}) as PipedSanitizeParams<any, any>),
+      ...((isHasSanitizeBody(left) && isHasSanitizeBody(right)
+        ? {
+            sanitizeBody: (context: any) => {
+              const leftOut = left.sanitizeBody(context) || {};
+              const rightIn = leftOut;
+              const rightOut = right.sanitizeBody(rightIn) || {};
+              return rightOut as {};
+            },
+          }
+        : isHasSanitizeBody(left)
+        ? { sanitizeBody: left.sanitizeBody }
+        : isHasSanitizeBody(right)
+        ? { sanitizeBody: right.sanitizeBody }
+        : {}) as PipedSanitizeBody<any, any>),
       ...((isHasAttachData(left) && isHasAttachData(right)
         ? {
             attachData: async (context: any) => {
@@ -340,6 +474,38 @@ export function HTPipe(...objs: any[]) {
         : isHasAttachData(right)
         ? { attachData: left.attachData }
         : {}) as PipedAttachData<any, any>),
+      ...((isHasRespond(left) && isHasRespond(right)
+        ? {
+            respond: (context: any) => {
+              const leftOut = left.respond(context);
+              const rightOut = right.respond(leftOut.unsafeResponse);
+              return {
+                unsafeResponse: rightOut.unsafeResponse,
+                status:
+                  rightOut.status === undefined
+                    ? leftOut.status
+                    : rightOut.status,
+              };
+            },
+          }
+        : isHasRespond(left)
+        ? { respond: left.respond }
+        : isHasRespond(right)
+        ? { respond: right.respond }
+        : {}) as PipedRespond<any, any>),
+      ...((isHasSanitizeResponse(left) && isHasSanitizeResponse(right)
+        ? {
+            sanitizeResponse: (context: any) => {
+              const leftOut = left.sanitizeResponse(context) || {};
+              const rightOut = right.sanitizeResponse(leftOut) || {};
+              return rightOut;
+            },
+          }
+        : isHasSanitizeResponse(left)
+        ? { sanitizeResponse: left.sanitizeResponse }
+        : isHasSanitizeResponse(right)
+        ? { sanitizeResponse: right.sanitizeResponse }
+        : {}) as PipedSanitizeResponse<any, any>),
     };
   }
 
