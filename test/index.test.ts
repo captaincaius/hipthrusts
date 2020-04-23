@@ -319,7 +319,7 @@ describe('HipThrusTS', () => {
       it('attaches properly typed data from left and right sync data attacher', async () => {
         const aPassedIn = 'some string';
         const bPassedIn = 4;
-        const cReturned = 4;
+        const cReturned = 6;
         const left = {
           attachData(context: { a: string }) {
             expect(context.a).to.be.equal(aPassedIn);
@@ -381,7 +381,7 @@ describe('HipThrusTS', () => {
       it('attaches right sync output instead of left sync output if right output sync transform left output type', async () => {
         const aPassedIn = 5;
         const bPassedIn = 'some string';
-        const bReturned = 5;
+        const bReturned = 4;
 
         const left = {
           attachData(context: { a: number }) {
@@ -451,7 +451,7 @@ describe('HipThrusTS', () => {
         const aPassedIn = 'some string';
         const bReturned = 4;
         const otherPassedIn = 'other string';
-        const cReturned = 4;
+        const cReturned = 6;
 
         const left = {
           attachData(context: { a: string }) {
@@ -517,7 +517,7 @@ describe('HipThrusTS', () => {
         const aPassedIn = 'some string';
         const otherPassedIn = 'other string';
         const bReturned = 4;
-        const cReturned = 4;
+        const cReturned = 6;
 
         const left = {
           attachData(context: { a: string }) {
@@ -739,7 +739,7 @@ describe('HipThrusTS', () => {
       it('attaches properly typed data from left and right async data attacher', async () => {
         const aPassedIn = 'some string';
         const bPassedIn = 4;
-        const cReturned = 4;
+        const cReturned = 6;
 
         const left = {
           attachData(context: { a: string }) {
@@ -802,12 +802,12 @@ describe('HipThrusTS', () => {
       it('attaches right async output instead of left async output if right output async transform left output type', async () => {
         const aPassedIn = 5;
         const bPassedIn = 'some string';
-        const bReturned = 5;
+        const bReturned = 6;
 
         const left = {
           attachData(context: { a: number }) {
             expect(context.a).to.be.equal(aPassedIn);
-            return Promise.resolve({ b: 'some string' });
+            return Promise.resolve({ b: bPassedIn });
           },
         };
 
@@ -872,7 +872,7 @@ describe('HipThrusTS', () => {
         const aPassedIn = 'some string';
         const bPassedIn = 4;
         const otherPassedIn = 'other string';
-        const cReturned = 4;
+        const cReturned = 6;
 
         const left = {
           attachData(context: { a: string }) {
@@ -936,7 +936,7 @@ describe('HipThrusTS', () => {
         const aPassedIn = 'some string';
         const otherPassedIn = 'other string';
         const bReturned = 4;
-        const cReturned = 4;
+        const cReturned = 6;
 
         const left = {
           attachData(context: { a: string }) {
