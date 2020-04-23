@@ -37,7 +37,7 @@ import {
 
 // @todo: MINOR: consider bringing this back to life so complexity of optionality is removed from executeHipthrustable
 export function withDefaultImplementations<
-  TStrategy extends HasInitPreContext<any, any> &
+  TStrategy extends OptionallyHasInitPreContext<any, any> &
     OptionallyHasSanitizeParams<any, any> &
     OptionallyHasSanitizeBody<any, any> &
     HasAllRequireds &
@@ -46,7 +46,9 @@ export function withDefaultImplementations<
 >(
   strategy: TStrategy
 ): {
-  initPreContext: TStrategy['initPreContext'];
+  initPreContext: TStrategy extends HasInitPreContext<any, any>
+    ? TStrategy['initPreContext']
+    : () => {};
   sanitizeParams: TStrategy extends HasSanitizeParams<any, any>
     ? TStrategy['sanitizeParams']
     : () => {};
@@ -67,6 +69,13 @@ export function withDefaultImplementations<
   // @tswtf why isn't typescript smart enough to not require these type assertions below?
   return {
     ...strategy,
+    initPreContext: (strategy.initPreContext
+      ? strategy.initPreContext
+      : () => {
+          return {};
+        }) as TStrategy extends HasInitPreContext<any, any>
+      ? TStrategy['initPreContext']
+      : () => {},
     sanitizeParams: (strategy.sanitizeParams
       ? strategy.sanitizeParams
       : () => {
@@ -215,7 +224,7 @@ export async function executeHipthrustable<
     OptionallyHasSanitizeBody<any, any> &
     OptionallyHasAttachData<any, any> &
     OptionallyHasDoWork<any, any> &
-    HasInitPreContext<any, any> &
+    OptionallyHasInitPreContext<any, any> &
     HasInitPreContextProperOptionals<TConf> &
     HasParamsProperOptionals<TConf> &
     HasBodyProperOptionals<TConf> &
@@ -238,12 +247,9 @@ export async function executeHipthrustable<
   unsafeBody: TUnsafeBody
 ) {
   const badDataThrow = Boom.badData('User input sanitization failure');
-  // const safeInitialContext = requestHandler.initPreContext ? transformThrow(badDataThrow, requestHandler.initPreContext, unsafe) : {};
-  const safeInitPreContext = transformThrowSync(
-    badDataThrow,
-    requestHandler.initPreContext,
-    unsafe
-  );
+  const safeInitPreContext = requestHandler.initPreContext
+    ? transformThrowSync(badDataThrow, requestHandler.initPreContext, unsafe)
+    : {};
   // @todo: maybe params should throw something different like 400
   const safeParams = requestHandler.sanitizeParams
     ? transformThrowSync(
