@@ -77,6 +77,8 @@ type AttachDataOut<T> = T extends HasAttachData<any, any>
   ? PromiseResolveOrSync<ReturnType<T['attachData']>>
   : never;
 
+// @note must wrap types with arrays to avoid distribution over naked type conditionals blowing up exponentially - see
+// https://github.com/Microsoft/TypeScript/issues/29368#issuecomment-453529532
 type PipedPreContext<TLeft, TRight> = [TLeft] extends [
   HasInitPreContext<any, any>
 ]
@@ -92,6 +94,8 @@ type PipedPreContext<TLeft, TRight> = [TLeft] extends [
   ? { initPreContext: TRight['initPreContext'] }
   : {};
 
+// @note must wrap types with arrays to avoid distribution over naked type conditionals blowing up exponentially - see
+// https://github.com/Microsoft/TypeScript/issues/29368#issuecomment-453529532
 type PipedSanitizeParams<TLeft, TRight> = [TLeft] extends [
   HasSanitizeParams<any, any>
 ]
@@ -105,6 +109,8 @@ type PipedSanitizeParams<TLeft, TRight> = [TLeft] extends [
   ? { sanitizeParams: TRight['sanitizeParams'] }
   : {};
 
+// @note must wrap types with arrays to avoid distribution over naked type conditionals blowing up exponentially - see
+// https://github.com/Microsoft/TypeScript/issues/29368#issuecomment-453529532
 type PipedSanitizeBody<TLeft, TRight> = [TLeft] extends [
   HasSanitizeBody<any, any>
 ]
@@ -118,6 +124,8 @@ type PipedSanitizeBody<TLeft, TRight> = [TLeft] extends [
   ? { sanitizeBody: TRight['sanitizeBody'] }
   : {};
 
+// @note must wrap types with arrays to avoid distribution over naked type conditionals blowing up exponentially - see
+// https://github.com/Microsoft/TypeScript/issues/29368#issuecomment-453529532
 type PipedAttachData<TLeft, TRight> = [TLeft] extends [HasAttachData<any, any>]
   ? [TRight] extends [HasAttachData<any, any>]
     ? HasAttachData<
@@ -131,6 +139,8 @@ type PipedAttachData<TLeft, TRight> = [TLeft] extends [HasAttachData<any, any>]
   ? { attachData: TRight['attachData'] }
   : {};
 
+// @note must wrap types with arrays to avoid distribution over naked type conditionals blowing up exponentially - see
+// https://github.com/Microsoft/TypeScript/issues/29368#issuecomment-453529532
 type PipedRespond<TLeft, TRight> = [TLeft] extends [HasRespond<any, any>]
   ? [TRight] extends [HasRespond<any, any>]
     ? HasRespond<Parameters<TLeft['respond']>[0], ReturnType<TRight['respond']>>
@@ -139,6 +149,8 @@ type PipedRespond<TLeft, TRight> = [TLeft] extends [HasRespond<any, any>]
   ? { respond: TRight['respond'] }
   : {};
 
+// @note must wrap types with arrays to avoid distribution over naked type conditionals blowing up exponentially - see
+// https://github.com/Microsoft/TypeScript/issues/29368#issuecomment-453529532
 type PipedSanitizeResponse<TLeft, TRight> = [TLeft] extends [
   HasSanitizeResponse<any, any>
 ]
