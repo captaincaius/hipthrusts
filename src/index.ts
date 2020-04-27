@@ -133,7 +133,7 @@ type PipedSanitizeParams<TLeft, TRight> = [TLeft] extends [
         SanitizeParamsContextOut<TRight>
       >
     : { sanitizeParams: TLeft['sanitizeParams'] }
-  : TRight extends HasSanitizeParams<any, any>
+  : [TRight] extends [HasSanitizeParams<any, any>]
   ? { sanitizeParams: TRight['sanitizeParams'] }
   : {};
 
