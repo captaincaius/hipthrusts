@@ -91,6 +91,13 @@ type AttachDataOut<T extends HasAttachData<any, any>> = PromiseResolveOrSync<
   ReturnType<T['attachData']>
 >;
 
+type DoWorkContextIn<T extends HasDoWork<any, any>> = Parameters<
+  T['doWork']
+>[0];
+type DoWorkContextOut<T extends HasDoWork<any, any>> = PromiseResolveOrSync<
+  ReturnType<T['doWork']>
+>;
+
 type RespondContextIn<T extends HasRespond<any, any>> = Parameters<
   T['respond']
 >[0];
@@ -167,6 +174,29 @@ type PipedAttachData<TLeft, TRight> = [TLeft] extends [HasAttachData<any, any>]
   ? { attachData: TRight['attachData'] }
   : {};
 
+type PipedDoWork<TLeft, TRight> = [TLeft] extends [HasDoWork<any, any>]
+  ? [TRight] extends [HasDoWork<any, any>]
+    ? HasDoWork<
+        DoWorkContextIn<TLeft> &
+          Omit<
+            DoWorkContextIn<TRight>,
+            DoWorkContextOut<TLeft> extends void
+              ? keyof {}
+              : keyof DoWorkContextOut<TLeft>
+          >,
+        DoWorkContextOut<TRight> &
+          Omit<
+            DoWorkContextOut<TLeft>,
+            DoWorkContextOut<TRight> extends void
+              ? keyof {}
+              : keyof DoWorkContextOut<TRight>
+          >
+      >
+    : { doWork: TLeft['doWork'] }
+  : [TRight] extends [HasDoWork<any, any>]
+  ? { doWork: TRight['doWork'] }
+  : {};
+
 // @note must wrap types with arrays to avoid distribution over naked type conditionals blowing up exponentially - see
 // https://github.com/Microsoft/TypeScript/issues/29368#issuecomment-453529532
 type PipedRespond<TLeft, TRight> = [TLeft] extends [HasRespond<any, any>]
@@ -236,6 +266,21 @@ type ClashlessAttachData<TLeft, TRight> = OptionallyHasAttachData<
     : any
 >;
 
+type ClashlessDoWork<TLeft, TRight> = OptionallyHasDoWork<
+  any,
+  | void
+  | (TRight extends HasDoWork<any, any>
+      ? Pick<
+          Parameters<TRight['doWork']>[0],
+          keyof PromiseResolveOrSync<
+            ReturnType<
+              TLeft extends HasDoWork<any, any> ? TLeft['doWork'] : () => {}
+            >
+          >
+        >
+      : any)
+>;
+
 type ClashlessRespond<TLeft, TRight> = MightHaveRespond<
   any,
   TRight extends HasRespond<any, any> ? Parameters<TRight['respond']>[0] : any
@@ -257,6 +302,7 @@ export function HTPipe<
     OptionallyHasSanitizeParams<any, any> &
     OptionallyHasSanitizeBody<any, any> &
     OptionallyHasAttachData<any, any> &
+    OptionallyHasDoWork<any, any> &
     MightHaveRespond<any, any> &
     MightHaveSanitizeResponse<any, any>
   // @fixme: refactor - export a union type in types.ts for this
@@ -268,6 +314,7 @@ export function HTPipe<
   | 'sanitizeParams'
   | 'sanitizeBody'
   | 'attachData'
+  | 'doWork'
   | 'respond'
   | 'sanitizeResponse'
 >;
@@ -279,6 +326,7 @@ export function HTPipe<
     OptionallyHasSanitizeParams<any, any> &
     OptionallyHasSanitizeBody<any, any> &
     OptionallyHasAttachData<any, any> &
+    OptionallyHasDoWork<any, any> &
     MightHaveRespond<any, any> &
     MightHaveSanitizeResponse<any, any>,
   TRight extends (TLeft extends HasInitPreContext<any, any>
@@ -296,6 +344,12 @@ export function HTPipe<
           any
         >
       : {}) &
+    (TLeft extends HasDoWork<any, any>
+      ? OptionallyHasDoWork<
+          PromiseResolveOrSync<ReturnType<TLeft['doWork']>>,
+          any
+        >
+      : {}) &
     (TLeft extends HasRespond<any, any>
       ? MightHaveRespond<ReturnType<TLeft['respond']>, any>
       : {}) &
@@ -309,6 +363,7 @@ export function HTPipe<
   PipedSanitizeParams<TLeft, TRight> &
   PipedSanitizeBody<TLeft, TRight> &
   PipedAttachData<TLeft, TRight> &
+  PipedDoWork<TLeft, TRight> &
   PipedRespond<TLeft, TRight> &
   PipedSanitizeResponse<TLeft, TRight>;
 
@@ -318,12 +373,14 @@ export function HTPipe<
     ClashlessSanitizeParams<TLeft, TRight> &
     ClashlessSanitizeBody<TLeft, TRight> &
     ClashlessAttachData<TLeft, TRight> &
+    ClashlessDoWork<TLeft, TRight> &
     ClashlessRespond<TLeft, TRight> &
     ClashlessSanitizeResponse<TLeft, TRight>,
   TRight extends OptionallyHasInitPreContext<any, any> &
     OptionallyHasSanitizeParams<any, any> &
     OptionallyHasSanitizeBody<any, any> &
     OptionallyHasAttachData<any, any> &
+    OptionallyHasDoWork<any, any> &
     MightHaveRespond<any, any> &
     MightHaveSanitizeResponse<any, any>
 >(
@@ -333,6 +390,7 @@ export function HTPipe<
   PipedSanitizeParams<TLeft, TRight> &
   PipedSanitizeBody<TLeft, TRight> &
   PipedAttachData<TLeft, TRight> &
+  PipedDoWork<TLeft, TRight> &
   PipedRespond<TLeft, TRight> &
   PipedSanitizeResponse<TLeft, TRight>;
 
@@ -342,18 +400,21 @@ export function HTPipe<
     ClashlessSanitizeParams<T3, PipedSanitizeParams<T2, T1>> &
     ClashlessSanitizeBody<T3, PipedSanitizeBody<T2, T1>> &
     ClashlessAttachData<T3, PipedAttachData<T2, T1>> &
+    ClashlessDoWork<T3, PipedDoWork<T2, T1>> &
     ClashlessRespond<T3, PipedRespond<T2, T1>> &
     ClashlessSanitizeResponse<T3, PipedSanitizeResponse<T2, T1>>,
   T2 extends ClashlessInitPreContext<T2, T1> &
     ClashlessSanitizeParams<T2, T1> &
     ClashlessSanitizeBody<T2, T1> &
     ClashlessAttachData<T2, T1> &
+    ClashlessDoWork<T2, T1> &
     ClashlessRespond<T2, T1> &
     ClashlessSanitizeResponse<T2, T1>,
   T1 extends OptionallyHasInitPreContext<any, any> &
     OptionallyHasSanitizeParams<any, any> &
     OptionallyHasSanitizeBody<any, any> &
     OptionallyHasAttachData<any, any> &
+    OptionallyHasDoWork<any, any> &
     MightHaveRespond<any, any> &
     MightHaveSanitizeResponse<any, any>
 >(
@@ -364,6 +425,7 @@ export function HTPipe<
   PipedSanitizeParams<T3, PipedSanitizeParams<T2, T1>> &
   PipedSanitizeBody<T3, PipedSanitizeBody<T2, T1>> &
   PipedAttachData<T3, PipedAttachData<T2, T1>> &
+  PipedDoWork<T3, PipedDoWork<T2, T1>> &
   PipedRespond<T3, PipedRespond<T2, T1>> &
   PipedSanitizeResponse<T3, PipedSanitizeResponse<T2, T1>>;
 
@@ -382,6 +444,7 @@ export function HTPipe<
       PipedSanitizeBody<T3, PipedSanitizeBody<T2, T1>>
     > &
     ClashlessAttachData<T4, PipedAttachData<T3, PipedAttachData<T2, T1>>> &
+    ClashlessDoWork<T4, PipedDoWork<T3, PipedDoWork<T2, T1>>> &
     ClashlessRespond<T4, PipedRespond<T3, PipedRespond<T2, T1>>> &
     ClashlessSanitizeResponse<
       T4,
@@ -391,18 +454,21 @@ export function HTPipe<
     ClashlessSanitizeParams<T3, PipedSanitizeParams<T2, T1>> &
     ClashlessSanitizeBody<T3, PipedSanitizeBody<T2, T1>> &
     ClashlessAttachData<T3, PipedAttachData<T2, T1>> &
+    ClashlessDoWork<T3, PipedDoWork<T2, T1>> &
     ClashlessRespond<T3, PipedRespond<T2, T1>> &
     ClashlessSanitizeResponse<T3, PipedSanitizeResponse<T2, T1>>,
   T2 extends ClashlessInitPreContext<T2, T1> &
     ClashlessSanitizeParams<T2, T1> &
     ClashlessSanitizeBody<T2, T1> &
     ClashlessAttachData<T2, T1> &
+    ClashlessDoWork<T2, T1> &
     ClashlessRespond<T2, T1> &
     ClashlessSanitizeResponse<T2, T1>,
   T1 extends OptionallyHasInitPreContext<any, any> &
     OptionallyHasSanitizeParams<any, any> &
     OptionallyHasSanitizeBody<any, any> &
     OptionallyHasAttachData<any, any> &
+    OptionallyHasDoWork<any, any> &
     MightHaveRespond<any, any> &
     MightHaveSanitizeResponse<any, any>
 >(
@@ -417,6 +483,7 @@ export function HTPipe<
   > &
   PipedSanitizeBody<T4, PipedSanitizeBody<T3, PipedSanitizeBody<T2, T1>>> &
   PipedAttachData<T4, PipedAttachData<T3, PipedAttachData<T2, T1>>> &
+  PipedDoWork<T4, PipedDoWork<T3, PipedDoWork<T2, T1>>> &
   PipedRespond<T4, PipedRespond<T3, PipedRespond<T2, T1>>> &
   PipedSanitizeResponse<
     T4,
@@ -514,6 +581,25 @@ export function HTPipe(...objs: any[]) {
         : isHasAttachData(right)
         ? { attachData: right.attachData }
         : {}) as PipedAttachData<any, any>),
+      ...((isHasDoWork(left) && isHasDoWork(right)
+        ? {
+            doWork: async (context: any) => {
+              const leftOut =
+                (await Promise.resolve(left.doWork(context))) || {};
+              const rightIn = {
+                ...context,
+                ...(leftOut as object),
+              };
+              const rightOut =
+                (await Promise.resolve(right.doWork(rightIn))) || {};
+              return { ...(leftOut as object), ...(rightOut as object) };
+            },
+          }
+        : isHasDoWork(left)
+        ? { doWork: left.doWork }
+        : isHasDoWork(right)
+        ? { doWork: right.doWork }
+        : {}) as PipedDoWork<any, any>),
       ...((isHasRespond(left) && isHasRespond(right)
         ? {
             respond: (context: any) => {
