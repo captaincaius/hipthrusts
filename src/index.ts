@@ -63,19 +63,47 @@ export function NoopFinalAuth() {
 // i.e. can return bool vs not, possibly async vs sync only, mandatory vs not mandatory...
 // then the final master HTPipe will just build an object out of all the sub-HTPipe*'s
 
-type InitPreContextIn<T> = T extends HasInitPreContext<any, any>
-  ? Parameters<T['initPreContext']>[0]
-  : never;
-type InitPreContextOut<T> = T extends HasInitPreContext<any, any>
-  ? ReturnType<T['initPreContext']>
-  : never;
+type InitPreContextIn<T extends HasInitPreContext<any, any>> = Parameters<
+  T['initPreContext']
+>[0];
+type InitPreContextOut<T extends HasInitPreContext<any, any>> = ReturnType<
+  T['initPreContext']
+>;
 
-type AttachDataIn<T> = T extends HasAttachData<any, any>
-  ? Parameters<T['attachData']>[0]
-  : never;
-type AttachDataOut<T> = T extends HasAttachData<any, any>
-  ? PromiseResolveOrSync<ReturnType<T['attachData']>>
-  : never;
+type SanitizeParamsContextIn<
+  T extends HasSanitizeParams<any, any>
+> = Parameters<T['sanitizeParams']>[0];
+type SanitizeParamsContextOut<
+  T extends HasSanitizeParams<any, any>
+> = ReturnType<T['sanitizeParams']>;
+
+type SanitizeBodyContextIn<T extends HasSanitizeBody<any, any>> = Parameters<
+  T['sanitizeBody']
+>[0];
+type SanitizeBodyContextOut<T extends HasSanitizeBody<any, any>> = ReturnType<
+  T['sanitizeBody']
+>;
+
+type AttachDataIn<T extends HasAttachData<any, any>> = Parameters<
+  T['attachData']
+>[0];
+type AttachDataOut<T extends HasAttachData<any, any>> = PromiseResolveOrSync<
+  ReturnType<T['attachData']>
+>;
+
+type RespondContextIn<T extends HasRespond<any, any>> = Parameters<
+  T['respond']
+>[0];
+type RespondContextOut<T extends HasRespond<any, any>> = ReturnType<
+  T['respond']
+>;
+
+type SanitizeResponseContextIn<
+  T extends HasSanitizeResponse<any, any>
+> = Parameters<T['sanitizeResponse']>[0];
+type SanitizeResponseContextOut<
+  T extends HasSanitizeResponse<any, any>
+> = ReturnType<T['sanitizeResponse']>;
 
 // @note must wrap types with arrays to avoid distribution over naked type conditionals blowing up exponentially - see
 // https://github.com/Microsoft/TypeScript/issues/29368#issuecomment-453529532
@@ -90,7 +118,7 @@ type PipedPreContext<TLeft, TRight> = [TLeft] extends [
           Omit<InitPreContextOut<TLeft>, keyof InitPreContextOut<TRight>>
       >
     : { initPreContext: TLeft['initPreContext'] }
-  : TRight extends HasInitPreContext<any, any>
+  : [TRight] extends [HasInitPreContext<any, any>]
   ? { initPreContext: TRight['initPreContext'] }
   : {};
 
@@ -101,8 +129,8 @@ type PipedSanitizeParams<TLeft, TRight> = [TLeft] extends [
 ]
   ? [TRight] extends [HasSanitizeParams<any, any>]
     ? HasSanitizeParams<
-        Parameters<TLeft['sanitizeParams']>[0],
-        ReturnType<TRight['sanitizeParams']>
+        SanitizeParamsContextIn<TLeft>,
+        SanitizeParamsContextOut<TRight>
       >
     : { sanitizeParams: TLeft['sanitizeParams'] }
   : TRight extends HasSanitizeParams<any, any>
@@ -116,11 +144,11 @@ type PipedSanitizeBody<TLeft, TRight> = [TLeft] extends [
 ]
   ? [TRight] extends [HasSanitizeBody<any, any>]
     ? HasSanitizeBody<
-        Parameters<TLeft['sanitizeBody']>[0],
-        ReturnType<TRight['sanitizeBody']>
+        SanitizeBodyContextIn<TLeft>,
+        SanitizeBodyContextOut<TRight>
       >
     : { sanitizeBody: TLeft['sanitizeBody'] }
-  : TRight extends HasSanitizeBody<any, any>
+  : [TRight] extends [HasSanitizeBody<any, any>]
   ? { sanitizeBody: TRight['sanitizeBody'] }
   : {};
 
@@ -135,7 +163,7 @@ type PipedAttachData<TLeft, TRight> = [TLeft] extends [HasAttachData<any, any>]
           Omit<AttachDataOut<TLeft>, keyof AttachDataOut<TRight>>
       >
     : { attachData: TLeft['attachData'] }
-  : TRight extends HasAttachData<any, any>
+  : [TRight] extends [HasAttachData<any, any>]
   ? { attachData: TRight['attachData'] }
   : {};
 
@@ -143,9 +171,9 @@ type PipedAttachData<TLeft, TRight> = [TLeft] extends [HasAttachData<any, any>]
 // https://github.com/Microsoft/TypeScript/issues/29368#issuecomment-453529532
 type PipedRespond<TLeft, TRight> = [TLeft] extends [HasRespond<any, any>]
   ? [TRight] extends [HasRespond<any, any>]
-    ? HasRespond<Parameters<TLeft['respond']>[0], ReturnType<TRight['respond']>>
+    ? HasRespond<RespondContextIn<TLeft>, RespondContextOut<TRight>>
     : { respond: TLeft['respond'] }
-  : TRight extends HasRespond<any, any>
+  : [TRight] extends [HasRespond<any, any>]
   ? { respond: TRight['respond'] }
   : {};
 
@@ -156,11 +184,11 @@ type PipedSanitizeResponse<TLeft, TRight> = [TLeft] extends [
 ]
   ? [TRight] extends [HasSanitizeResponse<any, any>]
     ? HasSanitizeResponse<
-        Parameters<TLeft['sanitizeResponse']>[0],
-        ReturnType<TRight['sanitizeResponse']>
+        SanitizeResponseContextIn<TLeft>,
+        SanitizeResponseContextOut<TRight>
       >
     : { sanitizeResponse: TLeft['sanitizeResponse'] }
-  : TRight extends HasSanitizeResponse<any, any>
+  : [TRight] extends [HasSanitizeResponse<any, any>]
   ? { sanitizeResponse: TRight['sanitizeResponse'] }
   : {};
 
