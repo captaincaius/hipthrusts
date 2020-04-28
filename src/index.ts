@@ -180,19 +180,19 @@ type PipedPreAuthorize<TLeft, TRight> = [TLeft] extends [
               : keyof PreAuthorizeContextOut<TLeft>
           >,
         PreAuthorizeContextOut<TLeft> extends boolean
-          ? PreAuthorizeContextOut<TRight> extends boolean // BOTH left AND right have preAuthorize that returns ONLY booleans - never objects
-            ? boolean // left's preAuthorize returns ONLY booleans but right's might return objects
+          ? PreAuthorizeContextOut<TRight> extends boolean
+            ? boolean // BOTH left AND right have preAuthorize that returns ONLY booleans - never objects
             :
-                | PreAuthorizeContextOutObjectCase<TRight>
+                | PreAuthorizeContextOutObjectCase<TRight> // left's preAuthorize returns ONLY booleans but right's might return objects
                 | (PreAuthorizeContextOutFalseCase<TLeft> & false)
-                | (PreAuthorizeContextOutFalseCase<TRight> & false) // right's preAuthorize returns ONLY booleans but left's might return objects
+                | (PreAuthorizeContextOutFalseCase<TRight> & false)
           : PreAuthorizeContextOut<TRight> extends boolean
           ?
-              | PreAuthorizeContextOutObjectCase<TLeft>
+              | PreAuthorizeContextOutObjectCase<TLeft> // right's preAuthorize returns ONLY booleans but left's might return objects
               | (PreAuthorizeContextOutFalseCase<TLeft> & false)
-              | (PreAuthorizeContextOutFalseCase<TRight> & false) // NEITHER left NOR right's preAuthorize return strictly boolean - so both might return objects
+              | (PreAuthorizeContextOutFalseCase<TRight> & false)
           :
-              | (PreAuthorizeContextOutObjectCase<TRight> &
+              | (PreAuthorizeContextOutObjectCase<TRight> & // NEITHER left NOR right's preAuthorize return strictly boolean - so both might return objects
                   Omit<
                     PreAuthorizeContextOutObjectCase<TLeft>,
                     keyof PreAuthorizeContextOutObjectCase<TRight>
