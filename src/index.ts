@@ -97,6 +97,8 @@ type DoWorkContextIn<T extends HasDoWork<any, any>> = Parameters<
 type DoWorkContextOut<T extends HasDoWork<any, any>> = PromiseResolveOrSync<
   ReturnType<T['doWork']>
 >;
+type DoWorkContextOutObjectCase<T extends HasDoWork<any, any>> = object &
+  PromiseResolveOrSync<ReturnType<T['doWork']>>;
 
 type RespondContextIn<T extends HasRespond<any, any>> = Parameters<
   T['respond']
@@ -184,13 +186,17 @@ type PipedDoWork<TLeft, TRight> = [TLeft] extends [HasDoWork<any, any>]
               ? keyof {}
               : keyof DoWorkContextOut<TLeft>
           >,
-        DoWorkContextOut<TRight> &
-          Omit<
-            DoWorkContextOut<TLeft>,
-            DoWorkContextOut<TRight> extends void
-              ? keyof {}
-              : keyof DoWorkContextOut<TRight>
-          >
+        DoWorkContextOut<TLeft> extends void
+          ? DoWorkContextOut<TRight> extends void
+            ? void // BOTH left AND right have doWork that returns ONLY void - never objects
+            : DoWorkContextOutObjectCase<TRight> // left's doWork returns ONLY void but right's might return objects
+          : DoWorkContextOut<TRight> extends void
+          ? DoWorkContextOutObjectCase<TLeft> // right's doWork returns ONLY void but left's might return objects
+          : DoWorkContextOutObjectCase<TRight> & // NEITHER left NOR right's doWork return void - so both might return objects
+              Omit<
+                DoWorkContextOutObjectCase<TLeft>,
+                keyof DoWorkContextOutObjectCase<TRight>
+              >
       >
     : { doWork: TLeft['doWork'] }
   : [TRight] extends [HasDoWork<any, any>]
