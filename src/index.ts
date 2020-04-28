@@ -90,6 +90,12 @@ type PreAuthorizeContextIn<T extends HasPreAuthorize<any, any>> = Parameters<
 type PreAuthorizeContextOut<T extends HasPreAuthorize<any, any>> = ReturnType<
   T['preAuthorize']
 >;
+type PreAuthorizeContextOutObjectCase<
+  T extends HasPreAuthorize<any, any>
+> = ReturnType<T['preAuthorize']>;
+type PreAuthorizeContextOutFalseCase<
+  T extends HasPreAuthorize<any, any>
+> = false & ReturnType<T['preAuthorize']>;
 
 type AttachDataIn<T extends HasAttachData<any, any>> = Parameters<
   T['attachData']
@@ -173,13 +179,26 @@ type PipedPreAuthorize<TLeft, TRight> = [TLeft] extends [
               ? keyof {}
               : keyof PreAuthorizeContextOut<TLeft>
           >,
-        PreAuthorizeContextOut<TRight> &
-          Omit<
-            PreAuthorizeContextOut<TLeft>,
-            PreAuthorizeContextOut<TRight> extends boolean
-              ? keyof {}
-              : keyof PreAuthorizeContextOut<TRight>
-          >
+        PreAuthorizeContextOut<TLeft> extends boolean
+          ? PreAuthorizeContextOut<TRight> extends boolean // BOTH left AND right have preAuthorize that returns ONLY booleans - never objects
+            ? boolean // left's preAuthorize returns ONLY booleans but right's might return objects
+            :
+                | PreAuthorizeContextOutObjectCase<TRight>
+                | (PreAuthorizeContextOutFalseCase<TLeft> & false)
+                | (PreAuthorizeContextOutFalseCase<TRight> & false) // right's preAuthorize returns ONLY booleans but left's might return objects
+          : PreAuthorizeContextOut<TRight> extends boolean
+          ?
+              | PreAuthorizeContextOutObjectCase<TLeft>
+              | (PreAuthorizeContextOutFalseCase<TLeft> & false)
+              | (PreAuthorizeContextOutFalseCase<TRight> & false) // NEITHER left NOR right's preAuthorize return strictly boolean - so both might return objects
+          :
+              | (PreAuthorizeContextOutObjectCase<TRight> &
+                  Omit<
+                    PreAuthorizeContextOutObjectCase<TLeft>,
+                    keyof PreAuthorizeContextOutObjectCase<TRight>
+                  >)
+              | (PreAuthorizeContextOutFalseCase<TLeft> & false)
+              | (PreAuthorizeContextOutFalseCase<TRight> & false)
       >
     : { preAuthorize: TLeft['preAuthorize'] }
   : [TRight] extends [HasPreAuthorize<any, any>]
@@ -471,6 +490,7 @@ export function HTPipe<
   T1 extends OptionallyHasInitPreContext<any, any> &
     OptionallyHasSanitizeParams<any, any> &
     OptionallyHasSanitizeBody<any, any> &
+    MightHavePreAuthorize<any, any> &
     OptionallyHasAttachData<any, any> &
     MightHaveRespond<any, any> &
     MightHaveSanitizeResponse<any, any>
@@ -570,7 +590,7 @@ export function HTPipe(...objs: any[]) {
                 return false;
               }
               const leftContextOut =
-                leftPassed === true ? {} : (leftOut as object);
+                leftOut === true ? {} : (leftOut as object);
               const rightIn = {
                 ...context,
                 ...leftContextOut,
