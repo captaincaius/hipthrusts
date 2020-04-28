@@ -84,6 +84,19 @@ type SanitizeBodyContextOut<T extends HasSanitizeBody<any, any>> = ReturnType<
   T['sanitizeBody']
 >;
 
+type PreAuthorizeContextIn<T extends HasPreAuthorize<any, any>> = Parameters<
+  T['preAuthorize']
+>[0];
+type PreAuthorizeContextOut<T extends HasPreAuthorize<any, any>> = ReturnType<
+  T['preAuthorize']
+>;
+type PreAuthorizeContextOutObjectCase<
+  T extends HasPreAuthorize<any, any>
+> = ReturnType<T['preAuthorize']>;
+type PreAuthorizeContextOutFalseCase<
+  T extends HasPreAuthorize<any, any>
+> = false & ReturnType<T['preAuthorize']>;
+
 type AttachDataIn<T extends HasAttachData<any, any>> = Parameters<
   T['attachData']
 >[0];
@@ -154,6 +167,46 @@ type PipedSanitizeBody<TLeft, TRight> = [TLeft] extends [
 
 // @note must wrap types with arrays to avoid distribution over naked type conditionals blowing up exponentially - see
 // https://github.com/Microsoft/TypeScript/issues/29368#issuecomment-453529532
+type PipedPreAuthorize<TLeft, TRight> = [TLeft] extends [
+  HasPreAuthorize<any, any>
+]
+  ? [TRight] extends [HasPreAuthorize<any, any>]
+    ? HasPreAuthorize<
+        PreAuthorizeContextIn<TLeft> &
+          Omit<
+            PreAuthorizeContextIn<TRight>,
+            PreAuthorizeContextOut<TLeft> extends boolean
+              ? keyof {}
+              : keyof PreAuthorizeContextOut<TLeft>
+          >,
+        PreAuthorizeContextOut<TLeft> extends boolean
+          ? PreAuthorizeContextOut<TRight> extends boolean
+            ? boolean // BOTH left AND right have preAuthorize that returns ONLY booleans - never objects
+            :
+                | PreAuthorizeContextOutObjectCase<TRight> // left's preAuthorize returns ONLY booleans but right's might return objects
+                | (PreAuthorizeContextOutFalseCase<TLeft> & false)
+                | (PreAuthorizeContextOutFalseCase<TRight> & false)
+          : PreAuthorizeContextOut<TRight> extends boolean
+          ?
+              | PreAuthorizeContextOutObjectCase<TLeft> // right's preAuthorize returns ONLY booleans but left's might return objects
+              | (PreAuthorizeContextOutFalseCase<TLeft> & false)
+              | (PreAuthorizeContextOutFalseCase<TRight> & false)
+          :
+              | (PreAuthorizeContextOutObjectCase<TRight> & // NEITHER left NOR right's preAuthorize return strictly boolean - so both might return objects
+                  Omit<
+                    PreAuthorizeContextOutObjectCase<TLeft>,
+                    keyof PreAuthorizeContextOutObjectCase<TRight>
+                  >)
+              | (PreAuthorizeContextOutFalseCase<TLeft> & false)
+              | (PreAuthorizeContextOutFalseCase<TRight> & false)
+      >
+    : { preAuthorize: TLeft['preAuthorize'] }
+  : [TRight] extends [HasPreAuthorize<any, any>]
+  ? { preAuthorize: TRight['preAuthorize'] }
+  : {};
+
+// @note must wrap types with arrays to avoid distribution over naked type conditionals blowing up exponentially - see
+// https://github.com/Microsoft/TypeScript/issues/29368#issuecomment-453529532
 type PipedAttachData<TLeft, TRight> = [TLeft] extends [HasAttachData<any, any>]
   ? [TRight] extends [HasAttachData<any, any>]
     ? HasAttachData<
@@ -220,6 +273,21 @@ type ClashlessSanitizeBody<TLeft, TRight> = OptionallyHasSanitizeBody<
     : any
 >;
 
+type ClashlessPreAuthorize<TLeft, TRight> = MightHavePreAuthorize<
+  any,
+  | boolean
+  | (TRight extends HasPreAuthorize<any, any>
+      ? Pick<
+          Parameters<TRight['preAuthorize']>[0],
+          keyof ReturnType<
+            TLeft extends HasPreAuthorize<any, any>
+              ? TLeft['preAuthorize']
+              : () => {}
+          >
+        >
+      : any)
+>;
+
 type ClashlessAttachData<TLeft, TRight> = OptionallyHasAttachData<
   any,
   TRight extends HasAttachData<any, any>
@@ -256,6 +324,7 @@ export function HTPipe<
   T extends OptionallyHasInitPreContext<any, any> &
     OptionallyHasSanitizeParams<any, any> &
     OptionallyHasSanitizeBody<any, any> &
+    MightHavePreAuthorize<any, any> &
     OptionallyHasAttachData<any, any> &
     MightHaveRespond<any, any> &
     MightHaveSanitizeResponse<any, any>
@@ -267,6 +336,7 @@ export function HTPipe<
   | 'initPreContext'
   | 'sanitizeParams'
   | 'sanitizeBody'
+  | 'preAuthorize'
   | 'attachData'
   | 'respond'
   | 'sanitizeResponse'
@@ -278,6 +348,7 @@ export function HTPipe<
   TLeft extends OptionallyHasInitPreContext<any, any> &
     OptionallyHasSanitizeParams<any, any> &
     OptionallyHasSanitizeBody<any, any> &
+    MightHavePreAuthorize<any, any> &
     OptionallyHasAttachData<any, any> &
     MightHaveRespond<any, any> &
     MightHaveSanitizeResponse<any, any>,
@@ -289,6 +360,9 @@ export function HTPipe<
       : {}) &
     (TLeft extends HasSanitizeBody<any, any>
       ? OptionallyHasSanitizeBody<ReturnType<TLeft['sanitizeBody']>, any>
+      : {}) &
+    (TLeft extends HasPreAuthorize<any, any>
+      ? MightHavePreAuthorize<ReturnType<TLeft['preAuthorize']>, any>
       : {}) &
     (TLeft extends HasAttachData<any, any>
       ? OptionallyHasAttachData<
@@ -308,6 +382,7 @@ export function HTPipe<
 ): PipedPreContext<TLeft, TRight> &
   PipedSanitizeParams<TLeft, TRight> &
   PipedSanitizeBody<TLeft, TRight> &
+  PipedPreAuthorize<TLeft, TRight> &
   PipedAttachData<TLeft, TRight> &
   PipedRespond<TLeft, TRight> &
   PipedSanitizeResponse<TLeft, TRight>;
@@ -317,12 +392,14 @@ export function HTPipe<
   TLeft extends ClashlessInitPreContext<TLeft, TRight> &
     ClashlessSanitizeParams<TLeft, TRight> &
     ClashlessSanitizeBody<TLeft, TRight> &
+    ClashlessPreAuthorize<TLeft, TRight> &
     ClashlessAttachData<TLeft, TRight> &
     ClashlessRespond<TLeft, TRight> &
     ClashlessSanitizeResponse<TLeft, TRight>,
   TRight extends OptionallyHasInitPreContext<any, any> &
     OptionallyHasSanitizeParams<any, any> &
     OptionallyHasSanitizeBody<any, any> &
+    MightHavePreAuthorize<any, any> &
     OptionallyHasAttachData<any, any> &
     MightHaveRespond<any, any> &
     MightHaveSanitizeResponse<any, any>
@@ -332,6 +409,7 @@ export function HTPipe<
 ): PipedPreContext<TLeft, TRight> &
   PipedSanitizeParams<TLeft, TRight> &
   PipedSanitizeBody<TLeft, TRight> &
+  PipedPreAuthorize<TLeft, TRight> &
   PipedAttachData<TLeft, TRight> &
   PipedRespond<TLeft, TRight> &
   PipedSanitizeResponse<TLeft, TRight>;
@@ -341,18 +419,21 @@ export function HTPipe<
   T3 extends ClashlessInitPreContext<T3, PipedPreContext<T2, T1>> &
     ClashlessSanitizeParams<T3, PipedSanitizeParams<T2, T1>> &
     ClashlessSanitizeBody<T3, PipedSanitizeBody<T2, T1>> &
+    ClashlessPreAuthorize<T3, PipedPreAuthorize<T2, T1>> &
     ClashlessAttachData<T3, PipedAttachData<T2, T1>> &
     ClashlessRespond<T3, PipedRespond<T2, T1>> &
     ClashlessSanitizeResponse<T3, PipedSanitizeResponse<T2, T1>>,
   T2 extends ClashlessInitPreContext<T2, T1> &
     ClashlessSanitizeParams<T2, T1> &
     ClashlessSanitizeBody<T2, T1> &
+    ClashlessPreAuthorize<T2, T1> &
     ClashlessAttachData<T2, T1> &
     ClashlessRespond<T2, T1> &
     ClashlessSanitizeResponse<T2, T1>,
   T1 extends OptionallyHasInitPreContext<any, any> &
     OptionallyHasSanitizeParams<any, any> &
     OptionallyHasSanitizeBody<any, any> &
+    MightHavePreAuthorize<any, any> &
     OptionallyHasAttachData<any, any> &
     MightHaveRespond<any, any> &
     MightHaveSanitizeResponse<any, any>
@@ -363,6 +444,7 @@ export function HTPipe<
 ): PipedPreContext<T3, PipedPreContext<T2, T1>> &
   PipedSanitizeParams<T3, PipedSanitizeParams<T2, T1>> &
   PipedSanitizeBody<T3, PipedSanitizeBody<T2, T1>> &
+  PipedPreAuthorize<T3, PipedPreAuthorize<T2, T1>> &
   PipedAttachData<T3, PipedAttachData<T2, T1>> &
   PipedRespond<T3, PipedRespond<T2, T1>> &
   PipedSanitizeResponse<T3, PipedSanitizeResponse<T2, T1>>;
@@ -381,6 +463,10 @@ export function HTPipe<
       T4,
       PipedSanitizeBody<T3, PipedSanitizeBody<T2, T1>>
     > &
+    ClashlessPreAuthorize<
+      T4,
+      PipedPreAuthorize<T3, PipedPreAuthorize<T2, T1>>
+    > &
     ClashlessAttachData<T4, PipedAttachData<T3, PipedAttachData<T2, T1>>> &
     ClashlessRespond<T4, PipedRespond<T3, PipedRespond<T2, T1>>> &
     ClashlessSanitizeResponse<
@@ -390,18 +476,21 @@ export function HTPipe<
   T3 extends ClashlessInitPreContext<T3, PipedPreContext<T2, T1>> &
     ClashlessSanitizeParams<T3, PipedSanitizeParams<T2, T1>> &
     ClashlessSanitizeBody<T3, PipedSanitizeBody<T2, T1>> &
+    ClashlessPreAuthorize<T3, PipedPreAuthorize<T2, T1>> &
     ClashlessAttachData<T3, PipedAttachData<T2, T1>> &
     ClashlessRespond<T3, PipedRespond<T2, T1>> &
     ClashlessSanitizeResponse<T3, PipedSanitizeResponse<T2, T1>>,
   T2 extends ClashlessInitPreContext<T2, T1> &
     ClashlessSanitizeParams<T2, T1> &
     ClashlessSanitizeBody<T2, T1> &
+    ClashlessPreAuthorize<T2, T1> &
     ClashlessAttachData<T2, T1> &
     ClashlessRespond<T2, T1> &
     ClashlessSanitizeResponse<T2, T1>,
   T1 extends OptionallyHasInitPreContext<any, any> &
     OptionallyHasSanitizeParams<any, any> &
     OptionallyHasSanitizeBody<any, any> &
+    MightHavePreAuthorize<any, any> &
     OptionallyHasAttachData<any, any> &
     MightHaveRespond<any, any> &
     MightHaveSanitizeResponse<any, any>
@@ -416,6 +505,7 @@ export function HTPipe<
     PipedSanitizeParams<T3, PipedSanitizeParams<T2, T1>>
   > &
   PipedSanitizeBody<T4, PipedSanitizeBody<T3, PipedSanitizeBody<T2, T1>>> &
+  PipedPreAuthorize<T4, PipedPreAuthorize<T3, PipedPreAuthorize<T2, T1>>> &
   PipedAttachData<T4, PipedAttachData<T3, PipedAttachData<T2, T1>>> &
   PipedRespond<T4, PipedRespond<T3, PipedRespond<T2, T1>>> &
   PipedSanitizeResponse<
@@ -489,6 +579,45 @@ export function HTPipe(...objs: any[]) {
         : isHasSanitizeBody(right)
         ? { sanitizeBody: right.sanitizeBody }
         : {}) as PipedSanitizeBody<any, any>),
+      ...((isHasPreAuthorize(left) && isHasPreAuthorize(right)
+        ? {
+            preAuthorize: (context: any) => {
+              const leftOut = left.preAuthorize(context);
+              const leftPassed = authorizationPassed(
+                leftOut as boolean | object
+              );
+              if (!leftPassed) {
+                return false;
+              }
+              const leftContextOut =
+                leftOut === true ? {} : (leftOut as object);
+              const rightIn = {
+                ...context,
+                ...leftContextOut,
+              };
+              const rightOut = right.preAuthorize(rightIn);
+              const rightPassed = authorizationPassed(
+                rightOut as boolean | object
+              );
+              if (!rightPassed) {
+                return false;
+              }
+              if (leftOut === true && rightOut === true) {
+                return true;
+              }
+              const rightContextOut =
+                rightOut === true ? {} : (rightOut as object);
+              return {
+                ...leftContextOut,
+                ...rightContextOut,
+              };
+            },
+          }
+        : isHasPreAuthorize(left)
+        ? { preAuthorize: left.preAuthorize }
+        : isHasPreAuthorize(right)
+        ? { preAuthorize: right.preAuthorize }
+        : {}) as PipedPreAuthorize<any, any>),
       ...((isHasAttachData(left) && isHasAttachData(right)
         ? {
             attachData: async (context: any) => {
