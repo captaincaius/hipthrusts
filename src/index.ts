@@ -722,7 +722,7 @@ export function HTPipe(...objs: any[]) {
         : isHasInitPreContext(left)
         ? { initPreContext: left.initPreContext }
         : isHasInitPreContext(right)
-        ? { initPreContext: left.initPreContext }
+        ? { initPreContext: right.initPreContext }
         : {}) as PipedPreContext<any, any>),
       ...((isHasSanitizeParams(left) && isHasSanitizeParams(right)
         ? {

@@ -206,8 +206,16 @@ export function htMongooseFactory(mongoose: any) {
     };
   }
 
-  function WithPojoToDocument(modelClass: any) {
-    return WithAttached((pojo: any) => Promise.resolve(new modelClass(pojo)));
+  function WithPojoToDocument(
+    pojoKey: string,
+    modelClass: any,
+    newDocKey: string
+  ) {
+    return WithAttached((context: any) => {
+      return {
+        [newDocKey]: new modelClass(context[pojoKey]),
+      };
+    });
   }
 
   return {

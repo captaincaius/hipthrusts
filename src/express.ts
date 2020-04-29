@@ -32,7 +32,6 @@ interface ExpressInitialUnsafeContext {
 
 export function hipExpressHandlerFactory<
   TConf extends HasAllRequireds &
-    HasInitPreContext<any, any> &
     HasInitPreContextProperOptionals<TConf> &
     HasParamsProperOptionals<TConf> &
     HasBodyProperOptionals<TConf> &
