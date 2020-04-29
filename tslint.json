@@ -3,6 +3,7 @@
   "extends": ["tslint:recommended", "tslint-config-prettier"],
   "rulesDirectory": ["node_modules/tslint-eslint-rules/dist/rules"],
   "rules": {
+    "object-literal-sort-keys": false,
     "interface-name": false,
     "max-classes-per-file": false
   }

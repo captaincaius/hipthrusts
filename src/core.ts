@@ -1,31 +1,161 @@
 import Boom from '@hapi/boom';
-import { Constructor } from './types';
+import {
+  HasAllRequireds,
+  HasAttachData,
+  HasAttachDataProperOptionals,
+  HasBodyProperOptionals,
+  HasDoWork,
+  HasDoWorkProperOptionals,
+  HasFinalAuthorize,
+  HasFinalAuthorizeProperOptionals,
+  HasInitPreContext,
+  HasInitPreContextProperOptionals,
+  HasParamsProperOptionals,
+  HasPreAuthorize,
+  HasPreauthProperOptionals,
+  HasRespond,
+  HasRespondProperOptionals,
+  HasSanitizeBody,
+  HasSanitizeParams,
+  HasSanitizeResponse,
+  HasUpToAttachDataProperOptionals,
+  HasUpToDoWorkProperOptionals,
+  HasUpToFinalAuthorizeProperOptionals,
+  HasUpToRespondProperOptionals,
+  MightHaveFinalAuthorize,
+  MightHavePreAuthorize,
+  MightHaveRespond,
+  MightHaveSanitizeResponse,
+  OptionallyHasAttachData,
+  OptionallyHasDoWork,
+  OptionallyHasInitPreContext,
+  OptionallyHasSanitizeBody,
+  OptionallyHasSanitizeParams,
+  PromiseOrSync,
+  PromiseResolveOrSync,
+} from './types';
 
-export interface HipThrustable<
-  TParamsSafe,
-  TBodySafe,
-  TResBodyUnsafeReturn extends TResBodyUnsafeInput,
-  TResBodyUnsafeInput
-> {
-  params: TParamsSafe;
-  body: TBodySafe;
-  // doesn't need composition
-  sanitizeParams(unsafeParams: any): TParamsSafe;
-  // doesn't need composition
-  sanitizeBody(unsafeBody: any): TBodySafe;
-  preAuthorize(): boolean;
-  attachData?(): Promise<void>;
-  finalAuthorize(): Promise<boolean>;
-  doWork?(): Promise<void>;
-  response(): HipWorkResponse<TResBodyUnsafeReturn>;
-  sanitizeResponse(unsafeResponse: TResBodyUnsafeInput): any;
+// @todo: MINOR: consider bringing this back to life so complexity of optionality is removed from executeHipthrustable
+export function withDefaultImplementations<
+  TStrategy extends OptionallyHasInitPreContext<any, any> &
+    OptionallyHasSanitizeParams<any, any> &
+    OptionallyHasSanitizeBody<any, any> &
+    HasAllRequireds &
+    OptionallyHasAttachData<any, any> &
+    OptionallyHasDoWork<any, any>
+>(
+  strategy: TStrategy
+): {
+  initPreContext: TStrategy extends HasInitPreContext<any, any>
+    ? TStrategy['initPreContext']
+    : () => {};
+  sanitizeParams: TStrategy extends HasSanitizeParams<any, any>
+    ? TStrategy['sanitizeParams']
+    : () => {};
+  sanitizeBody: TStrategy extends HasSanitizeBody<any, any>
+    ? TStrategy['sanitizeBody']
+    : () => {};
+  preAuthorize: TStrategy['preAuthorize'];
+  attachData: TStrategy extends HasAttachData<any, any>
+    ? TStrategy['attachData']
+    : () => {};
+  finalAuthorize: TStrategy['finalAuthorize'];
+  doWork: TStrategy extends HasDoWork<any, any>
+    ? TStrategy['doWork']
+    : () => {};
+  respond: TStrategy['respond'];
+  sanitizeResponse: TStrategy['sanitizeResponse'];
+} {
+  // @tswtf why isn't typescript smart enough to not require these type assertions below?
+  return {
+    ...strategy,
+    initPreContext: (strategy.initPreContext
+      ? strategy.initPreContext
+      : () => {
+          return {};
+        }) as TStrategy extends HasInitPreContext<any, any>
+      ? TStrategy['initPreContext']
+      : () => {},
+    sanitizeParams: (strategy.sanitizeParams
+      ? strategy.sanitizeParams
+      : () => {
+          return {};
+        }) as TStrategy extends HasSanitizeParams<any, any>
+      ? TStrategy['sanitizeParams']
+      : () => {},
+    sanitizeBody: (strategy.sanitizeBody ||
+      (() => {
+        return {};
+      })) as TStrategy extends HasSanitizeBody<any, any>
+      ? TStrategy['sanitizeBody']
+      : () => {},
+    attachData: (strategy.attachData ||
+      (() => {
+        return {};
+      })) as TStrategy extends HasAttachData<any, any>
+      ? TStrategy['attachData']
+      : () => {},
+    doWork: (strategy.doWork ||
+      (() => {
+        return {};
+      })) as TStrategy extends HasDoWork<any, any>
+      ? TStrategy['doWork']
+      : () => {},
+  };
 }
 
-export type AnyHipThrustable = HipThrustable<any, any, any, any>;
+export function isHasInitPreContext<TContextIn, TContextOut>(
+  thing: OptionallyHasInitPreContext<TContextIn, TContextOut>
+): thing is HasInitPreContext<TContextIn, TContextOut> {
+  return !!(thing && thing.initPreContext);
+}
 
-interface HipWorkResponse<ResponseShape> {
-  unsafeResponse: ResponseShape;
-  status?: number;
+export function isHasAttachData<TContextIn, TContextOut>(
+  thing: OptionallyHasAttachData<TContextIn, TContextOut>
+): thing is HasAttachData<TContextIn, TContextOut> {
+  return !!(thing && thing.attachData);
+}
+
+export function isHasDoWork<TContextIn, TContextOut>(
+  thing: OptionallyHasDoWork<TContextIn, TContextOut>
+): thing is HasDoWork<TContextIn, TContextOut> {
+  return !!(thing && thing.doWork);
+}
+
+export function isHasFinalAuthorize<TContextIn, TContextOut>(
+  thing: MightHaveFinalAuthorize<TContextIn, TContextOut>
+): thing is HasFinalAuthorize<TContextIn, TContextOut> {
+  return !!(thing && thing.finalAuthorize);
+}
+
+export function isHasPreAuthorize<TContextIn, TContextOut>(
+  thing: MightHavePreAuthorize<TContextIn, TContextOut>
+): thing is HasPreAuthorize<TContextIn, TContextOut> {
+  return !!(thing && thing.preAuthorize);
+}
+
+export function isHasSanitizeParams<TContextIn, TContextOut>(
+  thing: OptionallyHasSanitizeParams<TContextIn, TContextOut>
+): thing is HasSanitizeParams<TContextIn, TContextOut> {
+  return !!(thing && thing.sanitizeParams);
+}
+
+export function isHasSanitizeBody<TContextIn, TContextOut>(
+  thing: OptionallyHasSanitizeBody<TContextIn, TContextOut>
+): thing is HasSanitizeBody<TContextIn, TContextOut> {
+  return !!(thing && thing.sanitizeBody);
+}
+
+export function isHasSanitizeResponse<TContextIn, TContextOut>(
+  thing: MightHaveSanitizeResponse<TContextIn, TContextOut>
+): thing is HasSanitizeResponse<TContextIn, TContextOut> {
+  return !!(thing && thing.sanitizeResponse);
+}
+
+export function isHasRespond<TContextIn, TContextOut>(
+  thing: MightHaveRespond<TContextIn, TContextOut>
+): thing is HasRespond<TContextIn, TContextOut> {
+  return !!(thing && thing.respond);
 }
 
 export class HipRedirectException {
@@ -35,55 +165,158 @@ export class HipRedirectException {
   ) {}
 }
 
-export async function executeHipthrustable(requestHandler: AnyHipThrustable) {
+function transformThrowSync<TOrigFn extends (param: any) => any>(
+  toThrow: any,
+  origFn: TOrigFn,
+  origParam: Parameters<TOrigFn>[0]
+): ReturnType<TOrigFn> {
   try {
-    if (requestHandler.preAuthorize() !== true) {
-      throw Boom.forbidden(
-        'General pre-authorization lacking for this resource'
-      );
-    }
+    return origFn(origParam);
   } catch (exception) {
     if (exception instanceof HipRedirectException || Boom.isBoom(exception)) {
       // Don't transform redirect exceptions or intentionally constructed boom errors
       throw exception;
     } else {
-      // All other uncaught exceptions transform to generic 403s here
-      throw Boom.forbidden(
-        'General pre-authorization lacking for this resource'
-      );
+      // All other uncaught exceptions transform to whatever is requested
+      throw toThrow;
     }
   }
-  if (requestHandler.attachData) {
-    try {
-      await requestHandler.attachData();
-    } catch (exception) {
-      if (exception instanceof HipRedirectException || Boom.isBoom(exception)) {
-        // Don't transform redirect exceptions or intentionally constructed boom errors
-        throw exception;
-      } else {
-        // All other uncaught exceptions transform to generic 404s here
-        throw Boom.notFound('Resource not found');
-      }
-    }
-  }
-  try {
-    if ((await requestHandler.finalAuthorize()) !== true) {
-      throw Boom.forbidden('General authorization lacking for this resource');
-    }
-  } catch (exception) {
+}
+
+function transformThrowPossiblyAsync<
+  TOrigFn extends (param: any) => PromiseOrSync<any>
+>(
+  toThrow: any,
+  origFn: TOrigFn,
+  origParam: Parameters<TOrigFn>[0]
+): Promise<PromiseResolveOrSync<ReturnType<TOrigFn>>> {
+  return Promise.resolve(origFn(origParam)).catch(exception => {
     if (exception instanceof HipRedirectException || Boom.isBoom(exception)) {
       // Don't transform redirect exceptions or intentionally constructed boom errors
       throw exception;
     } else {
-      // All other uncaught exceptions transform to generic 403s here
-      throw Boom.forbidden('General authorization lacking for this resource');
+      // All other uncaught exceptions transform to whatever is requested
+      throw toThrow;
     }
+  });
+}
+
+export async function executeHipthrustable<
+  // @todo: MINOR: consider swapping these when withDefaultImplementations is fixed
+  /*
+  TConf extends
+    HasSanitizeResponse<any,any>
+    & HasInitPreContextProper<TConf>
+    & HasParamsProper<TConf>
+    & HasBodyProper<TConf>
+    & HasPreauthProper<TConf>
+    & HasUpToAttachDataProper<TConf>
+    & HasAttachDataProper<TConf>
+    & HasUpToFinalAuthorizeProper<TConf>
+    & HasFinalAuthorizeProper<TConf>
+    & HasUpToDoWorkProper<TConf>
+    & HasDoWorkProper<TConf>
+    & HasUpToRespondProper<TConf>
+    & HasRespondProper<TConf>,
+  */
+  TConf extends HasAllRequireds &
+    OptionallyHasSanitizeParams<any, any> &
+    OptionallyHasSanitizeBody<any, any> &
+    OptionallyHasAttachData<any, any> &
+    OptionallyHasDoWork<any, any> &
+    OptionallyHasInitPreContext<any, any> &
+    HasInitPreContextProperOptionals<TConf> &
+    HasParamsProperOptionals<TConf> &
+    HasBodyProperOptionals<TConf> &
+    HasPreauthProperOptionals<TConf> &
+    HasUpToAttachDataProperOptionals<TConf> &
+    HasAttachDataProperOptionals<TConf> &
+    HasUpToFinalAuthorizeProperOptionals<TConf> &
+    HasFinalAuthorizeProperOptionals<TConf> &
+    HasUpToDoWorkProperOptionals<TConf> &
+    HasDoWorkProperOptionals<TConf> &
+    HasUpToRespondProperOptionals<TConf> &
+    HasRespondProperOptionals<TConf>,
+  TUnsafe,
+  TUnsafeParams,
+  TUnsafeBody
+>(
+  requestHandler: TConf,
+  unsafe: TUnsafe,
+  unsafeParams: TUnsafeParams,
+  unsafeBody: TUnsafeBody
+) {
+  const badDataThrow = Boom.badData('User input sanitization failure');
+  const safeInitPreContext = requestHandler.initPreContext
+    ? transformThrowSync(badDataThrow, requestHandler.initPreContext, unsafe)
+    : {};
+  // @todo: maybe params should throw something different like 400
+  const safeParams = requestHandler.sanitizeParams
+    ? transformThrowSync(
+        badDataThrow,
+        requestHandler.sanitizeParams,
+        unsafeParams
+      )
+    : undefined;
+  const safeBody = requestHandler.sanitizeBody
+    ? transformThrowSync(badDataThrow, requestHandler.sanitizeBody, unsafeBody)
+    : undefined;
+  const inputsContext = {
+    preContext: safeInitPreContext,
+    params: safeParams,
+    body: safeBody,
+  };
+
+  const forbiddenPreAuthThrow = Boom.forbidden(
+    'General pre-authorization lacking for this resource'
+  );
+  // @todo: allow preAuthorize to return more context instead of "true" too.  Anything falsy will be interpreted as an error.  Don't forget || {} after call
+  if (
+    transformThrowSync(
+      forbiddenPreAuthThrow,
+      requestHandler.preAuthorize,
+      inputsContext
+    ) !== true
+  ) {
+    throw forbiddenPreAuthThrow;
   }
+  const preAuthContext = inputsContext;
+
+  const notFoundThrow = Boom.notFound('Resource not found');
+  const attachedDataContextOnly = requestHandler.attachData
+    ? (await transformThrowPossiblyAsync(
+        notFoundThrow,
+        requestHandler.attachData,
+        preAuthContext
+      )) || {}
+    : {};
+  const attachedDataContext = { ...preAuthContext, ...attachedDataContextOnly };
+
+  const forbiddenFinalAuthThrow = Boom.forbidden(
+    'General authorization lacking for this resource'
+  );
+  // @todo: allow finalAuthorize to return more context instead of "true" too.  Anything falsy will be interpreted as an error.  Don't forget || {} after call
+  if (
+    (await transformThrowPossiblyAsync(
+      forbiddenFinalAuthThrow,
+      requestHandler.finalAuthorize,
+      attachedDataContext
+    )) !== true
+  ) {
+    throw forbiddenPreAuthThrow;
+  }
+  const finalAuthContext = attachedDataContext;
+
   try {
+    // @todo: allow doWork to return more context instead of "true" too.  Anything falsy will be interpreted as an error.  Don't forget || {} after call
     if (requestHandler.doWork) {
-      await requestHandler.doWork();
+      // to keep executeHipthrustable from being too opinionated, it's doWork's responsibility to handle and throw client errors.
+      // Any un-boom'ed errors here should be interpreted as server errors
+      await Promise.resolve(requestHandler.doWork(finalAuthContext));
     }
-    const { unsafeResponse, status } = requestHandler.response();
+    const doWorkContext = finalAuthContext;
+
+    const { unsafeResponse, status } = requestHandler.respond(doWorkContext);
     const safeResponse = requestHandler.sanitizeResponse(unsafeResponse);
     const responseAndStatus = { response: safeResponse, status: status || 200 };
     return responseAndStatus;
@@ -99,20 +332,18 @@ export async function executeHipthrustable(requestHandler: AnyHipThrustable) {
 }
 
 export async function assertHipthrustable(
-  RequestHandler: Constructor<AnyHipThrustable>
+  requestHandler: HasAllRequireds & Record<string, any>
 ) {
   const requiredMethods = [
-    'sanitizeParams',
-    'sanitizeBody',
     'preAuthorize',
     'finalAuthorize',
-    'response',
+    'respond',
     'sanitizeResponse',
   ];
   requiredMethods.forEach(method => {
     if (
-      !RequestHandler.prototype[method] ||
-      typeof RequestHandler.prototype[method] !== 'function'
+      !requestHandler[method] ||
+      typeof requestHandler[method] !== 'function'
     ) {
       throw new Error(
         `Missing instance method "${method}" on supposedly hipthrustable class`
