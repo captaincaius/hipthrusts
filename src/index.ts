@@ -104,6 +104,19 @@ type AttachDataOut<T extends HasAttachData<any, any>> = PromiseResolveOrSync<
   ReturnType<T['attachData']>
 >;
 
+type FinalAuthorizeContextIn<
+  T extends HasFinalAuthorize<any, any>
+> = Parameters<T['finalAuthorize']>[0];
+type FinalAuthorizeContextOut<
+  T extends HasFinalAuthorize<any, any>
+> = PromiseResolveOrSync<ReturnType<T['finalAuthorize']>>;
+type FinalAuthorizeContextOutObjectCase<
+  T extends HasFinalAuthorize<any, any>
+> = object & PromiseResolveOrSync<ReturnType<T['finalAuthorize']>>;
+type FinalAuthorizeContextOutFalseCase<
+  T extends HasFinalAuthorize<any, any>
+> = false & PromiseResolveOrSync<ReturnType<T['finalAuthorize']>>;
+
 type DoWorkContextIn<T extends HasDoWork<any, any>> = Parameters<
   T['doWork']
 >[0];
@@ -229,6 +242,48 @@ type PipedAttachData<TLeft, TRight> = [TLeft] extends [HasAttachData<any, any>]
   ? { attachData: TRight['attachData'] }
   : {};
 
+// @note must wrap types with arrays to avoid distribution over naked type conditionals blowing up exponentially - see
+// https://github.com/Microsoft/TypeScript/issues/29368#issuecomment-453529532
+type PipedFinalAuthorize<TLeft, TRight> = [TLeft] extends [
+  HasFinalAuthorize<any, any>
+]
+  ? [TRight] extends [HasFinalAuthorize<any, any>]
+    ? HasFinalAuthorize<
+        FinalAuthorizeContextIn<TLeft> &
+          Omit<
+            FinalAuthorizeContextIn<TRight>,
+            FinalAuthorizeContextOut<TLeft> extends boolean
+              ? keyof {}
+              : keyof FinalAuthorizeContextOut<TLeft>
+          >,
+        FinalAuthorizeContextOut<TLeft> extends boolean
+          ? FinalAuthorizeContextOut<TRight> extends boolean
+            ? boolean // BOTH left AND right have finalAuthorize that returns ONLY booleans - never objects
+            :
+                | FinalAuthorizeContextOutObjectCase<TRight> // left's finalAuthorize returns ONLY booleans but right's might return objects
+                | (FinalAuthorizeContextOutFalseCase<TLeft> & false)
+                | (FinalAuthorizeContextOutFalseCase<TRight> & false)
+          : FinalAuthorizeContextOut<TRight> extends boolean
+          ?
+              | FinalAuthorizeContextOutObjectCase<TLeft> // right's finalAuthorize returns ONLY booleans but left's might return objects
+              | (FinalAuthorizeContextOutFalseCase<TLeft> & false)
+              | (FinalAuthorizeContextOutFalseCase<TRight> & false)
+          :
+              | (FinalAuthorizeContextOutObjectCase<TRight> & // NEITHER left NOR right's finalAuthorize return strictly boolean - so both might return objects
+                  Omit<
+                    FinalAuthorizeContextOutObjectCase<TLeft>,
+                    keyof FinalAuthorizeContextOutObjectCase<TRight>
+                  >)
+              | (FinalAuthorizeContextOutFalseCase<TLeft> & false)
+              | (FinalAuthorizeContextOutFalseCase<TRight> & false)
+      >
+    : { finalAuthorize: TLeft['finalAuthorize'] }
+  : [TRight] extends [HasFinalAuthorize<any, any>]
+  ? { finalAuthorize: TRight['finalAuthorize'] }
+  : {};
+
+// @note must wrap types with arrays to avoid distribution over naked type conditionals blowing up exponentially - see
+// https://github.com/Microsoft/TypeScript/issues/29368#issuecomment-453529532
 type PipedDoWork<TLeft, TRight> = [TLeft] extends [HasDoWork<any, any>]
   ? [TRight] extends [HasDoWork<any, any>]
     ? HasDoWork<
@@ -340,6 +395,23 @@ type ClashlessAttachData<TLeft, TRight> = OptionallyHasAttachData<
     : any
 >;
 
+type ClashlessFinalAuthorize<TLeft, TRight> = MightHaveFinalAuthorize<
+  any,
+  | boolean
+  | (TRight extends HasFinalAuthorize<any, any>
+      ? Pick<
+          Parameters<TRight['finalAuthorize']>[0],
+          keyof PromiseResolveOrSync<
+            ReturnType<
+              TLeft extends HasFinalAuthorize<any, any>
+                ? TLeft['finalAuthorize']
+                : () => {}
+            >
+          >
+        >
+      : any)
+>;
+
 type ClashlessDoWork<TLeft, TRight> = OptionallyHasDoWork<
   any,
   | void
@@ -377,6 +449,7 @@ export function HTPipe<
     OptionallyHasSanitizeBody<any, any> &
     MightHavePreAuthorize<any, any> &
     OptionallyHasAttachData<any, any> &
+    MightHaveFinalAuthorize<any, any> &
     OptionallyHasDoWork<any, any> &
     MightHaveRespond<any, any> &
     MightHaveSanitizeResponse<any, any>
@@ -390,6 +463,7 @@ export function HTPipe<
   | 'sanitizeBody'
   | 'preAuthorize'
   | 'attachData'
+  | 'finalAuthorize'
   | 'doWork'
   | 'respond'
   | 'sanitizeResponse'
@@ -403,6 +477,7 @@ export function HTPipe<
     OptionallyHasSanitizeBody<any, any> &
     MightHavePreAuthorize<any, any> &
     OptionallyHasAttachData<any, any> &
+    MightHaveFinalAuthorize<any, any> &
     OptionallyHasDoWork<any, any> &
     MightHaveRespond<any, any> &
     MightHaveSanitizeResponse<any, any>,
@@ -421,6 +496,12 @@ export function HTPipe<
     (TLeft extends HasAttachData<any, any>
       ? OptionallyHasAttachData<
           PromiseResolveOrSync<ReturnType<TLeft['attachData']>>,
+          any
+        >
+      : {}) &
+    (TLeft extends HasFinalAuthorize<any, any>
+      ? MightHaveFinalAuthorize<
+          PromiseResolveOrSync<ReturnType<TLeft['finalAuthorize']>>,
           any
         >
       : {}) &
@@ -444,6 +525,7 @@ export function HTPipe<
   PipedSanitizeBody<TLeft, TRight> &
   PipedPreAuthorize<TLeft, TRight> &
   PipedAttachData<TLeft, TRight> &
+  PipedFinalAuthorize<TLeft, TRight> &
   PipedDoWork<TLeft, TRight> &
   PipedRespond<TLeft, TRight> &
   PipedSanitizeResponse<TLeft, TRight>;
@@ -455,6 +537,7 @@ export function HTPipe<
     ClashlessSanitizeBody<TLeft, TRight> &
     ClashlessPreAuthorize<TLeft, TRight> &
     ClashlessAttachData<TLeft, TRight> &
+    ClashlessFinalAuthorize<TLeft, TRight> &
     ClashlessDoWork<TLeft, TRight> &
     ClashlessRespond<TLeft, TRight> &
     ClashlessSanitizeResponse<TLeft, TRight>,
@@ -463,6 +546,7 @@ export function HTPipe<
     OptionallyHasSanitizeBody<any, any> &
     MightHavePreAuthorize<any, any> &
     OptionallyHasAttachData<any, any> &
+    MightHaveFinalAuthorize<any, any> &
     OptionallyHasDoWork<any, any> &
     MightHaveRespond<any, any> &
     MightHaveSanitizeResponse<any, any>
@@ -474,6 +558,7 @@ export function HTPipe<
   PipedSanitizeBody<TLeft, TRight> &
   PipedPreAuthorize<TLeft, TRight> &
   PipedAttachData<TLeft, TRight> &
+  PipedFinalAuthorize<TLeft, TRight> &
   PipedDoWork<TLeft, TRight> &
   PipedRespond<TLeft, TRight> &
   PipedSanitizeResponse<TLeft, TRight>;
@@ -485,6 +570,7 @@ export function HTPipe<
     ClashlessSanitizeBody<T3, PipedSanitizeBody<T2, T1>> &
     ClashlessPreAuthorize<T3, PipedPreAuthorize<T2, T1>> &
     ClashlessAttachData<T3, PipedAttachData<T2, T1>> &
+    ClashlessFinalAuthorize<T3, PipedFinalAuthorize<T2, T1>> &
     ClashlessDoWork<T3, PipedDoWork<T2, T1>> &
     ClashlessRespond<T3, PipedRespond<T2, T1>> &
     ClashlessSanitizeResponse<T3, PipedSanitizeResponse<T2, T1>>,
@@ -493,6 +579,7 @@ export function HTPipe<
     ClashlessSanitizeBody<T2, T1> &
     ClashlessPreAuthorize<T2, T1> &
     ClashlessAttachData<T2, T1> &
+    ClashlessFinalAuthorize<T2, T1> &
     ClashlessDoWork<T2, T1> &
     ClashlessRespond<T2, T1> &
     ClashlessSanitizeResponse<T2, T1>,
@@ -501,6 +588,7 @@ export function HTPipe<
     OptionallyHasSanitizeBody<any, any> &
     MightHavePreAuthorize<any, any> &
     OptionallyHasAttachData<any, any> &
+    MightHaveFinalAuthorize<any, any> &
     OptionallyHasDoWork<any, any> &
     MightHaveRespond<any, any> &
     MightHaveSanitizeResponse<any, any>
@@ -513,6 +601,7 @@ export function HTPipe<
   PipedSanitizeBody<T3, PipedSanitizeBody<T2, T1>> &
   PipedPreAuthorize<T3, PipedPreAuthorize<T2, T1>> &
   PipedAttachData<T3, PipedAttachData<T2, T1>> &
+  PipedFinalAuthorize<T3, PipedFinalAuthorize<T2, T1>> &
   PipedDoWork<T3, PipedDoWork<T2, T1>> &
   PipedRespond<T3, PipedRespond<T2, T1>> &
   PipedSanitizeResponse<T3, PipedSanitizeResponse<T2, T1>>;
@@ -536,6 +625,10 @@ export function HTPipe<
       PipedPreAuthorize<T3, PipedPreAuthorize<T2, T1>>
     > &
     ClashlessAttachData<T4, PipedAttachData<T3, PipedAttachData<T2, T1>>> &
+    ClashlessFinalAuthorize<
+      T4,
+      PipedFinalAuthorize<T3, PipedFinalAuthorize<T2, T1>>
+    > &
     ClashlessDoWork<T4, PipedDoWork<T3, PipedDoWork<T2, T1>>> &
     ClashlessRespond<T4, PipedRespond<T3, PipedRespond<T2, T1>>> &
     ClashlessSanitizeResponse<
@@ -547,6 +640,7 @@ export function HTPipe<
     ClashlessSanitizeBody<T3, PipedSanitizeBody<T2, T1>> &
     ClashlessPreAuthorize<T3, PipedPreAuthorize<T2, T1>> &
     ClashlessAttachData<T3, PipedAttachData<T2, T1>> &
+    ClashlessFinalAuthorize<T3, PipedFinalAuthorize<T2, T1>> &
     ClashlessDoWork<T3, PipedDoWork<T2, T1>> &
     ClashlessRespond<T3, PipedRespond<T2, T1>> &
     ClashlessSanitizeResponse<T3, PipedSanitizeResponse<T2, T1>>,
@@ -555,6 +649,7 @@ export function HTPipe<
     ClashlessSanitizeBody<T2, T1> &
     ClashlessPreAuthorize<T2, T1> &
     ClashlessAttachData<T2, T1> &
+    ClashlessFinalAuthorize<T2, T1> &
     ClashlessDoWork<T2, T1> &
     ClashlessRespond<T2, T1> &
     ClashlessSanitizeResponse<T2, T1>,
@@ -563,6 +658,7 @@ export function HTPipe<
     OptionallyHasSanitizeBody<any, any> &
     MightHavePreAuthorize<any, any> &
     OptionallyHasAttachData<any, any> &
+    MightHaveFinalAuthorize<any, any> &
     OptionallyHasDoWork<any, any> &
     MightHaveRespond<any, any> &
     MightHaveSanitizeResponse<any, any>
@@ -579,6 +675,10 @@ export function HTPipe<
   PipedSanitizeBody<T4, PipedSanitizeBody<T3, PipedSanitizeBody<T2, T1>>> &
   PipedPreAuthorize<T4, PipedPreAuthorize<T3, PipedPreAuthorize<T2, T1>>> &
   PipedAttachData<T4, PipedAttachData<T3, PipedAttachData<T2, T1>>> &
+  PipedFinalAuthorize<
+    T4,
+    PipedFinalAuthorize<T3, PipedFinalAuthorize<T2, T1>>
+  > &
   PipedDoWork<T4, PipedDoWork<T3, PipedDoWork<T2, T1>>> &
   PipedRespond<T4, PipedRespond<T3, PipedRespond<T2, T1>>> &
   PipedSanitizeResponse<
@@ -716,6 +816,49 @@ export function HTPipe(...objs: any[]) {
         : isHasAttachData(right)
         ? { attachData: right.attachData }
         : {}) as PipedAttachData<any, any>),
+      ...((isHasFinalAuthorize(left) && isHasFinalAuthorize(right)
+        ? {
+            finalAuthorize: async (context: any) => {
+              const leftOut = await Promise.resolve(
+                left.finalAuthorize(context)
+              );
+              const leftPassed = authorizationPassed(
+                leftOut as boolean | object
+              );
+              if (!leftPassed) {
+                return false;
+              }
+              const leftContextOut =
+                leftOut === true ? {} : (leftOut as object);
+              const rightIn = {
+                ...context,
+                ...leftContextOut,
+              };
+              const rightOut = await Promise.resolve(
+                right.finalAuthorize(rightIn)
+              );
+              const rightPassed = authorizationPassed(
+                rightOut as boolean | object
+              );
+              if (!rightPassed) {
+                return false;
+              }
+              if (leftOut === true && rightOut === true) {
+                return true;
+              }
+              const rightContextOut =
+                rightOut === true ? {} : (rightOut as object);
+              return {
+                ...leftContextOut,
+                ...rightContextOut,
+              };
+            },
+          }
+        : isHasFinalAuthorize(left)
+        ? { finalAuthorize: left.finalAuthorize }
+        : isHasFinalAuthorize(right)
+        ? { finalAuthorize: right.finalAuthorize }
+        : {}) as PipedFinalAuthorize<any, any>),
       ...((isHasDoWork(left) && isHasDoWork(right)
         ? {
             doWork: async (context: any) => {
