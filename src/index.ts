@@ -1,4 +1,5 @@
 import {
+  authorizationPassed,
   isHasAttachData,
   isHasDoWork,
   isHasFinalAuthorize,
@@ -1061,15 +1062,6 @@ export function HTPipeAttachData<
   } else {
     return {};
   }
-}
-
-function authorizationPassed<TAuthOut extends boolean | object>(
-  authOut: TAuthOut
-) {
-  return (
-    authOut === true ||
-    (authOut && typeof authOut === 'object' && Object.keys(authOut).length > 0)
-  );
 }
 
 // left has preAuthorize and right has preAuthorize

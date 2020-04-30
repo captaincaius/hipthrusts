@@ -158,6 +158,15 @@ export function isHasRespond<TContextIn, TContextOut>(
   return !!(thing && thing.respond);
 }
 
+export function authorizationPassed<TAuthOut extends boolean | object>(
+  authOut: TAuthOut
+) {
+  return (
+    authOut === true ||
+    (authOut && typeof authOut === 'object' && Object.keys(authOut).length > 0)
+  );
+}
+
 export class HipRedirectException {
   constructor(
     public readonly redirectUrl: string,
@@ -270,17 +279,26 @@ export async function executeHipthrustable<
   const forbiddenPreAuthThrow = Boom.forbidden(
     'General pre-authorization lacking for this resource'
   );
-  // @todo: allow preAuthorize to return more context instead of "true" too.  Anything falsy will be interpreted as an error.  Don't forget || {} after call
-  if (
-    transformThrowSync(
-      forbiddenPreAuthThrow,
-      requestHandler.preAuthorize,
-      inputsContext
-    ) !== true
-  ) {
+
+  const preAuthorizeResult = transformThrowSync(
+    forbiddenPreAuthThrow,
+    requestHandler.preAuthorize,
+    inputsContext
+  );
+
+  const preAuthorizePassed = authorizationPassed(preAuthorizeResult);
+
+  if (!preAuthorizePassed) {
     throw forbiddenPreAuthThrow;
   }
-  const preAuthContext = inputsContext;
+
+  const preAuthorizeContextOut =
+    preAuthorizeResult === true ? {} : preAuthorizeResult;
+
+  const preAuthContext = {
+    ...inputsContext,
+    ...preAuthorizeContextOut,
+  };
 
   const notFoundThrow = Boom.notFound('Resource not found');
   const attachedDataContextOnly = requestHandler.attachData
@@ -295,17 +313,28 @@ export async function executeHipthrustable<
   const forbiddenFinalAuthThrow = Boom.forbidden(
     'General authorization lacking for this resource'
   );
-  // @todo: allow finalAuthorize to return more context instead of "true" too.  Anything falsy will be interpreted as an error.  Don't forget || {} after call
-  if (
-    (await transformThrowPossiblyAsync(
-      forbiddenFinalAuthThrow,
-      requestHandler.finalAuthorize,
-      attachedDataContext
-    )) !== true
-  ) {
+
+  const finalAuthorizeResult = await transformThrowPossiblyAsync(
+    forbiddenFinalAuthThrow,
+    requestHandler.finalAuthorize,
+    attachedDataContext
+  );
+
+  const finalAuthorizePassed = authorizationPassed(
+    finalAuthorizeResult as object | boolean
+  );
+
+  if (!finalAuthorizePassed) {
     throw forbiddenPreAuthThrow;
   }
-  const finalAuthContext = attachedDataContext;
+
+  const finalAuthorizeContextOut =
+    finalAuthorizeResult === true ? {} : (finalAuthorizeResult as object);
+
+  const finalAuthContext = {
+    ...attachedDataContext,
+    ...finalAuthorizeContextOut,
+  };
 
   try {
     // @todo: allow doWork to return more context instead of "true" too.  Anything falsy will be interpreted as an error.  Don't forget || {} after call
