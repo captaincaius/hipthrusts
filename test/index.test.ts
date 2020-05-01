@@ -4,7 +4,7 @@ import chaiAsPromised from 'chai-as-promised';
 // tslint:disable-next-line:no-var-requires
 const { describe, it } = require('mocha');
 
-import { HTPipe, HTPipeOld, WithAttached, WithInit } from '../src';
+import { HTPipe, WithAttached, WithInit } from '../src';
 import { PromiseOrSync } from '../src/types';
 
 use(chaiAsPromised);

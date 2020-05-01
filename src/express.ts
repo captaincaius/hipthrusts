@@ -14,7 +14,6 @@ import {
   HasBodyProperOptionals,
   HasDoWorkProperOptionals,
   HasFinalAuthorizeProperOptionals,
-  HasInitPreContext,
   HasInitPreContextProperOptionals,
   HasParamsProperOptionals,
   HasPreauthProperOptionals,
@@ -24,11 +23,6 @@ import {
   HasUpToFinalAuthorizeProperOptionals,
   HasUpToRespondProperOptionals,
 } from './types';
-
-interface ExpressInitialUnsafeContext {
-  req: ExpressRequest;
-  res: ExpressResponse;
-}
 
 export function hipExpressHandlerFactory<
   TConf extends HasAllRequireds &

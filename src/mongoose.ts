@@ -1,5 +1,5 @@
 import Boom from '@hapi/boom';
-import { WithAttached } from './subclassers';
+import { WithAttached } from './lifecycle-functions';
 import {
   HasDoWork,
   HasSanitizeBody,
@@ -119,7 +119,7 @@ export function htMongooseFactory(mongoose: any) {
     TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>,
     TUnsafeParam
-  >(DocFactory: TDocFactory): HasSanitizeParams<TSafeParam, TUnsafeParam> {
+  >(DocFactory: TDocFactory): HasSanitizeParams<TUnsafeParam, TSafeParam> {
     return {
       sanitizeParams: (unsafeParams: TUnsafeParam) => {
         const doc = DocFactory(unsafeParams);
@@ -176,7 +176,7 @@ export function htMongooseFactory(mongoose: any) {
     TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>,
     TUnsafeBody
-  >(DocFactory: TDocFactory): HasSanitizeBody<TSafeBody, TUnsafeBody> {
+  >(DocFactory: TDocFactory): HasSanitizeBody<TUnsafeBody, TSafeBody> {
     return {
       sanitizeBody: (unsafeBody: TUnsafeBody) => {
         const doc = DocFactory(unsafeBody);

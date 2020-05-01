@@ -5,7 +5,6 @@ import {
   HasInitPreContext,
   HasPreAuthorize,
   HasRespond,
-  PromiseResolveOrSync,
 } from './types';
 
 export function WithInit(
@@ -17,7 +16,7 @@ export function WithInit(
 }
 
 export function WithPreAuth(
-  projector: PromiseResolveOrSync<any>
+  projector: (context: any) => any
 ): HasPreAuthorize<any, any> {
   return {
     preAuthorize: projector,
@@ -25,7 +24,7 @@ export function WithPreAuth(
 }
 
 export function WithDoWork(
-  projector: PromiseResolveOrSync<any>
+  projector: (context: any) => any
 ): HasDoWork<any, any> {
   return {
     doWork: projector,
@@ -33,7 +32,7 @@ export function WithDoWork(
 }
 
 export function WithFinalAuth(
-  projector: PromiseResolveOrSync<any>
+  projector: (context: any) => any
 ): HasFinalAuthorize<any, any> {
   return {
     finalAuthorize: projector,
@@ -41,7 +40,7 @@ export function WithFinalAuth(
 }
 
 export function WithAttached(
-  projector: PromiseResolveOrSync<any>
+  projector: (context: any) => any
 ): HasAttachData<any, any> {
   return {
     attachData: projector,
