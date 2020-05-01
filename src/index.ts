@@ -11,6 +11,7 @@ import {
 } from './core';
 import { WithFinalAuth, WithPreAuth } from './subclassers';
 import {
+  AllStageKeys,
   HasAttachData,
   HasDoWork,
   HasFinalAuthorize,
@@ -454,20 +455,7 @@ export function HTPipe<
     MightHaveRespond<any, any> &
     MightHaveSanitizeResponse<any, any>
   // @fixme: refactor - export a union type in types.ts for this
->(
-  obj: T
-): Pick<
-  T,
-  | 'initPreContext'
-  | 'sanitizeParams'
-  | 'sanitizeBody'
-  | 'preAuthorize'
-  | 'attachData'
-  | 'finalAuthorize'
-  | 'doWork'
-  | 'respond'
-  | 'sanitizeResponse'
->;
+>(obj: T): Pick<T, AllStageKeys>;
 
 // two parameters with automatic type guessing or right - all or nothing!
 // @todo: add the ability for each stage to get outputs of previous stages too!
