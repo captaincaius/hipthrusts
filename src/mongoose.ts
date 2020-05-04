@@ -1,5 +1,5 @@
 import Boom from '@hapi/boom';
-import { WithAttached } from './subclassers';
+import { WithAttached } from './lifecycle-functions';
 import {
   HasDoWork,
   HasSanitizeBody,
