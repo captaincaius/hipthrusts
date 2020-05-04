@@ -53,27 +53,45 @@ async function HTPipeTest<
     OptionallyHasDoWork<any, any> &
     MightHaveRespond<any, any> &
     MightHaveSanitizeResponse<any, any>,
-  TPipeIn extends TPipeInExpected,
-  TPipeOut extends TPipeOutExpected,
+  TPipeIn,
+  TPipeOut,
   TStage extends AllStageKeys,
-  TLifecycleStage extends TPipe extends HasInitPreContext<any, any>
-    ? TPipe['initPreContext']
-    : TPipe extends HasSanitizeParams<any, any>
-    ? TPipe['sanitizeParams']
-    : TPipe extends HasSanitizeBody<any, any>
-    ? TPipe['sanitizeBody']
-    : TPipe extends HasPreAuthorize<any, any>
-    ? TPipe['preAuthorize']
-    : TPipe extends HasAttachData<any, any>
-    ? TPipe['attachData']
-    : TPipe extends HasFinalAuthorize<any, any>
-    ? TPipe['finalAuthorize']
-    : TPipe extends HasDoWork<any, any>
-    ? TPipe['doWork']
-    : TPipe extends HasRespond<any, any>
-    ? TPipe['respond']
-    : TPipe extends HasSanitizeResponse<any, any>
-    ? TPipe['sanitizeResponse']
+  TLifecycleStage extends TStage extends 'initPreContext'
+    ? TPipe extends HasInitPreContext<any, any>
+      ? TPipe[TStage]
+      : never
+    : TStage extends 'sanitizeParams'
+    ? TPipe extends HasSanitizeParams<any, any>
+      ? TPipe[TStage]
+      : never
+    : TStage extends 'sanitizeBody'
+    ? TPipe extends HasSanitizeBody<any, any>
+      ? TPipe[TStage]
+      : never
+    : TStage extends 'preAuthorize'
+    ? TPipe extends HasPreAuthorize<any, any>
+      ? TPipe[TStage]
+      : never
+    : TStage extends 'attachData'
+    ? TPipe extends HasAttachData<any, any>
+      ? TPipe[TStage]
+      : never
+    : TStage extends 'finalAuthorize'
+    ? TPipe extends HasFinalAuthorize<any, any>
+      ? TPipe[TStage]
+      : never
+    : TStage extends 'doWork'
+    ? TPipe extends HasDoWork<any, any>
+      ? TPipe[TStage]
+      : never
+    : TStage extends 'respond'
+    ? TPipe extends HasRespond<any, any>
+      ? TPipe[TStage]
+      : never
+    : TStage extends 'sanitizeResponse'
+    ? TPipe extends HasSanitizeResponse<any, any>
+      ? TPipe[TStage]
+      : never
     : never,
   TValid extends TPipeInExpected extends Parameters<TLifecycleStage>[0]
     ? Parameters<TLifecycleStage>[0] extends TPipeInExpected
@@ -91,12 +109,12 @@ async function HTPipeTest<
   lifecycleStage: TStage,
   pipeIn: TPipeIn,
   pipeOut: TPipeOut,
-  valid: TValid,
-  pipeInExpected: TPipeInExpected = pipeIn,
-  pipeOutExpected: TPipeOutExpected = pipeOut
+  valid: TValid
 ) {
   const pipedLifecycleStage = pipe[lifecycleStage];
 
+  // tslint:disable-next-line:no-unused-expression
+  expect(pipedLifecycleStage).to.not.be.eql({});
   if (pipedLifecycleStage) {
     const pipedLifecycleStageResult =
       lifecycleStage === 'attachData' ||
@@ -105,9 +123,6 @@ async function HTPipeTest<
         ? await pipedLifecycleStage(pipeIn)
         : pipedLifecycleStage(pipeIn);
     expect(pipedLifecycleStageResult).to.deep.equal(pipeOut);
-  } else {
-    // tslint:disable-next-line:no-unused-expression
-    expect(pipedLifecycleStage).to.not.be.empty;
   }
 }
 
@@ -393,111 +408,186 @@ describe('HipThrusTS', () => {
     describe('HTPipeTest', () => {
       it('HTPipeTest should pass with correct params', async () => {
         const aPassedIn = 'some string';
-        const bPassedIn = 4;
+        const bReturned = 4;
         const cReturned = 6;
-        const left = {
-          attachData(context: { a: string }) {
-            expect(context.a).to.be.equal(aPassedIn);
-            return { b: bPassedIn };
-          },
-        };
-
-        const rightFullyCovered = {
-          attachData(context: { b: number }) {
-            expect(context.b).to.be.equal(bPassedIn);
-            return { c: cReturned };
-          },
-        };
-
-        const pipedAtoBC = HTPipe(left, rightFullyCovered);
 
         await HTPipeTest(
-          pipedAtoBC,
+          {
+            attachData: (context: { a: string }) => {
+              return {
+                c: cReturned,
+                b: bReturned,
+              };
+            },
+          },
           'attachData',
           { a: aPassedIn },
-          { b: bPassedIn, c: cReturned },
+          { b: bReturned, c: cReturned },
           true
         );
       });
-      it('should give error if pipeIn type has typemismatch with lifecycle stage context in type', () => {
+      it('should give error if pipeIn type has more inputs params than lifecycle stage context in type', () => {
         const aPassedIn = 'some string';
-        const bPassedIn = 4;
+        const bReturned = 4;
         const cReturned = 6;
-        const left = {
-          attachData(context: { a: string }) {
-            expect(context.a).to.be.equal(aPassedIn);
-            return { b: bPassedIn };
-          },
-        };
-
-        const rightFullyCovered = {
-          attachData(context: { b: number }) {
-            expect(context.b).to.be.equal(bPassedIn);
-            return { c: cReturned };
-          },
-        };
-
-        const pipedAtoBC = HTPipe(left, rightFullyCovered);
 
         async function HTPipeTypeMismatchTest() {
           await HTPipeTest(
-            pipedAtoBC,
-            'attachData',
-            {},
-            { b: bPassedIn, c: cReturned },
-            // @ts-expect-error
-            true
-          );
-
-          await HTPipeTest(
-            pipedAtoBC,
+            {
+              attachData: (context: { a: string }) => {
+                return {
+                  c: cReturned,
+                  b: bReturned,
+                };
+              },
+            },
             'attachData',
             { a: aPassedIn, other: 'some other string' },
-            { b: bPassedIn, c: cReturned },
+            { b: bReturned, c: cReturned },
             // @ts-expect-error
             true
           );
         }
       });
-      it('should give error if pipeOut type has typemismatch with lifecycle stage context out type', () => {
+      it('should give error if pipeIn type has less inputs params than lifecycle stage context in type', () => {
         const aPassedIn = 'some string';
-        const bPassedIn = 4;
+        const bReturned = 4;
         const cReturned = 6;
-        const left = {
-          attachData(context: { a: string }) {
-            expect(context.a).to.be.equal(aPassedIn);
-            return { b: bPassedIn };
-          },
-        };
-
-        const rightFullyCovered = {
-          attachData(context: { b: number }) {
-            expect(context.b).to.be.equal(bPassedIn);
-            return { c: cReturned };
-          },
-        };
-
-        const pipedAtoBC = HTPipe(left, rightFullyCovered);
 
         async function HTPipeTypeMismatchTest() {
           await HTPipeTest(
-            pipedAtoBC,
+            {
+              attachData: (context: { a: string; z: number }) => {
+                return {
+                  c: cReturned,
+                  b: bReturned,
+                };
+              },
+            },
             'attachData',
             { a: aPassedIn },
-            { b: bPassedIn },
-            // @ts-expect-error
-            true
-          );
-
-          await HTPipeTest(
-            pipedAtoBC,
-            'attachData',
-            { a: aPassedIn },
-            { b: bPassedIn, c: cReturned, other: 'some string' },
+            { b: bReturned, c: cReturned },
             // @ts-expect-error
             true
           );
         }
+      });
+      it('should give error if pipeOut has more return values than lifecycle stage context out type', () => {
+        const aPassedIn = 'some string';
+        const bReturned = 4;
+        const cReturned = 6;
+
+        async function HTPipeTypeMismatchTest() {
+          await HTPipeTest(
+            {
+              attachData: (context: { a: string }) => {
+                return {
+                  c: cReturned,
+                  b: bReturned,
+                };
+              },
+            },
+            'attachData',
+            { a: aPassedIn },
+            { b: bReturned, c: cReturned, other: 'some string' },
+            // @ts-expect-error
+            true
+          );
+        }
+      });
+      it('should give error if pipeOut has less return values than lifecycle stage context out type', () => {
+        const aPassedIn = 'some string';
+        const bReturned = 4;
+        const cReturned = 6;
+
+        async function HTPipeTypeMismatchTest() {
+          await HTPipeTest(
+            {
+              attachData: (context: { a: string }) => {
+                return {
+                  c: cReturned,
+                  b: bReturned,
+                };
+              },
+            },
+            'attachData',
+            { a: aPassedIn },
+            { b: bReturned },
+            // @ts-expect-error
+            true
+          );
+        }
+      });
+      it('should give error if pipeIn has same count of keys as lifecycle stage context in, and pipe out has same count of keys as lifecycle stage context out, but pipeIn key values has different types', () => {
+        const incorrectAValue = 3;
+        const bReturned = 4;
+
+        async function HTPipeTypeMismatchTest() {
+          await HTPipeTest(
+            {
+              attachData: (context: { a: string }) => {
+                return {
+                  b: bReturned,
+                };
+              },
+            },
+            'attachData',
+            { a: incorrectAValue },
+            { b: bReturned },
+            // @ts-expect-error
+            true
+          );
+        }
+      });
+      it('should give error if pipeIn has same count of keys as lifecycle stage context in, and pipe out has same count of keys as lifecycle stage context out, but pipeOut key values has different types', () => {
+        const aPassedIn = 'some string';
+        const bReturned = 4;
+
+        async function HTPipeTypeMismatchTest() {
+          await HTPipeTest(
+            {
+              attachData: (context: { a: string }) => {
+                return {
+                  b: bReturned,
+                };
+              },
+            },
+            'attachData',
+            { a: aPassedIn },
+            { b: 'string' },
+            // @ts-expect-error
+            true
+          );
+        }
+      });
+      it('should give error if pipeIn and PipeOut have correct types, but return data of lifecycle stage have different values than pipeOut', async () => {
+        const aPassedIn = 'some string';
+        const bReturned = 4;
+        const cReturned = 6;
+        const incorrectCReturned = 12;
+
+        let errorReturned;
+
+        try {
+          await HTPipeTest(
+            {
+              attachData: (context: { a: string }) => {
+                return {
+                  c: cReturned,
+                  b: bReturned,
+                };
+              },
+            },
+            'attachData',
+            { a: aPassedIn },
+            { b: bReturned, c: incorrectCReturned },
+            true
+          );
+        } catch (err) {
+          errorReturned = err;
+        }
+        // tslint:disable-next-line:no-unused-expression
+        expect(errorReturned).to.not.be.empty;
       });
     });
     describe('HTPipe2', () => {
@@ -686,8 +776,19 @@ describe('HipThrusTS', () => {
           true
         );
       });
-      it('no attaches data when left and right is empty objects', async () => {
+      it('no attaches data when left and right is empty objects', () => {
         const pipedWithEmptyObjectsOnly = HTPipe({}, {});
+
+        type assignableToCorrect = {} extends typeof pipedWithEmptyObjectsOnly
+          ? true
+          : false;
+        type assignableFromCorrect = typeof pipedWithEmptyObjectsOnly extends {}
+          ? true
+          : false;
+        // @ts-expect-error
+        const assignableToCorrect: assignableToCorrect = false;
+        // @ts-expect-error
+        const assignableFromCorrect: assignableFromCorrect = false;
 
         expect(pipedWithEmptyObjectsOnly).to.be.eql({});
       });
