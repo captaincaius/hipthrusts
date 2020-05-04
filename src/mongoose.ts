@@ -6,12 +6,7 @@ import {
   WithParams,
   WithSafeResponse,
 } from './subclassers';
-import {
-  HasDoWork,
-  HasSanitizeBody,
-  HasSanitizeParams,
-  HasSanitizeResponse,
-} from './types';
+
 // tslint:disable-next-line:no-var-requires
 const mask = require('json-mask');
 
@@ -125,7 +120,7 @@ export function htMongooseFactory(mongoose: any) {
     TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>,
     TUnsafeParam
-  >(DocFactory: TDocFactory): HasSanitizeParams<TUnsafeParam, TSafeParam> {
+  >(DocFactory: TDocFactory) {
     return WithParams((unsafeParams: TUnsafeParam) => {
       const doc = DocFactory(unsafeParams);
       const validateErrors = doc.validateSync();
@@ -143,7 +138,7 @@ export function htMongooseFactory(mongoose: any) {
     TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>,
     TUnsafeBody
-  >(DocFactory: TDocFactory): HasSanitizeBody<TUnsafeBody, TSafeBody> {
+  >(DocFactory: TDocFactory) {
     return WithBody((unsafeBody: TUnsafeBody) => {
       const doc = DocFactory(unsafeBody);
       const validateErrors = doc.validateSync(undefined, {
@@ -157,9 +152,7 @@ export function htMongooseFactory(mongoose: any) {
     });
   }
 
-  function WithSaveOnDocument(
-    propertyKeyOfDocument: string
-  ): HasDoWork<any, any> {
+  function WithSaveOnDocument(propertyKeyOfDocument: string) {
     return WithDoWork(async (context: any) => {
       if (context[propertyKeyOfDocument]) {
         try {
@@ -178,7 +171,7 @@ export function htMongooseFactory(mongoose: any) {
   function WithUpdateDocument(
     propertyKeyOfDocument: string,
     propertyKeyWithNewData: string = 'body'
-  ): HasDoWork<any, any> {
+  ) {
     return WithDoWork(async (context: any) => {
       if (context[propertyKeyOfDocument]) {
         return await context[propertyKeyOfDocument].set(
@@ -194,7 +187,7 @@ export function htMongooseFactory(mongoose: any) {
     TSafeResponse extends ReturnType<TInstance['toObject']>,
     TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>
-  >(DocFactory: TDocFactory): HasSanitizeResponse<any, any> {
+  >(DocFactory: TDocFactory) {
     return WithSafeResponse((unsafeResponse: any) => {
       const doc = DocFactory(unsafeResponse);
       // @tswtf: why do I need to force this?!
