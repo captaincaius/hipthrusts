@@ -415,6 +415,7 @@ describe('HipThrusTS', () => {
           {
             attachData: (context: { a: string }) => {
               return {
+                aOut: context.a,
                 c: cReturned,
                 b: bReturned,
               };
@@ -422,7 +423,7 @@ describe('HipThrusTS', () => {
           },
           'attachData',
           { a: aPassedIn },
-          { b: bReturned, c: cReturned },
+          { aOut: aPassedIn, b: bReturned, c: cReturned },
           true
         );
       });
@@ -587,7 +588,7 @@ describe('HipThrusTS', () => {
           errorReturned = err;
         }
         // tslint:disable-next-line:no-unused-expression
-        expect(errorReturned).to.not.be.empty;
+        expect(errorReturned).to.exist;
       });
     });
     describe('HTPipe2', () => {
