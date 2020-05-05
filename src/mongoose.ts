@@ -1,11 +1,12 @@
 import Boom from '@hapi/boom';
-import { WithAttached } from './subclassers';
 import {
-  HasDoWork,
-  HasSanitizeBody,
-  HasSanitizeParams,
-  HasSanitizeResponse,
-} from './types';
+  WithAttached,
+  WithBody,
+  WithDoWork,
+  WithParams,
+  WithSafeResponse,
+} from './subclassers';
+
 // tslint:disable-next-line:no-var-requires
 const mask = require('json-mask');
 
@@ -119,55 +120,16 @@ export function htMongooseFactory(mongoose: any) {
     TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>,
     TUnsafeParam
-  >(DocFactory: TDocFactory): HasSanitizeParams<TSafeParam, TUnsafeParam> {
-    return {
-      sanitizeParams: (unsafeParams: TUnsafeParam) => {
-        const doc = DocFactory(unsafeParams);
-        const validateErrors = doc.validateSync();
-        if (validateErrors !== undefined) {
-          throw Boom.badRequest('Params not valid');
-        }
-        // @tswtf: why do I need to force this?!
-        return doc.toObject({ transform: stripIdTransform }) as TSafeParam;
-      },
-    };
-  }
-
-  function WithSaveOnDocument(
-    propertyKeyOfDocument: string
-  ): HasDoWork<any, any> {
-    return {
-      doWork: async (context: any) => {
-        if (context[propertyKeyOfDocument]) {
-          try {
-            return await context[propertyKeyOfDocument].save();
-          } catch (err) {
-            throw Boom.badData(
-              'Unable to save. Please check if data sent was valid.'
-            );
-          }
-        } else {
-          throw Boom.badRequest('Resource not found');
-        }
-      },
-    };
-  }
-
-  function WithUpdateDocument(
-    propertyKeyOfDocument: string,
-    propertyKeyWithNewData: string = 'body'
-  ): HasDoWork<any, any> {
-    return {
-      doWork: async (context: any) => {
-        if (context[propertyKeyOfDocument]) {
-          return await context[propertyKeyOfDocument].set(
-            context[propertyKeyWithNewData]
-          );
-        } else {
-          throw Boom.badRequest('Resource not found');
-        }
-      },
-    };
+  >(DocFactory: TDocFactory) {
+    return WithParams((unsafeParams: TUnsafeParam) => {
+      const doc = DocFactory(unsafeParams);
+      const validateErrors = doc.validateSync();
+      if (validateErrors !== undefined) {
+        throw Boom.badRequest('Params not valid');
+      }
+      // @tswtf: why do I need to force this?!
+      return doc.toObject({ transform: stripIdTransform }) as TSafeParam;
+    });
   }
 
   // @note: sanitize body validates modified only!  This is cause you usually will only send fields to update.
@@ -176,34 +138,61 @@ export function htMongooseFactory(mongoose: any) {
     TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>,
     TUnsafeBody
-  >(DocFactory: TDocFactory): HasSanitizeBody<TSafeBody, TUnsafeBody> {
-    return {
-      sanitizeBody: (unsafeBody: TUnsafeBody) => {
-        const doc = DocFactory(unsafeBody);
-        const validateErrors = doc.validateSync(undefined, {
-          validateModifiedOnly: true,
-        });
-        if (validateErrors !== undefined) {
-          throw Boom.badRequest('Body not valid');
+  >(DocFactory: TDocFactory) {
+    return WithBody((unsafeBody: TUnsafeBody) => {
+      const doc = DocFactory(unsafeBody);
+      const validateErrors = doc.validateSync(undefined, {
+        validateModifiedOnly: true,
+      });
+      if (validateErrors !== undefined) {
+        throw Boom.badRequest('Body not valid');
+      }
+      // @tswtf: why do I need to force this?!
+      return doc.toObject({ transform: stripIdTransform }) as TSafeBody;
+    });
+  }
+
+  function WithSaveOnDocument(propertyKeyOfDocument: string) {
+    return WithDoWork(async (context: any) => {
+      if (context[propertyKeyOfDocument]) {
+        try {
+          return await context[propertyKeyOfDocument].save();
+        } catch (err) {
+          throw Boom.badData(
+            'Unable to save. Please check if data sent was valid.'
+          );
         }
-        // @tswtf: why do I need to force this?!
-        return doc.toObject({ transform: stripIdTransform }) as TSafeBody;
-      },
-    };
+      } else {
+        throw Boom.badRequest('Resource not found');
+      }
+    });
+  }
+
+  function WithUpdateDocument(
+    propertyKeyOfDocument: string,
+    propertyKeyWithNewData: string = 'body'
+  ) {
+    return WithDoWork(async (context: any) => {
+      if (context[propertyKeyOfDocument]) {
+        return await context[propertyKeyOfDocument].set(
+          context[propertyKeyWithNewData]
+        );
+      } else {
+        throw Boom.badRequest('Resource not found');
+      }
+    });
   }
 
   function WithResponseSanitized<
     TSafeResponse extends ReturnType<TInstance['toObject']>,
     TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>
-  >(DocFactory: TDocFactory): HasSanitizeResponse<any, any> {
-    return {
-      sanitizeResponse: (unsafeResponse: any) => {
-        const doc = DocFactory(unsafeResponse);
-        // @tswtf: why do I need to force this?!
-        return doc.toObject() as TSafeResponse;
-      },
-    };
+  >(DocFactory: TDocFactory) {
+    return WithSafeResponse((unsafeResponse: any) => {
+      const doc = DocFactory(unsafeResponse);
+      // @tswtf: why do I need to force this?!
+      return doc.toObject() as TSafeResponse;
+    });
   }
 
   function WithPojoToDocument(
