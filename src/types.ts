@@ -8,6 +8,16 @@ export interface HipWorkResponse<ResponseShape> {
   status?: number;
 }
 
+export type AllAsyncStageKeys = 'attachData' | 'finalAuthorize' | 'doWork';
+export type AllSyncStageKeys =
+  | 'initPreContext'
+  | 'sanitizeParams'
+  | 'sanitizeBody'
+  | 'preAuthorize'
+  | 'respond'
+  | 'sanitizeResponse';
+export type AllStageKeys = AllAsyncStageKeys | AllSyncStageKeys;
+
 export interface OptionallyHasInitPreContext<TUnsafe, TContextInit> {
   initPreContext?: (unsafe: TUnsafe) => TContextInit;
 }
