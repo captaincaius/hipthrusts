@@ -5,7 +5,7 @@ import {
   WithDoWork,
   WithParams,
   WithSafeResponse,
-} from './subclassers';
+} from './lifecycle-functions';
 
 // tslint:disable-next-line:no-var-requires
 const mask = require('json-mask');

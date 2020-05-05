@@ -10,7 +10,7 @@ import {
   isHasSanitizeParams,
   isHasSanitizeResponse,
 } from './core';
-import { WithFinalAuth, WithPreAuth } from './subclassers';
+import { WithFinalAuth, WithPreAuth } from './lifecycle-functions';
 import {
   AllStageKeys,
   HasAttachData,
@@ -1990,101 +1990,8 @@ export function HTPipeSanitizeResponse<
   }
 }
 
-type ClassExtender<TClassIn, TClassOut> = (ClassIn: TClassIn) => TClassOut;
-
-// todo: Add an htMix too b/c this REQUIRES that a param has been provided
-// by one of the previous subclassers in the pipe
-export function HTPipeOld<ClassIn>(): ClassExtender<ClassIn, ClassIn>;
-export function HTPipeOld<ClassIn, A>(
-  fn1: ClassExtender<ClassIn, A>
-): ClassExtender<ClassIn, A>;
-export function HTPipeOld<ClassIn, A, B>(
-  fn1: ClassExtender<ClassIn, A>,
-  fn2: ClassExtender<A, B>
-): ClassExtender<ClassIn, B>;
-export function HTPipeOld<ClassIn, A, B, C>(
-  fn1: ClassExtender<ClassIn, A>,
-  fn2: ClassExtender<A, B>,
-  fn3: ClassExtender<B, C>
-): ClassExtender<ClassIn, C>;
-export function HTPipeOld<ClassIn, A, B, C, D>(
-  fn1: ClassExtender<ClassIn, A>,
-  fn2: ClassExtender<A, B>,
-  fn3: ClassExtender<B, C>,
-  fn4: ClassExtender<C, D>
-): ClassExtender<ClassIn, D>;
-export function HTPipeOld<ClassIn, A, B, C, D, E>(
-  fn1: ClassExtender<ClassIn, A>,
-  fn2: ClassExtender<A, B>,
-  fn3: ClassExtender<B, C>,
-  fn4: ClassExtender<C, D>,
-  fn5: ClassExtender<D, E>
-): ClassExtender<ClassIn, E>;
-export function HTPipeOld<ClassIn, A, B, C, D, E, F>(
-  fn1: ClassExtender<ClassIn, A>,
-  fn2: ClassExtender<A, B>,
-  fn3: ClassExtender<B, C>,
-  fn4: ClassExtender<C, D>,
-  fn5: ClassExtender<D, E>,
-  fn6: ClassExtender<E, F>
-): ClassExtender<ClassIn, F>;
-export function HTPipeOld<ClassIn, A, B, C, D, E, F, G>(
-  fn1: ClassExtender<ClassIn, A>,
-  fn2: ClassExtender<A, B>,
-  fn3: ClassExtender<B, C>,
-  fn4: ClassExtender<C, D>,
-  fn5: ClassExtender<D, E>,
-  fn6: ClassExtender<E, F>,
-  fn7: ClassExtender<F, G>
-): ClassExtender<ClassIn, G>;
-export function HTPipeOld<ClassIn, A, B, C, D, E, F, G, H>(
-  fn1: ClassExtender<ClassIn, A>,
-  fn2: ClassExtender<A, B>,
-  fn3: ClassExtender<B, C>,
-  fn4: ClassExtender<C, D>,
-  fn5: ClassExtender<D, E>,
-  fn6: ClassExtender<E, F>,
-  fn7: ClassExtender<F, G>,
-  fn8: ClassExtender<G, H>
-): ClassExtender<ClassIn, H>;
-export function HTPipeOld<ClassIn, A, B, C, D, E, F, G, H, I>(
-  fn1: ClassExtender<ClassIn, A>,
-  fn2: ClassExtender<A, B>,
-  fn3: ClassExtender<B, C>,
-  fn4: ClassExtender<C, D>,
-  fn5: ClassExtender<D, E>,
-  fn6: ClassExtender<E, F>,
-  fn7: ClassExtender<F, G>,
-  fn8: ClassExtender<G, H>,
-  fn9: ClassExtender<H, I>
-): ClassExtender<ClassIn, I>;
-export function HTPipeOld<ClassIn, A, B, C, D, E, F, G, H, I>(
-  fn1: ClassExtender<ClassIn, A>,
-  fn2: ClassExtender<A, B>,
-  fn3: ClassExtender<B, C>,
-  fn4: ClassExtender<C, D>,
-  fn5: ClassExtender<D, E>,
-  fn6: ClassExtender<E, F>,
-  fn7: ClassExtender<F, G>,
-  fn8: ClassExtender<G, H>,
-  fn9: ClassExtender<H, I>,
-  ...fns: Array<ClassExtender<any, any>>
-): ClassExtender<ClassIn, {}>;
-
-export function HTPipeOld(...fns: Array<ClassExtender<any, any>>) {
-  if (!fns) {
-    return (inClass: any) => inClass;
-  }
-  if (fns.length === 1) {
-    return fns[0];
-  }
-  return function piped<TSuper>(Super: TSuper) {
-    return fns.reduce((prev, fn) => fn(prev), Super);
-  };
-}
-
 export * from './core';
 export * from './express';
 export * from './mongoose';
 export * from './user';
-export * from './subclassers';
+export * from './lifecycle-functions';
