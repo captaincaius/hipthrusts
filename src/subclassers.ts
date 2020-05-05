@@ -1,66 +1,40 @@
-import {
-  HasAttachData,
-  HasDoWork,
-  HasFinalAuthorize,
-  HasInitPreContext,
-  HasPreAuthorize,
-  HasRespond,
-  HasSanitizeBody,
-  HasSanitizeParams,
-  HasSanitizeResponse,
-} from './types';
-
-export function WithInit(
-  projector: (context: any) => any
-): HasInitPreContext<any, any> {
+export function WithInit(projector: (context: any) => any) {
   return {
     initPreContext: projector,
   };
 }
 
-export function WithParams(
-  projector: (context: any) => any
-): HasSanitizeParams<any, any> {
+export function WithParams(projector: (context: any) => any) {
   return {
     sanitizeParams: projector,
   };
 }
 
-export function WithBody(
-  projector: (context: any) => any
-): HasSanitizeBody<any, any> {
+export function WithBody(projector: (context: any) => any) {
   return {
     sanitizeBody: projector,
   };
 }
 
-export function WithPreAuth(
-  projector: (context: any) => any
-): HasPreAuthorize<any, any> {
+export function WithPreAuth(projector: (context: any) => any) {
   return {
     preAuthorize: projector,
   };
 }
 
-export function WithAttached(
-  projector: (context: any) => any
-): HasAttachData<any, any> {
+export function WithAttached(projector: (context: any) => any) {
   return {
     attachData: projector,
   };
 }
 
-export function WithFinalAuth(
-  projector: (context: any) => any
-): HasFinalAuthorize<any, any> {
+export function WithFinalAuth(projector: (context: any) => any) {
   return {
     finalAuthorize: projector,
   };
 }
 
-export function WithDoWork(
-  projector: (context: any) => any
-): HasDoWork<any, any> {
+export function WithDoWork(projector: (context: any) => any) {
   return {
     doWork: projector,
   };
@@ -69,7 +43,7 @@ export function WithDoWork(
 export function WithResponse<TWhereToLook extends string>(
   whereToLook: TWhereToLook,
   successStatusCode: number
-): HasRespond<any, any> {
+) {
   return {
     respond: (context: any) => {
       return {
@@ -80,9 +54,7 @@ export function WithResponse<TWhereToLook extends string>(
   };
 }
 
-export function WithSafeResponse(
-  projector: (context: any) => any
-): HasSanitizeResponse<any, any> {
+export function WithSafeResponse(projector: (context: any) => any) {
   return {
     sanitizeResponse: projector,
   };
