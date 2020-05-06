@@ -4,7 +4,12 @@ import chaiAsPromised from 'chai-as-promised';
 // tslint:disable-next-line:no-var-requires
 const { describe, it } = require('mocha');
 
-import { HTPipe, WithAttached, WithInit } from '../src';
+import {
+  hipExpressHandlerFactory,
+  HTPipe,
+  WithAttached,
+  WithInit,
+} from '../src';
 import {
   AllAsyncStageKeys,
   AllStageKeys,
@@ -994,6 +999,298 @@ describe('HipThrusTS', () => {
         }
       });
     });
+    describe('hipExpressHandlerFactory', () => {
+      it('should pass when we have all correct lifecycles', () => {
+        const handlingStrategy = {
+          initPreContext() {
+            return {};
+          },
+          sanitizeParams() {
+            return {
+              ting: 5,
+            };
+          },
+          sanitizeBody() {
+            return {
+              ting: 5,
+            };
+          },
+          preAuthorize(context: { params: { ting: number }; body: {} }) {
+            return { asdf: { ting: 4 } };
+          },
+          attachData(context: { asdf: { ting: number } }) {
+            return { adOut: 4, ddd: 'hi' };
+          },
+          finalAuthorize(context: { ddd: string }) {
+            return {};
+          },
+          doWork(context: {}) {
+            return {};
+          },
+          respond(context: {}) {
+            return { unsafeResponse: {} };
+          },
+          sanitizeResponse(unsafeResponse: {}) {
+            return {};
+          },
+        };
+        hipExpressHandlerFactory(handlingStrategy);
+      });
+      it('should pass if lifecycle input params provided by other lifecycle way before', () => {
+        const handlingStrategy = {
+          sanitizeParams() {
+            return {
+              ting: 5,
+            };
+          },
+          preAuthorize(context: { params: { ting: number } }) {
+            return { asdf: { ting: 4 } };
+          },
+          attachData(context: { asdf: { ting: number } }) {
+            return { adOut: 4, ddd: 'hi' };
+          },
+          finalAuthorize(context: { ddd: string }) {
+            return {};
+          },
+          respond(context: { params: { ting: number } }) {
+            return { unsafeResponse: context.params };
+          },
+          sanitizeResponse(unsafeResponse: {}) {
+            return {};
+          },
+        };
+        hipExpressHandlerFactory(handlingStrategy);
+      });
+      it('should pass if lifecycle input params provided by previous and way before lifecycle', () => {
+        const handlingStrategy = {
+          sanitizeParams() {
+            return {
+              ting: 5,
+            };
+          },
+          preAuthorize(context: { params: { ting: number } }) {
+            return { asdf: { ting: 4 } };
+          },
+          attachData(context: {
+            params: { ting: number };
+            asdf: { ting: number };
+          }) {
+            return { adOut: 4, ddd: 'hi' };
+          },
+          finalAuthorize(context: { params: { ting: number }; ddd: string }) {
+            return {};
+          },
+          respond(context: { params: { ting: number } }) {
+            return { unsafeResponse: context.params };
+          },
+          sanitizeResponse(unsafeResponse: {}) {
+            return {};
+          },
+        };
+        hipExpressHandlerFactory(handlingStrategy);
+      });
+      it('should give error when lifecycle inputs requesting params what not probides by previous stage', () => {
+        const handlingStrategy = {
+          sanitizeParams() {
+            return {
+              ting: 5,
+            };
+          },
+          preAuthorize(context: { params: { ting: number; other: string } }) {
+            return { asdf: { ting: 4 } };
+          },
+          attachData(context: { asdf: { ting: number } }) {
+            return { adOut: 4, ddd: 'hi' };
+          },
+          finalAuthorize(context: { ddd: string }) {
+            return {};
+          },
+          respond(context: {}) {
+            return { unsafeResponse: {} };
+          },
+          sanitizeResponse(unsafeResponse: {}) {
+            return {};
+          },
+        };
+
+        function hipExpressHandlerFactoryExpectError() {
+          // @ts-expect-error
+          hipExpressHandlerFactory(handlingStrategy);
+        }
+      });
+      it('should give error when lifecycle stage inputs has type mismatch with previous stage output', () => {
+        const handlingStrategy = {
+          preAuthorize(context: {}) {
+            return { asdf: { ting: 4 } };
+          },
+          attachData(context: { asdf: { ting: string } }) {
+            return { adOut: 4, ddd: 'hi' };
+          },
+          finalAuthorize(context: { ddd: string }) {
+            return {};
+          },
+          respond(context: {}) {
+            return { unsafeResponse: {} };
+          },
+          sanitizeResponse(unsafeResponse: {}) {
+            return {};
+          },
+        };
+
+        function hipExpressHandlerFactoryExpectError() {
+          // @ts-expect-error
+          hipExpressHandlerFactory(handlingStrategy);
+        }
+      });
+      it('should give error when lifecycle inputs requesting params what not probides by previous stages way before', () => {
+        const handlingStrategy = {
+          sanitizeParams() {
+            return {
+              ting: 5,
+            };
+          },
+          preAuthorize(context: { params: { ting: number } }) {
+            return { asdf: { ting: 4 } };
+          },
+          attachData(context: { asdf: { ting: number } }) {
+            return { adOut: 4, ddd: 'hi' };
+          },
+          finalAuthorize(context: { ddd: string }) {
+            return {};
+          },
+          respond(context: { params: { ting: number; testParam: string } }) {
+            return { unsafeResponse: {} };
+          },
+          sanitizeResponse(unsafeResponse: {}) {
+            return {};
+          },
+        };
+
+        function hipExpressHandlerFactoryExpectError() {
+          // @ts-expect-error
+          hipExpressHandlerFactory(handlingStrategy);
+        }
+      });
+      it('should give error when lifecycle stage inputs has type mismatch with previous stage output', () => {
+        const handlingStrategy = {
+          sanitizeParams() {
+            return {
+              ting: 5,
+            };
+          },
+          preAuthorize(context: { params: { ting: number } }) {
+            return { asdf: { ting: 4 } };
+          },
+          attachData(context: { asdf: { ting: number } }) {
+            return { adOut: 4, ddd: 'hi' };
+          },
+          finalAuthorize(context: { ddd: string }) {
+            return {};
+          },
+          respond(context: { params: { ting: string } }) {
+            return { unsafeResponse: {} };
+          },
+          sanitizeResponse(unsafeResponse: {}) {
+            return {};
+          },
+        };
+
+        function hipExpressHandlerFactoryExpectError() {
+          // @ts-expect-error
+          hipExpressHandlerFactory(handlingStrategy);
+        }
+      });
+      it('should give error when preAuthorize is missing', () => {
+        const handlingStrategy = {
+          attachData(context: {}) {
+            return { adOut: 4, ddd: 'hi' };
+          },
+          finalAuthorize(context: { ddd: string }) {
+            return {};
+          },
+          respond(context: {}) {
+            return { unsafeResponse: {} };
+          },
+          sanitizeResponse(unsafeResponse: {}) {
+            return {};
+          },
+        };
+
+        function hipExpressHandlerFactoryExpectError() {
+          // @ts-expect-error
+          hipExpressHandlerFactory(handlingStrategy);
+        }
+      });
+      it('should give error when finalAuthorize is missing', () => {
+        const handlingStrategy = {
+          preAuthorize(context: {}) {
+            return {
+              b: 5,
+            };
+          },
+          attachData(context: { b: number }) {
+            return { adOut: 4, ddd: 'hi' };
+          },
+          respond(context: {}) {
+            return { unsafeResponse: {} };
+          },
+          sanitizeResponse(unsafeResponse: {}) {
+            return {};
+          },
+        };
+
+        function hipExpressHandlerFactoryExpectError() {
+          // @ts-expect-error
+          hipExpressHandlerFactory(handlingStrategy);
+        }
+      });
+      it('should give error when respond is missing', () => {
+        const handlingStrategy = {
+          preAuthorize(context: {}) {
+            return {
+              b: 5,
+            };
+          },
+          attachData(context: { b: number }) {
+            return { adOut: 4, ddd: 'hi' };
+          },
+          finalAuthorize(context: {}) {
+            return true;
+          },
+          sanitizeResponse(unsafeResponse: {}) {
+            return {};
+          },
+        };
+
+        function hipExpressHandlerFactoryExpectError() {
+          // @ts-expect-error
+          hipExpressHandlerFactory(handlingStrategy);
+        }
+      });
+      it('should give error when sanitizeResponse is missing', () => {
+        const handlingStrategy = {
+          preAuthorize(context: {}) {
+            return {
+              b: 5,
+            };
+          },
+          attachData(context: { b: number }) {
+            return { adOut: 4, ddd: 'hi' };
+          },
+          finalAuthorize(context: {}) {
+            return true;
+          },
+          respond(context: {}) {
+            return { unsafeResponse: {} };
+          },
+        };
+
+        function hipExpressHandlerFactoryExpectError() {
+          // @ts-expect-error
+          hipExpressHandlerFactory(handlingStrategy);
+        }
+      });
+    });
   });
 });
 
@@ -1009,39 +1306,3 @@ describe('HipThrusTS', () => {
 // - sad path ONLY PARTIALLY provided by previous (e.g. provided params: {a: string}, requesting params: {a: string, b: number})
 // - sad path provided by way before but type mismatch
 // - sad path ONLY PARTIALLY provided way before (e.g. provided params: {a: string}, requesting params: {a: string, b: number})
-/*
-const blah2 = {
-    initPreContext() {
-        return {};
-    },
-    sanitizeParams() {
-        return {
-            ting: 5
-        };
-    },
-    sanitizeBody() {
-        return {
-            ting: 5
-        };
-    },
-    preAuthorize(context: {params: {ting: number}, body: {}}) {
-        return {asdf: {ting: 4}};
-    },
-    attachData(context: {asdf: {ting: number}}) {
-        return {adOut: 4, ddd: "hi"};
-    },
-    finalAuthorize(context: {ddd: string}) {
-        return {};
-    },
-    doWork(context: {}) {
-      return {};
-    },
-    respond(context: {}) {
-      return {unsafeResponse: {}};
-    },
-    sanitizeResponse(unsafeResponse: {}) {
-      return {};
-    }
-}
-hipExpressHandlerFactory(blah2);
-*/
