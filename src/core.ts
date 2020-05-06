@@ -360,7 +360,7 @@ export async function executeHipthrustable<
   }
 }
 
-export async function assertHipthrustable(
+export function assertHipthrustable(
   requestHandler: HasAllRequireds & Record<string, any>
 ) {
   const requiredMethods = [

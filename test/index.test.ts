@@ -1036,7 +1036,7 @@ describe('HipThrusTS', () => {
         };
         hipExpressHandlerFactory(handlingStrategy);
       });
-      it('should pass if lifecycle input params provided by other lifecycle way before', () => {
+      it('should pass if respond lifecycle input params was provided by sanirizeParams lifecycle', () => {
         const handlingStrategy = {
           sanitizeParams() {
             return {
@@ -1061,7 +1061,7 @@ describe('HipThrusTS', () => {
         };
         hipExpressHandlerFactory(handlingStrategy);
       });
-      it('should pass if lifecycle input params provided by previous and way before lifecycle', () => {
+      it('should pass if finalAuthorize lifecycle input params was provided by attachData and sanitizeParams lifecycle', () => {
         const handlingStrategy = {
           sanitizeParams() {
             return {
@@ -1089,7 +1089,7 @@ describe('HipThrusTS', () => {
         };
         hipExpressHandlerFactory(handlingStrategy);
       });
-      it('should give error when lifecycle inputs requesting params what not probides by previous stage', () => {
+      it('should give error when preauthorize lifecycle other param was not provided by sanitizeParams stage', () => {
         const handlingStrategy = {
           sanitizeParams() {
             return {
@@ -1118,7 +1118,7 @@ describe('HipThrusTS', () => {
           hipExpressHandlerFactory(handlingStrategy);
         }
       });
-      it('should give error when lifecycle stage inputs has type mismatch with previous stage output', () => {
+      it('should give error when attachData lifecycle stage asdf param has type mismatch with preAuthorize stage output', () => {
         const handlingStrategy = {
           preAuthorize(context: {}) {
             return { asdf: { ting: 4 } };
@@ -1142,7 +1142,7 @@ describe('HipThrusTS', () => {
           hipExpressHandlerFactory(handlingStrategy);
         }
       });
-      it('should give error when lifecycle inputs requesting params what not probides by previous stages way before', () => {
+      it('should give error when finalAuthorize lifecycle testParam param whas not provided by previous stages way before', () => {
         const handlingStrategy = {
           sanitizeParams() {
             return {
@@ -1155,10 +1155,10 @@ describe('HipThrusTS', () => {
           attachData(context: { asdf: { ting: number } }) {
             return { adOut: 4, ddd: 'hi' };
           },
-          finalAuthorize(context: { ddd: string }) {
+          finalAuthorize(context: { ddd: string; testParam: string }) {
             return {};
           },
-          respond(context: { params: { ting: number; testParam: string } }) {
+          respond({}) {
             return { unsafeResponse: {} };
           },
           sanitizeResponse(unsafeResponse: {}) {
@@ -1171,7 +1171,7 @@ describe('HipThrusTS', () => {
           hipExpressHandlerFactory(handlingStrategy);
         }
       });
-      it('should give error when lifecycle stage inputs has type mismatch with previous stage output', () => {
+      it('should give error when respond lifecycle stage context.params has type mismatch with sanitizeParams stage output', () => {
         const handlingStrategy = {
           sanitizeParams() {
             return {
@@ -1216,10 +1216,17 @@ describe('HipThrusTS', () => {
           },
         };
 
-        function hipExpressHandlerFactoryExpectError() {
+        let hipExpressHandlerFactoryError;
+
+        try {
           // @ts-expect-error
           hipExpressHandlerFactory(handlingStrategy);
+        } catch (err) {
+          hipExpressHandlerFactoryError = err;
         }
+
+        // tslint:disable-next-line:no-unused-expression
+        expect(hipExpressHandlerFactoryError).to.not.be.undefined;
       });
       it('should give error when finalAuthorize is missing', () => {
         const handlingStrategy = {
@@ -1239,10 +1246,17 @@ describe('HipThrusTS', () => {
           },
         };
 
-        function hipExpressHandlerFactoryExpectError() {
+        let hipExpressHandlerFactoryError;
+
+        try {
           // @ts-expect-error
           hipExpressHandlerFactory(handlingStrategy);
+        } catch (err) {
+          hipExpressHandlerFactoryError = err;
         }
+
+        // tslint:disable-next-line:no-unused-expression
+        expect(hipExpressHandlerFactoryError).to.not.be.undefined;
       });
       it('should give error when respond is missing', () => {
         const handlingStrategy = {
@@ -1262,10 +1276,17 @@ describe('HipThrusTS', () => {
           },
         };
 
-        function hipExpressHandlerFactoryExpectError() {
+        let hipExpressHandlerFactoryError;
+
+        try {
           // @ts-expect-error
           hipExpressHandlerFactory(handlingStrategy);
+        } catch (err) {
+          hipExpressHandlerFactoryError = err;
         }
+
+        // tslint:disable-next-line:no-unused-expression
+        expect(hipExpressHandlerFactoryError).to.not.be.undefined;
       });
       it('should give error when sanitizeResponse is missing', () => {
         const handlingStrategy = {
@@ -1285,10 +1306,17 @@ describe('HipThrusTS', () => {
           },
         };
 
-        function hipExpressHandlerFactoryExpectError() {
+        let hipExpressHandlerFactoryError;
+
+        try {
           // @ts-expect-error
           hipExpressHandlerFactory(handlingStrategy);
+        } catch (err) {
+          hipExpressHandlerFactoryError = err;
         }
+
+        // tslint:disable-next-line:no-unused-expression
+        expect(hipExpressHandlerFactoryError).to.not.be.undefined;
       });
     });
   });
