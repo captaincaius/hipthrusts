@@ -1,27 +1,22 @@
 import Boom from '@hapi/boom';
 import {
+  AttachDataReqsSatisfiedOptional,
+  DoWorkReqsSatisfiedOptional,
+  FinalAuthReqsSatisfied,
+  HasAllNotRequireds,
   HasAllRequireds,
   HasAttachData,
-  HasAttachDataProperOptionals,
   HasBodyProperOptionals,
   HasDoWork,
-  HasDoWorkProperOptionals,
   HasFinalAuthorize,
-  HasFinalAuthorizeProperOptionals,
   HasInitPreContext,
   HasInitPreContextProperOptionals,
   HasParamsProperOptionals,
   HasPreAuthorize,
-  HasPreauthProperOptionals,
   HasRespond,
-  HasRespondProperOptionals,
   HasSanitizeBody,
   HasSanitizeParams,
   HasSanitizeResponse,
-  HasUpToAttachDataProperOptionals,
-  HasUpToDoWorkProperOptionals,
-  HasUpToFinalAuthorizeProperOptionals,
-  HasUpToRespondProperOptionals,
   MightHaveFinalAuthorize,
   MightHavePreAuthorize,
   MightHaveRespond,
@@ -31,8 +26,11 @@ import {
   OptionallyHasInitPreContext,
   OptionallyHasSanitizeBody,
   OptionallyHasSanitizeParams,
+  PreAuthReqsSatisfied,
   PromiseOrSync,
   PromiseResolveOrSync,
+  RespondReqsSatisfied,
+  SanitizeResponseReqsSatisfied,
 } from './types';
 
 // @todo: MINOR: consider bringing this back to life so complexity of optionality is removed from executeHipthrustable
@@ -229,23 +227,16 @@ export async function executeHipthrustable<
     & HasRespondProper<TConf>,
   */
   TConf extends HasAllRequireds &
-    OptionallyHasSanitizeParams<any, any> &
-    OptionallyHasSanitizeBody<any, any> &
-    OptionallyHasAttachData<any, any> &
-    OptionallyHasDoWork<any, any> &
-    OptionallyHasInitPreContext<any, any> &
+    HasAllNotRequireds &
     HasInitPreContextProperOptionals<TConf> &
     HasParamsProperOptionals<TConf> &
     HasBodyProperOptionals<TConf> &
-    HasPreauthProperOptionals<TConf> &
-    HasUpToAttachDataProperOptionals<TConf> &
-    HasAttachDataProperOptionals<TConf> &
-    HasUpToFinalAuthorizeProperOptionals<TConf> &
-    HasFinalAuthorizeProperOptionals<TConf> &
-    HasUpToDoWorkProperOptionals<TConf> &
-    HasDoWorkProperOptionals<TConf> &
-    HasUpToRespondProperOptionals<TConf> &
-    HasRespondProperOptionals<TConf>,
+    PreAuthReqsSatisfied<TConf> &
+    AttachDataReqsSatisfiedOptional<TConf> &
+    FinalAuthReqsSatisfied<TConf> &
+    DoWorkReqsSatisfiedOptional<TConf> &
+    RespondReqsSatisfied<TConf> &
+    SanitizeResponseReqsSatisfied<TConf>,
   TUnsafe,
   TUnsafeParams,
   TUnsafeBody

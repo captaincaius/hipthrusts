@@ -7,43 +7,34 @@ import {
   assertHipthrustable,
   executeHipthrustable,
   HipRedirectException,
+  withDefaultImplementations,
 } from './core';
 import {
+  AttachDataReqsSatisfiedOptional,
+  DoWorkReqsSatisfiedOptional,
+  FinalAuthReqsSatisfied,
+  HasAllNotRequireds,
   HasAllRequireds,
-  HasAttachDataProperOptionals,
   HasBodyProperOptionals,
-  HasDoWorkProperOptionals,
-  HasFinalAuthorizeProperOptionals,
-  HasInitPreContext,
   HasInitPreContextProperOptionals,
   HasParamsProperOptionals,
-  HasPreauthProperOptionals,
-  HasRespondProperOptionals,
-  HasUpToAttachDataProperOptionals,
-  HasUpToDoWorkProperOptionals,
-  HasUpToFinalAuthorizeProperOptionals,
-  HasUpToRespondProperOptionals,
+  PreAuthReqsSatisfied,
+  RespondReqsSatisfied,
+  SanitizeResponseReqsSatisfied,
 } from './types';
-
-interface ExpressInitialUnsafeContext {
-  req: ExpressRequest;
-  res: ExpressResponse;
-}
 
 export function hipExpressHandlerFactory<
   TConf extends HasAllRequireds &
+    HasAllNotRequireds &
     HasInitPreContextProperOptionals<TConf> &
     HasParamsProperOptionals<TConf> &
     HasBodyProperOptionals<TConf> &
-    HasPreauthProperOptionals<TConf> &
-    HasUpToAttachDataProperOptionals<TConf> &
-    HasAttachDataProperOptionals<TConf> &
-    HasUpToFinalAuthorizeProperOptionals<TConf> &
-    HasFinalAuthorizeProperOptionals<TConf> &
-    HasUpToDoWorkProperOptionals<TConf> &
-    HasDoWorkProperOptionals<TConf> &
-    HasUpToRespondProperOptionals<TConf> &
-    HasRespondProperOptionals<TConf>
+    PreAuthReqsSatisfied<TConf> &
+    AttachDataReqsSatisfiedOptional<TConf> &
+    FinalAuthReqsSatisfied<TConf> &
+    DoWorkReqsSatisfiedOptional<TConf> &
+    RespondReqsSatisfied<TConf> &
+    SanitizeResponseReqsSatisfied<TConf>
 >(handlingStrategy: TConf) {
   assertHipthrustable(handlingStrategy);
   // @todo: MINOR: consider bringing this back - it's tricky though cause you need to
