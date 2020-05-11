@@ -135,55 +135,14 @@ type IntersectProperties<T> = [T] extends [object]
     : never
   : T;
 
-/*
-type Funcs = {
-  a: () => void;
-  v: (text: string) => number;
-};
-type IPFuncs = IntersectProperties<Funcs>;
-// type IPFuncs = (() => void) & ((text: string) => number) 👍
-
-type Foo = { a: string; b: number };
-type Bar = IntersectProperties<Foo>;
-// type Bar = string & number 😕
-*/
-
-// @todo These HasUpTo*'s below unfortunately don't give you a very good message :(
-// Therefore, we should rebuild all the exported types from HasPreauthProper and on using IntersectProperties like so...
-// It'll probably make all the code below HasBodyProper obsolete :)
-/*
-type ReturnedSomewhereUpToFinalAuthorize<T> = HasAttachData<any, T> | HasPreAuthorize<any, T>;
-
-type FinalAuthReqsSatisfied<T extends HasFinalAuthorize<any, any>> = IntersectProperties<
-  {
-    [P in keyof Parameters<T['finalAuthorize']>[0]]: ReturnedSomewhereUpToFinalAuthorize<Record<P,Parameters<T['finalAuthorize']>[0][P]>>
-  }
->;
-*/
-// Start with the "optionalized" section below
-
-type ObjectValueToAny<T, TKeyProperty extends string | symbol | number> = [
-  T
-] extends [object]
-  ? { [key in keyof T]: any }
-  : Record<TKeyProperty, T>;
-
-type NotObjectCase<TOut, TKeyProperty extends string | symbol | number> = [
-  TOut
-] extends [object]
-  ? TOut
-  : Record<TKeyProperty, TOut>;
-
-type ReturnedSomewhereUpToPreAuthorizeAuthorize<
-  T,
-  TOut,
-  TKeyProperty extends string | symbol | number
-> = [T] extends [HasSanitizeBody<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasSanitizeBody<any, NotObjectCase<TOut, TKeyProperty>>
-  : [T] extends [HasSanitizeParams<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasSanitizeParams<any, NotObjectCase<TOut, TKeyProperty>>
-  : [T] extends [HasInitPreContext<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasInitPreContext<any, NotObjectCase<TOut, TKeyProperty>>
+type ReturnedSomewhereUpToPreAuthorizeAuthorize<TOut, TValue> = [TOut] extends [
+  HasSanitizeBody<any, TValue>
+]
+  ? HasSanitizeBody<any, TValue>
+  : [TOut] extends [HasSanitizeParams<any, TValue>]
+  ? HasSanitizeParams<any, TValue>
+  : [TOut] extends [HasInitPreContext<any, TValue>]
+  ? HasInitPreContext<any, TValue>
   : never;
 
 export type PreAuthReqsSatisfied<
@@ -194,8 +153,7 @@ export type PreAuthReqsSatisfied<
       T['preAuthorize']
     >[0]]: ReturnedSomewhereUpToPreAuthorizeAuthorize<
       T,
-      Parameters<T['preAuthorize']>[0][P],
-      P
+      Parameters<T['preAuthorize']>[0][P]
     >;
   }
 >;
@@ -205,17 +163,17 @@ type OptionalAttachDataParams<T> = T extends HasAttachData<any, any>
   : {};
 
 type ReturnedSomewhereUpToAttachData<
-  T,
   TOut,
-  TKeyProperty extends string | symbol | number
-> = [T] extends [HasPreAuthorize<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasPreAuthorize<any, NotObjectCase<TOut, TKeyProperty>>
-  : [T] extends [HasSanitizeBody<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasSanitizeBody<any, NotObjectCase<TOut, TKeyProperty>>
-  : [T] extends [HasSanitizeParams<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasSanitizeParams<any, NotObjectCase<TOut, TKeyProperty>>
-  : [T] extends [HasInitPreContext<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasInitPreContext<any, NotObjectCase<TOut, TKeyProperty>>
+  TValue,
+  TKey extends string | symbol | number
+> = [TOut] extends [HasPreAuthorize<any, Record<TKey, TValue>>]
+  ? HasPreAuthorize<any, Record<TKey, TValue>>
+  : [TOut] extends [HasSanitizeBody<any, TValue>]
+  ? HasSanitizeBody<any, TValue>
+  : [TOut] extends [HasSanitizeParams<any, TValue>]
+  ? HasSanitizeParams<any, TValue>
+  : [TOut] extends [HasInitPreContext<any, TValue>]
+  ? HasInitPreContext<any, TValue>
   : never;
 
 export type AttachDataReqsSatisfiedOptional<T> = IntersectProperties<
@@ -229,19 +187,19 @@ export type AttachDataReqsSatisfiedOptional<T> = IntersectProperties<
 >;
 
 type ReturnedSomewhereUpToFinalAuthorize<
-  T,
   TOut,
-  TKeyProperty extends string | symbol | number
-> = [T] extends [HasAttachData<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasAttachData<any, NotObjectCase<TOut, TKeyProperty>>
-  : [T] extends [HasPreAuthorize<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasPreAuthorize<any, NotObjectCase<TOut, TKeyProperty>>
-  : [T] extends [HasSanitizeBody<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasSanitizeBody<any, NotObjectCase<TOut, TKeyProperty>>
-  : [T] extends [HasSanitizeParams<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasSanitizeParams<any, NotObjectCase<TOut, TKeyProperty>>
-  : [T] extends [HasInitPreContext<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasInitPreContext<any, NotObjectCase<TOut, TKeyProperty>>
+  TValue,
+  TKey extends string | symbol | number
+> = [TOut] extends [HasAttachData<any, Record<TKey, TValue>>]
+  ? HasAttachData<any, Record<TKey, TValue>>
+  : [TOut] extends [HasPreAuthorize<any, Record<TKey, TValue>>]
+  ? HasPreAuthorize<any, Record<TKey, TValue>>
+  : [TOut] extends [HasSanitizeBody<any, TValue>]
+  ? HasSanitizeBody<any, TValue>
+  : [TOut] extends [HasSanitizeParams<any, TValue>]
+  ? HasSanitizeParams<any, TValue>
+  : [TOut] extends [HasInitPreContext<any, TValue>]
+  ? HasInitPreContext<any, TValue>
   : never;
 
 export type FinalAuthReqsSatisfied<
@@ -263,21 +221,21 @@ type OptionalDoWorkParams<T> = T extends HasDoWork<any, any>
   : {};
 
 type ReturnedSomewhereUpToDoWork<
-  T,
   TOut,
-  TKeyProperty extends string | symbol | number
-> = [T] extends [HasFinalAuthorize<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasFinalAuthorize<any, TOut>
-  : [T] extends [HasAttachData<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasAttachData<any, NotObjectCase<TOut, TKeyProperty>>
-  : [T] extends [HasPreAuthorize<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasPreAuthorize<any, TOut>
-  : [T] extends [HasSanitizeBody<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasSanitizeBody<any, TOut>
-  : [T] extends [HasSanitizeParams<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasSanitizeParams<any, TOut>
-  : [T] extends [HasInitPreContext<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasInitPreContext<any, TOut>
+  TValue,
+  TKey extends string | symbol | number
+> = [TOut] extends [HasFinalAuthorize<any, Record<TKey, TValue>>]
+  ? HasFinalAuthorize<any, Record<TKey, TValue>>
+  : [TOut] extends [HasAttachData<any, Record<TKey, TValue>>]
+  ? HasAttachData<any, Record<TKey, TValue>>
+  : [TOut] extends [HasPreAuthorize<any, Record<TKey, TValue>>]
+  ? HasPreAuthorize<any, Record<TKey, TValue>>
+  : [TOut] extends [HasSanitizeBody<any, TValue>]
+  ? HasSanitizeBody<any, TValue>
+  : [TOut] extends [HasSanitizeParams<any, TValue>]
+  ? HasSanitizeParams<any, TValue>
+  : [TOut] extends [HasInitPreContext<any, TValue>]
+  ? HasInitPreContext<any, TValue>
   : never;
 
 export type DoWorkReqsSatisfiedOptional<T> = IntersectProperties<
@@ -291,23 +249,23 @@ export type DoWorkReqsSatisfiedOptional<T> = IntersectProperties<
 >;
 
 type ReturnedSomewhereUpToRespond<
-  T,
   TOut,
-  TKeyProperty extends string | symbol | number
-> = [T] extends [HasDoWork<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasDoWork<any, NotObjectCase<TOut, TKeyProperty>>
-  : [T] extends [HasFinalAuthorize<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasFinalAuthorize<any, NotObjectCase<TOut, TKeyProperty>>
-  : [T] extends [HasAttachData<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasAttachData<any, NotObjectCase<TOut, TKeyProperty>>
-  : [T] extends [HasPreAuthorize<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasPreAuthorize<any, NotObjectCase<TOut, TKeyProperty>>
-  : [T] extends [HasSanitizeBody<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasSanitizeBody<any, NotObjectCase<TOut, TKeyProperty>>
-  : [T] extends [HasSanitizeParams<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasSanitizeParams<any, NotObjectCase<TOut, TKeyProperty>>
-  : [T] extends [HasInitPreContext<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasInitPreContext<any, NotObjectCase<TOut, TKeyProperty>>
+  TValue,
+  TKey extends string | symbol | number
+> = [TOut] extends [HasDoWork<any, Record<TKey, TValue>>]
+  ? HasDoWork<any, TValue>
+  : [TOut] extends [HasFinalAuthorize<any, Record<TKey, TValue>>]
+  ? HasFinalAuthorize<any, Record<TKey, TValue>>
+  : [TOut] extends [HasAttachData<any, Record<TKey, TValue>>]
+  ? HasAttachData<any, Record<TKey, TValue>>
+  : [TOut] extends [HasPreAuthorize<any, Record<TKey, TValue>>]
+  ? HasPreAuthorize<any, Record<TKey, TValue>>
+  : [TOut] extends [HasSanitizeBody<any, TValue>]
+  ? HasSanitizeBody<any, TValue>
+  : [TOut] extends [HasSanitizeParams<any, TValue>]
+  ? HasSanitizeParams<any, TValue>
+  : [TOut] extends [HasInitPreContext<any, TValue>]
+  ? HasInitPreContext<any, TValue>
   : never;
 
 export type RespondReqsSatisfied<
@@ -323,11 +281,11 @@ export type RespondReqsSatisfied<
 >;
 
 type ReturnedSomewhereUpToSanitizeResponse<
-  T,
   TOut,
-  TKeyProperty extends string | symbol | number
-> = [T] extends [HasRespond<any, ObjectValueToAny<TOut, TKeyProperty>>]
-  ? HasRespond<any, NotObjectCase<TOut, TKeyProperty>>
+  TValue,
+  TKey extends string | symbol | number
+> = [TOut] extends [HasRespond<any, Record<TKey, TValue>>]
+  ? HasRespond<any, TValue>
   : never;
 
 export type SanitizeResponseReqsSatisfied<
