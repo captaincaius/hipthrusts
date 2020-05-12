@@ -6,12 +6,9 @@ import {
   HasAllNotRequireds,
   HasAllRequireds,
   HasAttachData,
-  HasBodyProperOptionals,
   HasDoWork,
   HasFinalAuthorize,
   HasInitPreContext,
-  HasInitPreContextProperOptionals,
-  HasParamsProperOptionals,
   HasPreAuthorize,
   HasRespond,
   HasSanitizeBody,
@@ -35,12 +32,7 @@ import {
 
 // @todo: MINOR: consider bringing this back to life so complexity of optionality is removed from executeHipthrustable
 export function withDefaultImplementations<
-  TStrategy extends OptionallyHasInitPreContext<any, any> &
-    OptionallyHasSanitizeParams<any, any> &
-    OptionallyHasSanitizeBody<any, any> &
-    HasAllRequireds &
-    OptionallyHasAttachData<any, any> &
-    OptionallyHasDoWork<any, any>
+  TStrategy extends HasAllRequireds & HasAllNotRequireds
 >(
   strategy: TStrategy
 ): {
@@ -209,28 +201,8 @@ function transformThrowPossiblyAsync<
 }
 
 export async function executeHipthrustable<
-  // @todo: MINOR: consider swapping these when withDefaultImplementations is fixed
-  /*
-  TConf extends
-    HasSanitizeResponse<any,any>
-    & HasInitPreContextProper<TConf>
-    & HasParamsProper<TConf>
-    & HasBodyProper<TConf>
-    & HasPreauthProper<TConf>
-    & HasUpToAttachDataProper<TConf>
-    & HasAttachDataProper<TConf>
-    & HasUpToFinalAuthorizeProper<TConf>
-    & HasFinalAuthorizeProper<TConf>
-    & HasUpToDoWorkProper<TConf>
-    & HasDoWorkProper<TConf>
-    & HasUpToRespondProper<TConf>
-    & HasRespondProper<TConf>,
-  */
   TConf extends HasAllRequireds &
     HasAllNotRequireds &
-    HasInitPreContextProperOptionals<TConf> &
-    HasParamsProperOptionals<TConf> &
-    HasBodyProperOptionals<TConf> &
     PreAuthReqsSatisfied<TConf> &
     AttachDataReqsSatisfiedOptional<TConf> &
     FinalAuthReqsSatisfied<TConf> &

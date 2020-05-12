@@ -135,30 +135,26 @@ type IntersectProperties<T> = [T] extends [object]
     : never
   : T;
 
-type ReturnedSomewhereUpToPreAuthorizeAuthorize<TOut, TValue> = [TOut] extends [
-  HasSanitizeBody<any, TValue>
-]
+type ReturnedTypeUpToPreAuthorize<TValue, TKey> = TKey extends 'body'
   ? HasSanitizeBody<any, TValue>
-  : [TOut] extends [HasSanitizeParams<any, TValue>]
+  : TKey extends 'params'
   ? HasSanitizeParams<any, TValue>
-  : [TOut] extends [HasInitPreContext<any, TValue>]
+  : TKey extends 'preContext'
   ? HasInitPreContext<any, TValue>
-  : never;
+  : {};
 
 export type PreAuthReqsSatisfied<
   T extends HasPreAuthorize<any, any>
 > = IntersectProperties<
   {
-    [P in keyof Parameters<
-      T['preAuthorize']
-    >[0]]: ReturnedSomewhereUpToPreAuthorizeAuthorize<
-      T,
-      Parameters<T['preAuthorize']>[0][P]
+    [P in keyof Parameters<T['preAuthorize']>[0]]: ReturnedTypeUpToPreAuthorize<
+      Parameters<T['preAuthorize']>[0][P],
+      P
     >;
   }
 >;
 
-type OptionalAttachDataParams<T> = T extends HasAttachData<any, any>
+type OptionalAttachDataParams<T> = [T] extends [HasAttachData<any, any>]
   ? Parameters<T['attachData']>[0]
   : {};
 
@@ -168,21 +164,15 @@ type ReturnedSomewhereUpToAttachData<
   TKey extends string | symbol | number
 > = [TOut] extends [HasPreAuthorize<any, Record<TKey, TValue>>]
   ? HasPreAuthorize<any, Record<TKey, TValue>>
-  : [TOut] extends [HasSanitizeBody<any, TValue>]
-  ? HasSanitizeBody<any, TValue>
-  : [TOut] extends [HasSanitizeParams<any, TValue>]
-  ? HasSanitizeParams<any, TValue>
-  : [TOut] extends [HasInitPreContext<any, TValue>]
-  ? HasInitPreContext<any, TValue>
   : never;
+
+type AllInitKeys = 'preContext' | 'params' | 'body';
 
 export type AttachDataReqsSatisfiedOptional<T> = IntersectProperties<
   {
-    [P in keyof OptionalAttachDataParams<T>]: ReturnedSomewhereUpToAttachData<
-      T,
-      OptionalAttachDataParams<T>[P],
-      P
-    >;
+    [P in keyof OptionalAttachDataParams<T>]: [P] extends [AllInitKeys]
+      ? ReturnedTypeUpToPreAuthorize<OptionalAttachDataParams<T>[P], P>
+      : ReturnedSomewhereUpToAttachData<T, OptionalAttachDataParams<T>[P], P>;
   }
 >;
 
@@ -194,29 +184,23 @@ type ReturnedSomewhereUpToFinalAuthorize<
   ? HasAttachData<any, Record<TKey, TValue>>
   : [TOut] extends [HasPreAuthorize<any, Record<TKey, TValue>>]
   ? HasPreAuthorize<any, Record<TKey, TValue>>
-  : [TOut] extends [HasSanitizeBody<any, TValue>]
-  ? HasSanitizeBody<any, TValue>
-  : [TOut] extends [HasSanitizeParams<any, TValue>]
-  ? HasSanitizeParams<any, TValue>
-  : [TOut] extends [HasInitPreContext<any, TValue>]
-  ? HasInitPreContext<any, TValue>
   : never;
 
 export type FinalAuthReqsSatisfied<
   T extends HasFinalAuthorize<any, any>
 > = IntersectProperties<
   {
-    [P in keyof Parameters<
-      T['finalAuthorize']
-    >[0]]: ReturnedSomewhereUpToFinalAuthorize<
-      T,
-      Parameters<T['finalAuthorize']>[0][P],
-      P
-    >;
+    [P in keyof Parameters<T['finalAuthorize']>[0]]: [P] extends [AllInitKeys]
+      ? ReturnedTypeUpToPreAuthorize<Parameters<T['finalAuthorize']>[0][P], P>
+      : ReturnedSomewhereUpToFinalAuthorize<
+          T,
+          Parameters<T['finalAuthorize']>[0][P],
+          P
+        >;
   }
 >;
 
-type OptionalDoWorkParams<T> = T extends HasDoWork<any, any>
+type OptionalDoWorkParams<T> = [T] extends [HasDoWork<any, any>]
   ? Parameters<T['doWork']>[0]
   : {};
 
@@ -230,21 +214,13 @@ type ReturnedSomewhereUpToDoWork<
   ? HasAttachData<any, Record<TKey, TValue>>
   : [TOut] extends [HasPreAuthorize<any, Record<TKey, TValue>>]
   ? HasPreAuthorize<any, Record<TKey, TValue>>
-  : [TOut] extends [HasSanitizeBody<any, TValue>]
-  ? HasSanitizeBody<any, TValue>
-  : [TOut] extends [HasSanitizeParams<any, TValue>]
-  ? HasSanitizeParams<any, TValue>
-  : [TOut] extends [HasInitPreContext<any, TValue>]
-  ? HasInitPreContext<any, TValue>
   : never;
 
 export type DoWorkReqsSatisfiedOptional<T> = IntersectProperties<
   {
-    [P in keyof OptionalDoWorkParams<T>]: ReturnedSomewhereUpToDoWork<
-      T,
-      OptionalDoWorkParams<T>[P],
-      P
-    >;
+    [P in keyof OptionalDoWorkParams<T>]: [P] extends [AllInitKeys]
+      ? ReturnedTypeUpToPreAuthorize<OptionalDoWorkParams<T>, P>
+      : ReturnedSomewhereUpToDoWork<T, OptionalDoWorkParams<T>[P], P>;
   }
 >;
 
@@ -260,31 +236,21 @@ type ReturnedSomewhereUpToRespond<
   ? HasAttachData<any, Record<TKey, TValue>>
   : [TOut] extends [HasPreAuthorize<any, Record<TKey, TValue>>]
   ? HasPreAuthorize<any, Record<TKey, TValue>>
-  : [TOut] extends [HasSanitizeBody<any, TValue>]
-  ? HasSanitizeBody<any, TValue>
-  : [TOut] extends [HasSanitizeParams<any, TValue>]
-  ? HasSanitizeParams<any, TValue>
-  : [TOut] extends [HasInitPreContext<any, TValue>]
-  ? HasInitPreContext<any, TValue>
   : never;
 
 export type RespondReqsSatisfied<
   T extends HasRespond<any, any>
 > = IntersectProperties<
   {
-    [P in keyof Parameters<T['respond']>[0]]: ReturnedSomewhereUpToRespond<
-      T,
-      Parameters<T['respond']>[0][P],
-      P
-    >;
+    [P in keyof Parameters<T['respond']>[0]]: [P] extends [AllInitKeys]
+      ? ReturnedTypeUpToPreAuthorize<Parameters<T['respond']>[0][P], P>
+      : ReturnedSomewhereUpToRespond<T, Parameters<T['respond']>[0][P], P>;
   }
 >;
 
-type ReturnedSomewhereUpToSanitizeResponse<
-  TOut,
-  TValue,
-  TKey extends string | symbol | number
-> = [TOut] extends [HasRespond<any, Record<TKey, TValue>>]
+type ReturnedSomewhereUpToSanitizeResponse<TOut, TValue> = [TOut] extends [
+  HasRespond<any, TValue>
+]
   ? HasRespond<any, TValue>
   : never;
 
@@ -296,41 +262,7 @@ export type SanitizeResponseReqsSatisfied<
       T['sanitizeResponse']
     >[0]]: ReturnedSomewhereUpToSanitizeResponse<
       T,
-      Record<P, Parameters<T['sanitizeResponse']>[0][P]>,
-      P
+      Record<P, Parameters<T['sanitizeResponse']>[0][P]>
     >;
   }
 >;
-
-// Not Optionalized
-
-type AllInitsReqs = HasInitPreContext<any, any> &
-  HasSanitizeParams<any, any> &
-  HasSanitizeBody<any, any>;
-export type HasInitPreContextProper<
-  T extends HasPreAuthorize<any, any>
-> = HasInitPreContext<any, Parameters<T['preAuthorize']>[0]['preContext']>;
-export type HasParamsProper<
-  T extends HasPreAuthorize<any, any>
-> = HasSanitizeParams<any, Parameters<T['preAuthorize']>[0]['params']>;
-export type HasBodyProper<
-  T extends HasPreAuthorize<any, any>
-> = HasSanitizeBody<any, Parameters<T['preAuthorize']>[0]['body']>;
-
-// optionalized
-
-export type HasInitPreContextProperOptionals<
-  T extends HasPreAuthorize<any, any>
-> = Parameters<T['preAuthorize']>[0]['preContext'] extends {}
-  ? HasInitPreContext<any, Parameters<T['preAuthorize']>[0]['preContext']>
-  : {};
-export type HasParamsProperOptionals<
-  T extends HasPreAuthorize<any, any>
-> = Parameters<T['preAuthorize']>[0]['params'] extends {}
-  ? HasSanitizeParams<any, Parameters<T['preAuthorize']>[0]['params']>
-  : {};
-export type HasBodyProperOptionals<
-  T extends HasPreAuthorize<any, any>
-> = Parameters<T['preAuthorize']>[0]['body'] extends {}
-  ? HasSanitizeBody<any, Parameters<T['preAuthorize']>[0]['body']>
-  : {};

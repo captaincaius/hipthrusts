@@ -15,9 +15,6 @@ import {
   FinalAuthReqsSatisfied,
   HasAllNotRequireds,
   HasAllRequireds,
-  HasBodyProperOptionals,
-  HasInitPreContextProperOptionals,
-  HasParamsProperOptionals,
   PreAuthReqsSatisfied,
   RespondReqsSatisfied,
   SanitizeResponseReqsSatisfied,
@@ -26,9 +23,6 @@ import {
 export function hipExpressHandlerFactory<
   TConf extends HasAllRequireds &
     HasAllNotRequireds &
-    HasInitPreContextProperOptionals<TConf> &
-    HasParamsProperOptionals<TConf> &
-    HasBodyProperOptionals<TConf> &
     PreAuthReqsSatisfied<TConf> &
     AttachDataReqsSatisfiedOptional<TConf> &
     FinalAuthReqsSatisfied<TConf> &
