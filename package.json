@@ -64,7 +64,7 @@
     "tslint": "5.20.0",
     "tslint-config-prettier": "^1.18.0",
     "tslint-eslint-rules": "*5.4.0",
-    "typescript": "^3.9.1-rc"
+    "typescript": "^3.9.2"
   },
   "prettier": {
     "trailingComma": "es5",
