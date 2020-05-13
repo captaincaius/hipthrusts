@@ -5,6 +5,7 @@ import {
   FinalAuthReqsSatisfied,
   HasAllNotRequireds,
   HasAllRequireds,
+  HasAllStagesNotOptionals,
   HasAttachData,
   HasDoWork,
   HasFinalAuthorize,
@@ -30,67 +31,46 @@ import {
   SanitizeResponseReqsSatisfied,
 } from './types';
 
-// @todo: MINOR: consider bringing this back to life so complexity of optionality is removed from executeHipthrustable
 export function withDefaultImplementations<
-  TStrategy extends HasAllRequireds & HasAllNotRequireds
->(
-  strategy: TStrategy
-): {
-  initPreContext: TStrategy extends HasInitPreContext<any, any>
-    ? TStrategy['initPreContext']
-    : () => {};
-  sanitizeParams: TStrategy extends HasSanitizeParams<any, any>
-    ? TStrategy['sanitizeParams']
-    : () => {};
-  sanitizeBody: TStrategy extends HasSanitizeBody<any, any>
-    ? TStrategy['sanitizeBody']
-    : () => {};
-  preAuthorize: TStrategy['preAuthorize'];
-  attachData: TStrategy extends HasAttachData<any, any>
-    ? TStrategy['attachData']
-    : () => {};
-  finalAuthorize: TStrategy['finalAuthorize'];
-  doWork: TStrategy extends HasDoWork<any, any>
-    ? TStrategy['doWork']
-    : () => {};
-  respond: TStrategy['respond'];
-  sanitizeResponse: TStrategy['sanitizeResponse'];
-} {
-  // @tswtf why isn't typescript smart enough to not require these type assertions below?
+  TStrategy extends HasAllRequireds &
+    HasAllNotRequireds &
+    PreAuthReqsSatisfied<TStrategy> &
+    AttachDataReqsSatisfiedOptional<TStrategy> &
+    FinalAuthReqsSatisfied<TStrategy> &
+    DoWorkReqsSatisfiedOptional<TStrategy> &
+    RespondReqsSatisfied<TStrategy> &
+    SanitizeResponseReqsSatisfied<TStrategy>
+>(strategy: TStrategy): HasAllStagesNotOptionals {
   return {
-    ...strategy,
-    initPreContext: (strategy.initPreContext
+    initPreContext: strategy.initPreContext
       ? strategy.initPreContext
       : () => {
           return {};
-        }) as TStrategy extends HasInitPreContext<any, any>
-      ? TStrategy['initPreContext']
-      : () => {},
-    sanitizeParams: (strategy.sanitizeParams
+        },
+    sanitizeParams: strategy.sanitizeParams
       ? strategy.sanitizeParams
       : () => {
           return {};
-        }) as TStrategy extends HasSanitizeParams<any, any>
-      ? TStrategy['sanitizeParams']
-      : () => {},
-    sanitizeBody: (strategy.sanitizeBody ||
+        },
+    sanitizeBody:
+      strategy.sanitizeBody ||
       (() => {
         return {};
-      })) as TStrategy extends HasSanitizeBody<any, any>
-      ? TStrategy['sanitizeBody']
-      : () => {},
-    attachData: (strategy.attachData ||
+      }),
+    preAuthorize: strategy.preAuthorize,
+    attachData:
+      strategy.attachData ||
       (() => {
         return {};
-      })) as TStrategy extends HasAttachData<any, any>
-      ? TStrategy['attachData']
-      : () => {},
-    doWork: (strategy.doWork ||
+      }),
+    finalAuthorize: strategy.finalAuthorize,
+    doWork:
+      strategy.doWork ||
       (() => {
         return {};
-      })) as TStrategy extends HasDoWork<any, any>
-      ? TStrategy['doWork']
-      : () => {},
+      }),
+    respond: strategy.respond,
+    sanitizeResponse: strategy.sanitizeResponse,
   };
 }
 
@@ -201,8 +181,7 @@ function transformThrowPossiblyAsync<
 }
 
 export async function executeHipthrustable<
-  TConf extends HasAllRequireds &
-    HasAllNotRequireds &
+  TConf extends HasAllStagesNotOptionals &
     PreAuthReqsSatisfied<TConf> &
     AttachDataReqsSatisfiedOptional<TConf> &
     FinalAuthReqsSatisfied<TConf> &
@@ -219,20 +198,22 @@ export async function executeHipthrustable<
   unsafeBody: TUnsafeBody
 ) {
   const badDataThrow = Boom.badData('User input sanitization failure');
-  const safeInitPreContext = requestHandler.initPreContext
-    ? transformThrowSync(badDataThrow, requestHandler.initPreContext, unsafe)
-    : {};
+  const safeInitPreContext = transformThrowSync(
+    badDataThrow,
+    requestHandler.initPreContext,
+    unsafe
+  );
   // @todo: maybe params should throw something different like 400
-  const safeParams = requestHandler.sanitizeParams
-    ? transformThrowSync(
-        badDataThrow,
-        requestHandler.sanitizeParams,
-        unsafeParams
-      )
-    : undefined;
-  const safeBody = requestHandler.sanitizeBody
-    ? transformThrowSync(badDataThrow, requestHandler.sanitizeBody, unsafeBody)
-    : undefined;
+  const safeParams = transformThrowSync(
+    badDataThrow,
+    requestHandler.sanitizeParams,
+    unsafeParams
+  );
+  const safeBody = transformThrowSync(
+    badDataThrow,
+    requestHandler.sanitizeBody,
+    unsafeBody
+  );
   const inputsContext = {
     preContext: safeInitPreContext,
     params: safeParams,
@@ -264,13 +245,12 @@ export async function executeHipthrustable<
   };
 
   const notFoundThrow = Boom.notFound('Resource not found');
-  const attachedDataContextOnly = requestHandler.attachData
-    ? (await transformThrowPossiblyAsync(
-        notFoundThrow,
-        requestHandler.attachData,
-        preAuthContext
-      )) || {}
-    : {};
+  const attachedDataContextOnly =
+    (await transformThrowPossiblyAsync(
+      notFoundThrow,
+      requestHandler.attachData,
+      preAuthContext
+    )) || {};
   const attachedDataContext = { ...preAuthContext, ...attachedDataContextOnly };
 
   const forbiddenFinalAuthThrow = Boom.forbidden(
@@ -300,13 +280,13 @@ export async function executeHipthrustable<
   };
 
   try {
-    // @todo: allow doWork to return more context instead of "true" too.  Anything falsy will be interpreted as an error.  Don't forget || {} after call
-    if (requestHandler.doWork) {
-      // to keep executeHipthrustable from being too opinionated, it's doWork's responsibility to handle and throw client errors.
-      // Any un-boom'ed errors here should be interpreted as server errors
-      await Promise.resolve(requestHandler.doWork(finalAuthContext));
-    }
-    const doWorkContext = finalAuthContext;
+    // to keep executeHipthrustable from being too opinionated, it's doWork's responsibility to handle and throw client errors.
+    // Any un-boom'ed errors here should be interpreted as server errors
+    const doWorkContextOnly = await Promise.resolve(
+      requestHandler.doWork(finalAuthContext)
+    );
+
+    const doWorkContext = { ...finalAuthContext, ...doWorkContextOnly };
 
     const { unsafeResponse, status } = requestHandler.respond(doWorkContext);
     const safeResponse = requestHandler.sanitizeResponse(unsafeResponse);

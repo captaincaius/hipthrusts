@@ -31,9 +31,7 @@ export function hipExpressHandlerFactory<
     SanitizeResponseReqsSatisfied<TConf>
 >(handlingStrategy: TConf) {
   assertHipthrustable(handlingStrategy);
-  // @todo: MINOR: consider bringing this back - it's tricky though cause you need to
-  // trick typescript into knowing it's assignable to executeHipthrustable's param!
-  // const fullHipthrustable = withDefaultImplementations(handlingStrategy);
+  const fullHipthrustable = withDefaultImplementations(handlingStrategy);
   return async (
     req: ExpressRequest,
     res: ExpressResponse,
@@ -41,7 +39,7 @@ export function hipExpressHandlerFactory<
   ) => {
     try {
       const { response, status } = await executeHipthrustable(
-        handlingStrategy,
+        fullHipthrustable,
         { req, res },
         req.params,
         req.body
