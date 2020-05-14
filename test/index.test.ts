@@ -4,12 +4,7 @@ import chaiAsPromised from 'chai-as-promised';
 // tslint:disable-next-line:no-var-requires
 const { describe, it } = require('mocha');
 
-import {
-  hipExpressHandlerFactory,
-  HTPipe,
-  WithAttached,
-  WithInit,
-} from '../src';
+import { hipExpressHandlerFactory, HTPipe } from '../src';
 import {
   AllAsyncStageKeys,
   AllStageKeys,

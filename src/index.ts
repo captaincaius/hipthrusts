@@ -10,7 +10,17 @@ import {
   isHasSanitizeParams,
   isHasSanitizeResponse,
 } from './core';
-import { WithFinalAuth, WithPreAuth } from './lifecycle-functions';
+import {
+  AttachData,
+  DoWork,
+  FinalAuthorize,
+  InitPreContext,
+  PreAuthorize,
+  Respond,
+  SanitizeBody,
+  SanitizeParams,
+  SanitizeResponse,
+} from './lifecycle-functions';
 import {
   AllStageKeys,
   HasAttachData,
@@ -53,17 +63,371 @@ export function fromWrappedInstanceMethod<
   };
 }
 
-export function WithNoopPreAuth() {
-  return WithPreAuth(() => true);
+export function NoopPreAuth() {
+  return PreAuthorize(() => true);
 }
 
 export function NoopFinalAuth() {
-  return WithFinalAuth(() => true);
+  return FinalAuthorize(() => true);
 }
 
-// @todo: implement all the other HTPipe*'s - note that each one will be slightly different based on their specifics...
-// i.e. can return bool vs not, possibly async vs sync only, mandatory vs not mandatory...
-// then the final master HTPipe will just build an object out of all the sub-HTPipe*'s
+export function InitPreContextFrom(
+  whereToLook: string,
+  projector: (htCtx: any) => any
+) {
+  return {
+    initPreContext: (htCtx: any) =>
+      InitPreContext(projector).initPreContext(htCtx[whereToLook]),
+  };
+}
+
+export function InitPreContextTo(
+  projector: (htCtx: any) => any,
+  whereToStore: string
+) {
+  return {
+    initPreContext: (htCtx: any) => {
+      return {
+        [whereToStore]: InitPreContext(projector).initPreContext(htCtx),
+      };
+    },
+  };
+}
+
+export function InitPreContextFromTo(
+  whereToLook: string,
+  projector: (htCtx: any) => any,
+  whereToStore: string
+) {
+  return {
+    initPreContext: (htCtx: any) => {
+      return {
+        [whereToStore]: InitPreContext(projector).initPreContext(
+          htCtx[whereToLook]
+        ),
+      };
+    },
+  };
+}
+
+export function SanitizeParamsFrom(
+  whereToLook: string,
+  projector: (htCtx: any) => any
+) {
+  return {
+    sanitizeParams: (htCtx: any) =>
+      SanitizeParams(projector).sanitizeParams(htCtx[whereToLook]),
+  };
+}
+
+export function SanitizeParamsTo(
+  projector: (htCtx: any) => any,
+  whereToStore: string
+) {
+  return {
+    sanitizeParams: (htCtx: any) => {
+      return {
+        [whereToStore]: SanitizeParams(projector).sanitizeParams(htCtx),
+      };
+    },
+  };
+}
+
+export function SanitizeParamsFromTo(
+  whereToLook: string,
+  projector: (htCtx: any) => any,
+  whereToStore: string
+) {
+  return {
+    sanitizeParams: (htCtx: any) => {
+      return {
+        [whereToStore]: SanitizeParams(projector).sanitizeParams(
+          htCtx[whereToLook]
+        ),
+      };
+    },
+  };
+}
+
+export function SanitizeBodyFrom(
+  whereToLook: string,
+  projector: (htCtx: any) => any
+) {
+  return {
+    sanitizeBody: (htCtx: any) =>
+      SanitizeBody(projector).sanitizeBody(htCtx[whereToLook]),
+  };
+}
+
+export function SanitizeBodyTo(
+  projector: (htCtx: any) => any,
+  whereToStore: string
+) {
+  return {
+    sanitizeBody: (htCtx: any) => {
+      return {
+        [whereToStore]: SanitizeBody(projector).sanitizeBody(htCtx),
+      };
+    },
+  };
+}
+
+export function SanitizeBodyFromTo(
+  whereToLook: string,
+  projector: (htCtx: any) => any,
+  whereToStore: string
+) {
+  return {
+    sanitizeBody: (htCtx: any) => {
+      return {
+        [whereToStore]: SanitizeBody(projector).sanitizeBody(
+          htCtx[whereToLook]
+        ),
+      };
+    },
+  };
+}
+
+export function PreAuthorizeFrom(
+  whereToLook: string,
+  projector: (htCtx: any) => any
+) {
+  return {
+    preAuthorize: (htCtx: any) =>
+      PreAuthorize(projector).preAuthorize(htCtx[whereToLook]),
+  };
+}
+
+export function PreAuthorizeTo(
+  projector: (htCtx: any) => any,
+  whereToStore: string
+) {
+  return {
+    preAuthorize: (htCtx: any) => {
+      const preAuthorizeResult = PreAuthorize(projector).preAuthorize(htCtx);
+      return authorizationPassed(preAuthorizeResult)
+        ? { [whereToStore]: preAuthorizeResult }
+        : false;
+    },
+  };
+}
+
+export function PreAuthorizeFromTo(
+  whereToLook: string,
+  projector: (htCtx: any) => any,
+  whereToStore: string
+) {
+  return {
+    preAuthorize: (htCtx: any) => {
+      const preAuthorizeResult = PreAuthorize(projector).preAuthorize(
+        htCtx[whereToLook]
+      );
+      return authorizationPassed(preAuthorizeResult)
+        ? { [whereToStore]: preAuthorizeResult }
+        : false;
+    },
+  };
+}
+
+export function AttachDataFrom(
+  whereToLook: string,
+  projector: (htCtx: any) => any
+) {
+  return {
+    attachData: (htCtx: any) =>
+      AttachData(projector).attachData(htCtx[whereToLook]),
+  };
+}
+
+export function AttachDataTo(
+  projector: (htCtx: any) => any,
+  whereToStore: string
+) {
+  return {
+    attachData: (htCtx: any) => {
+      return {
+        [whereToStore]: AttachData(projector).attachData(htCtx),
+      };
+    },
+  };
+}
+
+export function AttachDataFromTo(
+  whereToLook: string,
+  projector: (htCtx: any) => any,
+  whereToStore: string
+) {
+  return {
+    attachData: (htCtx: any) => {
+      return {
+        [whereToStore]: AttachData(projector).attachData(htCtx[whereToLook]),
+      };
+    },
+  };
+}
+
+export function FinalAuthorizeFrom(
+  whereToLook: string,
+  projector: (htCtx: any) => any
+) {
+  return {
+    finalAuthorize: (htCtx: any) =>
+      FinalAuthorize(projector).finalAuthorize(htCtx[whereToLook]),
+  };
+}
+
+export function FinalAuthorizeTo(
+  projector: (htCtx: any) => any,
+  whereToStore: string
+) {
+  return {
+    finalAuthorize: (htCtx: any) => {
+      const finalAuthorizeResult = FinalAuthorize(projector).finalAuthorize(
+        htCtx
+      );
+      return authorizationPassed(finalAuthorizeResult)
+        ? {
+            [whereToStore]: FinalAuthorize(projector).finalAuthorize(htCtx),
+          }
+        : false;
+    },
+  };
+}
+
+export function FinalAuthorizeFromTo(
+  whereToLook: string,
+  projector: (htCtx: any) => any,
+  whereToStore: string
+) {
+  return {
+    finalAuthorize: (htCtx: any) => {
+      const finalAuthorizeResult = FinalAuthorize(projector).finalAuthorize(
+        htCtx
+      );
+      return authorizationPassed(finalAuthorizeResult)
+        ? {
+            [whereToStore]: FinalAuthorize(projector).finalAuthorize(
+              htCtx[whereToLook]
+            ),
+          }
+        : false;
+    },
+  };
+}
+
+export function DoWorkFrom(
+  whereToLook: string,
+  projector: (htCtx: any) => any
+) {
+  return {
+    doWork: (htCtx: any) => DoWork(projector).doWork(htCtx[whereToLook]),
+  };
+}
+
+export function DoWorkTo(projector: (htCtx: any) => any, whereToStore: string) {
+  return {
+    doWork: (htCtx: any) => {
+      return {
+        [whereToStore]: DoWork(projector).doWork(htCtx),
+      };
+    },
+  };
+}
+
+export function DoWorkFromTo(
+  whereToLook: string,
+  projector: (htCtx: any) => any,
+  whereToStore: string
+) {
+  return {
+    doWork: (htCtx: any) => {
+      return {
+        [whereToStore]: DoWork(projector).doWork(htCtx[whereToLook]),
+      };
+    },
+  };
+}
+
+export function RespondFrom(
+  whereToLook: string,
+  projector: (htCtx: any) => any,
+  successStatusCode: number
+) {
+  return {
+    respond: (htCtx: any) =>
+      Respond(projector, successStatusCode).respond(htCtx[whereToLook]),
+  };
+}
+
+export function RespondTo(
+  projector: (htCtx: any) => any,
+  whereToStore: string,
+  successStatusCode: number
+) {
+  return {
+    respond: (htCtx: any) => {
+      return {
+        [whereToStore]: Respond(projector, successStatusCode).respond(htCtx),
+      };
+    },
+  };
+}
+
+export function RespondFromTo(
+  whereToLook: string,
+  projector: (htCtx: any) => any,
+  whereToStore: string,
+  successStatusCode: number
+) {
+  return {
+    respond: (htCtx: any) => {
+      return {
+        [whereToStore]: Respond(projector, successStatusCode).respond(
+          htCtx[whereToLook]
+        ),
+      };
+    },
+  };
+}
+
+export function SanitizeResponseFrom(
+  whereToLook: string,
+  projector: (htCtx: any) => any
+) {
+  return {
+    sanitizeResponse: (htCtx: any) =>
+      SanitizeResponse(projector).sanitizeResponse(htCtx[whereToLook]),
+  };
+}
+
+export function SanitizeResponseTo(
+  projector: (htCtx: any) => any,
+  whereToStore: string
+) {
+  return {
+    sanitizeResponse: (htCtx: any) => {
+      return {
+        [whereToStore]: SanitizeResponse(projector).sanitizeResponse(htCtx),
+      };
+    },
+  };
+}
+
+export function SanitizeResponseFromTo(
+  whereToLook: string,
+  projector: (htCtx: any) => any,
+  whereToStore: string
+) {
+  return {
+    sanitizeResponse: (htCtx: any) => {
+      return {
+        [whereToStore]: SanitizeResponse(projector).sanitizeResponse(
+          htCtx[whereToLook]
+        ),
+      };
+    },
+  };
+}
 
 type InitPreContextIn<T extends HasInitPreContext<any, any>> = Parameters<
   T['initPreContext']
@@ -680,11 +1044,7 @@ export function HTPipe(...objs: any[]) {
     return {};
   }
   if (objs.length === 1) {
-    // @todo: consider removing this explicitness and repetition by calling HTPipe(obj[0], {}) instead
-    return {
-      initPreContext: objs[0].initPreContext,
-      attachData: objs[0].attachData,
-    };
+    return HTPipe(objs[0], {});
   }
   if (objs.length === 2) {
     const left = objs[0];

@@ -1,60 +1,60 @@
-export function WithInit(projector: (context: any) => any) {
+export function InitPreContext(projector: (context: any) => any) {
   return {
     initPreContext: projector,
   };
 }
 
-export function WithParams(projector: (context: any) => any) {
+export function SanitizeParams(projector: (context: any) => any) {
   return {
     sanitizeParams: projector,
   };
 }
 
-export function WithBody(projector: (context: any) => any) {
+export function SanitizeBody(projector: (context: any) => any) {
   return {
     sanitizeBody: projector,
   };
 }
 
-export function WithPreAuth(projector: (context: any) => any) {
+export function PreAuthorize(projector: (context: any) => any) {
   return {
     preAuthorize: projector,
   };
 }
 
-export function WithAttached(projector: (context: any) => any) {
+export function AttachData(projector: (context: any) => any) {
   return {
     attachData: projector,
   };
 }
 
-export function WithFinalAuth(projector: (context: any) => any) {
+export function FinalAuthorize(projector: (context: any) => any) {
   return {
     finalAuthorize: projector,
   };
 }
 
-export function WithDoWork(projector: (context: any) => any) {
+export function DoWork(projector: (context: any) => any) {
   return {
     doWork: projector,
   };
 }
 
-export function WithResponse<TWhereToLook extends string>(
-  whereToLook: TWhereToLook,
+export function Respond(
+  projector: (htCtx: any) => any,
   successStatusCode: number
 ) {
   return {
-    respond: (context: any) => {
+    respond: (htCtx: any) => {
       return {
-        unsafeResponse: context[whereToLook],
+        unsafeResponse: projector(htCtx),
         status: successStatusCode,
       };
     },
   };
 }
 
-export function WithSafeResponse(projector: (context: any) => any) {
+export function SanitizeResponse(projector: (context: any) => any) {
   return {
     sanitizeResponse: projector,
   };
