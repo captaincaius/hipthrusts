@@ -195,12 +195,12 @@ export function htMongooseFactory(mongoose: any) {
     });
   }
 
-  function WithPojoToDocument(
-    pojoKey: string,
-    modelClass: any,
-    newDocKey: string
-  ) {
-    return WithAttached((context: any) => {
+  function WithPojoToDocument<
+    TPojoKey extends string,
+    TMongooseModel extends new (...args: any[]) => TMongooseModel,
+    TContextIn extends { [key in TPojoKey]: any }
+  >(pojoKey: TPojoKey, modelClass: TMongooseModel, newDocKey: string) {
+    return WithAttached((context: TContextIn) => {
       return {
         [newDocKey]: new modelClass(context[pojoKey]),
       };
