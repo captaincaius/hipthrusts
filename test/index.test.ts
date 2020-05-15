@@ -409,7 +409,8 @@ describe('HipThrusTS', () => {
     // @todo: add test coverage for SINGLE-OPERATOR and ZERO-OPERATOR pipes
     // @todo: add test coverage for TRIPLE-OPERATOR pipes
     // @todo: add test coverage for QUADRUPLE-AND-MORE-OPERATOR pipes (use empty objects)
-    // @todo: add test coverage for multi-stage operators
+    // @todo: add test coverage for weird operators that can return bool or void (e.g. authorizers and doWork)
+    // @todo: add test coverage for stages that do NOT snowball context (e.g. sanitizers and respond)
     describe('HTPipeTest', () => {
       it('HTPipeTest should pass with correct params', async () => {
         const aPassedIn = 'some string';
@@ -997,6 +998,204 @@ describe('HipThrusTS', () => {
           // @ts-expect-error
           const pipedError = HTPipe(leftBad, rightFullyCovered);
         }
+      });
+      it('should pass when multi-stage operators have correct types and correct in/out values', async () => {
+        const aPassedIn = 'some string';
+        const vPassedIn = 'v string';
+        const bReturned = 5;
+        const cReturned = 6;
+        const gReturned = 'some other string';
+
+        const left = {
+          initPreContext(context: { a: string }) {
+            return {
+              aOut: context.a,
+              b: bReturned,
+              c: cReturned,
+            };
+          },
+        };
+
+        const right = {
+          attachData(context: { v: string }) {
+            return {
+              g: gReturned,
+            };
+          },
+        };
+
+        const multiStagePiped = HTPipe(left, right);
+
+        await HTPipeTest(
+          multiStagePiped,
+          'initPreContext',
+          { a: aPassedIn },
+          { aOut: aPassedIn, b: bReturned, c: cReturned },
+          true
+        );
+        await HTPipeTest(
+          multiStagePiped,
+          'attachData',
+          { v: vPassedIn },
+          { g: gReturned },
+          true
+        );
+      });
+      it('should give error when one of the stage input params has type mismatch with pipeIn', async () => {
+        const aPassedIn = 'some string';
+        const vPassedIn = 'v string';
+        const bReturned = 5;
+        const cReturned = 6;
+        const gReturned = 'some other string';
+
+        const left = {
+          initPreContext(context: { a: string }) {
+            return {
+              aOut: context.a,
+              b: bReturned,
+              c: cReturned,
+            };
+          },
+        };
+
+        const right = {
+          attachData(context: { v: string }) {
+            return {
+              g: gReturned,
+            };
+          },
+        };
+
+        const multiStagePiped = HTPipe(left, right);
+
+        async function HTPipeTypeMismatchTest() {
+          await HTPipeTest(
+            multiStagePiped,
+            'initPreContext',
+            { a: aPassedIn, other: 'some string' },
+            { aOut: aPassedIn, b: bReturned, c: cReturned },
+            // @ts-expect-error
+            true
+          );
+          await HTPipeTest(
+            multiStagePiped,
+            'attachData',
+            { v: vPassedIn, other: 'some string' },
+            { g: gReturned },
+            // @ts-expect-error
+            true
+          );
+        }
+      });
+      it('should give error when one of the stages return type has type mismatch with pipeOut', async () => {
+        const aPassedIn = 'some string';
+        const vPassedIn = 'v string';
+        const bReturned = 5;
+        const cReturned = 6;
+        const gReturned = 'some other string';
+
+        const left = {
+          initPreContext(context: { a: string }) {
+            return {
+              aOut: context.a,
+              b: bReturned,
+              c: cReturned,
+            };
+          },
+        };
+
+        const right = {
+          attachData(context: { v: string }) {
+            return {
+              g: gReturned,
+            };
+          },
+        };
+
+        const multiStagePiped = HTPipe(left, right);
+
+        async function HTPipeTypeMismatchTest() {
+          await HTPipeTest(
+            multiStagePiped,
+            'initPreContext',
+            { a: aPassedIn },
+            {
+              aOut: aPassedIn,
+              b: bReturned,
+              c: cReturned,
+              other: 'some string',
+            },
+            // @ts-expect-error
+            true
+          );
+          await HTPipeTest(
+            multiStagePiped,
+            'attachData',
+            { v: vPassedIn },
+            { g: gReturned, other: 'some string' },
+            // @ts-expect-error
+            true
+          );
+        }
+      });
+      it('should give error when pipeIn and pipeOut one of the stages have correct type but wrong values', async () => {
+        const aPassedIn = 'some string';
+        const vPassedIn = 'v string';
+        const bReturned = 5;
+        const cReturned = 6;
+        const gReturned = 'some other string';
+
+        const left = {
+          initPreContext(context: { a: string }) {
+            return {
+              aOut: context.a,
+              b: bReturned,
+              c: cReturned,
+            };
+          },
+        };
+
+        const right = {
+          attachData(context: { v: string }) {
+            return {
+              g: gReturned,
+            };
+          },
+        };
+
+        const multiStagePiped = HTPipe(left, right);
+
+        let initPreContextLifecycleStageError;
+        try {
+          await HTPipeTest(
+            multiStagePiped,
+            'initPreContext',
+            { a: aPassedIn },
+            { aOut: aPassedIn, b: bReturned, c: 12 },
+            true
+          );
+        } catch (err) {
+          initPreContextLifecycleStageError = err;
+        }
+
+        // tslint:disable-next-line:no-unused-expression
+        expect(initPreContextLifecycleStageError).to.not.be.undefined;
+
+        let attachDataLifecycleStageError;
+        try {
+          await HTPipeTest(
+            multiStagePiped,
+            'attachData',
+            { v: vPassedIn },
+            { g: 'some string' },
+            true
+          );
+        } catch (err) {
+          attachDataLifecycleStageError = err;
+        }
+
+        // tslint:disable-next-line:no-unused-expression
+        expect(attachDataLifecycleStageError).to.not.be.undefined;
       });
     });
     describe('hipExpressHandlerFactory', () => {
