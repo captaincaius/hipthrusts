@@ -782,7 +782,7 @@ export function HTPipe(...objs: any[]) {
         : {}) as PipedPreAuthorize<any, any>),
       ...((isHasAttachData(left) && isHasAttachData(right)
         ? {
-            attachData: async (context: any) => {
+            attachData: async () => {
               const leftOut =
                 (await Promise.resolve(left.attachData(context))) || {};
               const rightIn = {
