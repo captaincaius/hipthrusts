@@ -317,7 +317,10 @@ type PipedDoWork<TLeft, TRight> = [TLeft] extends [HasDoWork<any, any>]
 // https://github.com/Microsoft/TypeScript/issues/29368#issuecomment-453529532
 type PipedRespond<TLeft, TRight> = [TLeft] extends [HasRespond<any, any>]
   ? [TRight] extends [HasRespond<any, any>]
-    ? HasRespond<RespondContextIn<TLeft>, RespondContextOut<TRight>>
+    ? HasRespond<
+        RespondContextIn<TLeft>,
+        RespondContextOut<TRight>['unsafeResponse']
+      >
     : { respond: TLeft['respond'] }
   : [TRight] extends [HasRespond<any, any>]
   ? { respond: TRight['respond'] }
@@ -874,10 +877,10 @@ export function HTPipe(...objs: any[]) {
               const rightOut = right.respond(leftOut.unsafeResponse);
               return {
                 unsafeResponse: rightOut.unsafeResponse,
-                status:
-                  rightOut.status === undefined
-                    ? leftOut.status
-                    : rightOut.status,
+                ...((rightOut &&
+                  rightOut.status && { status: rightOut.status }) ||
+                  (leftOut && leftOut.status && { status: leftOut.status }) ||
+                  {}),
               };
             },
           }

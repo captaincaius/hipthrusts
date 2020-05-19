@@ -618,6 +618,262 @@ describe('HipThrusTS', () => {
 
         const triple = HTPipe(left, midNotCovered, rightFullyCovered);
       });
+      // sanitizeParams test
+      it('should correctly sanitize params from left and right params sanitizers', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 'some other string';
+
+        const left = {
+          sanitizeParams(context: { someObj: { a: string; b: string } }) {
+            expect(context.someObj).to.deep.equal({
+              a: aPassedIn,
+              b: bPassedIn,
+            });
+            return context.someObj;
+          },
+        };
+
+        const right = {
+          sanitizeParams(context: { a: string; b: string }) {
+            expect(context).to.deep.equal({ a: aPassedIn, b: bPassedIn });
+            return context;
+          },
+        };
+
+        const pipedSanitizeParams = HTPipe(left, right);
+
+        await HTPipeTest(
+          pipedSanitizeParams,
+          'sanitizeParams',
+          { someObj: { a: aPassedIn, b: bPassedIn } },
+          { a: aPassedIn, b: bPassedIn },
+          true
+        );
+      });
+      it('should pass when right return object with same properties as left return but different types', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 'some other string';
+        const bReturned = 5;
+
+        const left = {
+          sanitizeParams(context: { someObj: { a: string; b: string } }) {
+            expect(context.someObj).to.deep.equal({
+              a: aPassedIn,
+              b: bPassedIn,
+            });
+            return context.someObj;
+          },
+        };
+
+        const right = {
+          sanitizeParams(context: { a: string; b: string }) {
+            expect(context).to.deep.equal({ a: aPassedIn, b: bPassedIn });
+            return { a: aPassedIn, b: bReturned };
+          },
+        };
+
+        const pipedSanitizeParams = HTPipe(left, right);
+
+        await HTPipeTest(
+          pipedSanitizeParams,
+          'sanitizeParams',
+          { someObj: { a: aPassedIn, b: bPassedIn } },
+          { a: aPassedIn, b: bReturned },
+          true
+        );
+      });
+      it('should sanitize params with only left sanitizeParams function', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 'some other string';
+
+        const left = {
+          sanitizeParams(context: { someObj: { a: string; b: string } }) {
+            expect(context.someObj).to.deep.equal({
+              a: aPassedIn,
+              b: bPassedIn,
+            });
+            return context.someObj;
+          },
+        };
+
+        const pipedSanitizeParams = HTPipe(left, {});
+
+        await HTPipeTest(
+          pipedSanitizeParams,
+          'sanitizeParams',
+          { someObj: { a: aPassedIn, b: bPassedIn } },
+          { a: aPassedIn, b: bPassedIn },
+          true
+        );
+      });
+      it('should sanitize params with only right sanitizeParams function', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 'some other string';
+
+        const right = {
+          sanitizeParams(context: { a: string; b: string }) {
+            expect(context).to.deep.equal({ a: aPassedIn, b: bPassedIn });
+            return context;
+          },
+        };
+
+        const pipedSanitizeParams = HTPipe({}, right);
+
+        await HTPipeTest(
+          pipedSanitizeParams,
+          'sanitizeParams',
+          { a: aPassedIn, b: bPassedIn },
+          { a: aPassedIn, b: bPassedIn },
+          true
+        );
+      });
+      it('should give error when right sanitizeParams function context have type mismatch with left sanitizeParams returns', async () => {
+        const left = {
+          sanitizeParams(context: { user: { a: string; b: string } }) {
+            return context.user;
+          },
+        };
+
+        const right = {
+          sanitizeParams(context: { a: string; b: string; some: string }) {
+            return context;
+          },
+        };
+
+        function expectErrorWithHTPipe() {
+          // @ts-expect-error
+          const pipedSanitizeParams = HTPipe(left, right);
+        }
+      });
+
+      // sanitizeBody test
+      it('should correctly sanitize body from left and right body', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 'some other string';
+
+        const left = {
+          sanitizeBody(context: { someObj: { a: string; b: string } }) {
+            expect(context.someObj).to.deep.equal({
+              a: aPassedIn,
+              b: bPassedIn,
+            });
+            return context.someObj;
+          },
+        };
+
+        const right = {
+          sanitizeBody(context: { a: string; b: string }) {
+            expect(context).to.deep.equal({ a: aPassedIn, b: bPassedIn });
+            return context;
+          },
+        };
+
+        const pipedSanitizeBody = HTPipe(left, right);
+
+        await HTPipeTest(
+          pipedSanitizeBody,
+          'sanitizeBody',
+          { someObj: { a: aPassedIn, b: bPassedIn } },
+          { a: aPassedIn, b: bPassedIn },
+          true
+        );
+      });
+      it('should pass when right return object with same properties as left return but different types', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 'some other string';
+        const bReturned = 5;
+
+        const left = {
+          sanitizeBody(context: { someObj: { a: string; b: string } }) {
+            expect(context.someObj).to.deep.equal({
+              a: aPassedIn,
+              b: bPassedIn,
+            });
+            return context.someObj;
+          },
+        };
+
+        const right = {
+          sanitizeBody(context: { a: string; b: string }) {
+            expect(context).to.deep.equal({ a: aPassedIn, b: bPassedIn });
+            return { a: aPassedIn, b: bReturned };
+          },
+        };
+
+        const pipedSanitizeBody = HTPipe(left, right);
+
+        await HTPipeTest(
+          pipedSanitizeBody,
+          'sanitizeBody',
+          { someObj: { a: aPassedIn, b: bPassedIn } },
+          { a: aPassedIn, b: bReturned },
+          true
+        );
+      });
+      it('should sanitize body with only left sanitizeBody function', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 'some other string';
+
+        const left = {
+          sanitizeBody(context: { someObj: { a: string; b: string } }) {
+            expect(context.someObj).to.deep.equal({
+              a: aPassedIn,
+              b: bPassedIn,
+            });
+            return context.someObj;
+          },
+        };
+
+        const pipedSanitizeBody = HTPipe(left, {});
+
+        await HTPipeTest(
+          pipedSanitizeBody,
+          'sanitizeBody',
+          { someObj: { a: aPassedIn, b: bPassedIn } },
+          { a: aPassedIn, b: bPassedIn },
+          true
+        );
+      });
+      it('should sanitize body with only right sanitizeBody function', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 'some other string';
+
+        const right = {
+          sanitizeBody(context: { a: string; b: string }) {
+            expect(context).to.deep.equal({ a: aPassedIn, b: bPassedIn });
+            return context;
+          },
+        };
+
+        const pipedSanitizeBody = HTPipe({}, right);
+
+        await HTPipeTest(
+          pipedSanitizeBody,
+          'sanitizeBody',
+          { a: aPassedIn, b: bPassedIn },
+          { a: aPassedIn, b: bPassedIn },
+          true
+        );
+      });
+      it('should give error when right sanitizeBody function context have type mismatch with left sanitizeBody returns', async () => {
+        const left = {
+          sanitizeBody(context: { user: { a: string; b: string } }) {
+            return context.user;
+          },
+        };
+
+        const right = {
+          sanitizeBody(context: { a: string; b: string; some: string }) {
+            return context;
+          },
+        };
+
+        function expectErrorWithHTPipe() {
+          // @ts-expect-error
+          const pipedSanitizeBody = HTPipe(left, right);
+        }
+      });
+      // attachData test
       it('attaches properly typed data from left and right sync data attacher', async () => {
         const aPassedIn = 'some string';
         const bPassedIn = 4;
@@ -996,6 +1252,262 @@ describe('HipThrusTS', () => {
         function expectErrorWithHTPipe2() {
           // @ts-expect-error
           const pipedError = HTPipe(leftBad, rightFullyCovered);
+        }
+      });
+
+      // respond test
+      it('should correctly return respond from left and right respond', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 'some other string';
+
+        const left = {
+          respond(context: { someObj: { a: string; b: string } }) {
+            expect(context.someObj).to.deep.equal({
+              a: aPassedIn,
+              b: bPassedIn,
+            });
+            return { unsafeResponse: context.someObj };
+          },
+        };
+
+        const right = {
+          respond(context: { a: string; b: string }) {
+            expect(context).to.deep.equal({ a: aPassedIn, b: bPassedIn });
+            return { unsafeResponse: context };
+          },
+        };
+
+        const pipedRespond = HTPipe(left, right);
+
+        await HTPipeTest(
+          pipedRespond,
+          'respond',
+          { someObj: { a: aPassedIn, b: bPassedIn } },
+          { unsafeResponse: { a: aPassedIn, b: bPassedIn } },
+          true
+        );
+      });
+      it('should pass when right return object with same properties as left return but different types', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 'some other string';
+        const bReturned = 5;
+
+        const left = {
+          respond(context: { someObj: { a: string; b: string } }) {
+            expect(context.someObj).to.deep.equal({
+              a: aPassedIn,
+              b: bPassedIn,
+            });
+            return { unsafeResponse: context.someObj };
+          },
+        };
+
+        const right = {
+          respond(context: { a: string; b: string }) {
+            expect(context).to.deep.equal({ a: aPassedIn, b: bPassedIn });
+            return { unsafeResponse: { a: aPassedIn, b: bReturned } };
+          },
+        };
+
+        const pipedRespond = HTPipe(left, right);
+
+        await HTPipeTest(
+          pipedRespond,
+          'respond',
+          { someObj: { a: aPassedIn, b: bPassedIn } },
+          { unsafeResponse: { a: aPassedIn, b: bReturned } },
+          true
+        );
+      });
+      it('should return respond with only left respond function', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 'some other string';
+
+        const left = {
+          respond(context: { someObj: { a: string; b: string } }) {
+            expect(context.someObj).to.deep.equal({
+              a: aPassedIn,
+              b: bPassedIn,
+            });
+            return { unsafeResponse: context.someObj };
+          },
+        };
+
+        const pipedRespond = HTPipe(left, {});
+
+        await HTPipeTest(
+          pipedRespond,
+          'respond',
+          { someObj: { a: aPassedIn, b: bPassedIn } },
+          { unsafeResponse: { a: aPassedIn, b: bPassedIn } },
+          true
+        );
+      });
+      it('should return respond with only right respond function', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 'some other string';
+
+        const right = {
+          respond(context: { a: string; b: string }) {
+            expect(context).to.deep.equal({ a: aPassedIn, b: bPassedIn });
+            return { unsafeResponse: context };
+          },
+        };
+
+        const pipedRespond = HTPipe({}, right);
+
+        await HTPipeTest(
+          pipedRespond,
+          'respond',
+          { a: aPassedIn, b: bPassedIn },
+          { unsafeResponse: { a: aPassedIn, b: bPassedIn } },
+          true
+        );
+      });
+      it('should give error when right respond function context have type mismatch with left respond returns', async () => {
+        const left = {
+          respond(context: { user: { a: string; b: string } }) {
+            return { unsafeResponse: context.user };
+          },
+        };
+
+        const right = {
+          respond(context: { a: string; b: string; some: string }) {
+            return { unsafeResponse: context };
+          },
+        };
+
+        function expectErrorWithHTPipe() {
+          // @ts-expect-error
+          const pipedRespond = HTPipe(left, right);
+        }
+      });
+
+      // sanitizeResponse test
+      it('should correctly sanitize response from left and right response sanitizers', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 'some other string';
+
+        const left = {
+          sanitizeResponse(context: { someObj: { a: string; b: string } }) {
+            expect(context.someObj).to.deep.equal({
+              a: aPassedIn,
+              b: bPassedIn,
+            });
+            return context.someObj;
+          },
+        };
+
+        const right = {
+          sanitizeResponse(context: { a: string; b: string }) {
+            expect(context).to.deep.equal({ a: aPassedIn, b: bPassedIn });
+            return context;
+          },
+        };
+
+        const pipedSanitizeResponse = HTPipe(left, right);
+
+        await HTPipeTest(
+          pipedSanitizeResponse,
+          'sanitizeResponse',
+          { someObj: { a: aPassedIn, b: bPassedIn } },
+          { a: aPassedIn, b: bPassedIn },
+          true
+        );
+      });
+      it('should pass when right return object with same properties as left return but different types', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 'some other string';
+        const bReturned = 5;
+
+        const left = {
+          sanitizeResponse(context: { someObj: { a: string; b: string } }) {
+            expect(context.someObj).to.deep.equal({
+              a: aPassedIn,
+              b: bPassedIn,
+            });
+            return context.someObj;
+          },
+        };
+
+        const right = {
+          sanitizeResponse(context: { a: string; b: string }) {
+            expect(context).to.deep.equal({ a: aPassedIn, b: bPassedIn });
+            return { a: aPassedIn, b: bReturned };
+          },
+        };
+
+        const pipedSanitizeResponse = HTPipe(left, right);
+
+        await HTPipeTest(
+          pipedSanitizeResponse,
+          'sanitizeResponse',
+          { someObj: { a: aPassedIn, b: bPassedIn } },
+          { a: aPassedIn, b: bReturned },
+          true
+        );
+      });
+      it('should sanitize response with only left sanitizeResponse function', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 'some other string';
+
+        const left = {
+          sanitizeResponse(context: { someObj: { a: string; b: string } }) {
+            expect(context.someObj).to.deep.equal({
+              a: aPassedIn,
+              b: bPassedIn,
+            });
+            return context.someObj;
+          },
+        };
+
+        const pipedSanitizeResponse = HTPipe(left, {});
+
+        await HTPipeTest(
+          pipedSanitizeResponse,
+          'sanitizeResponse',
+          { someObj: { a: aPassedIn, b: bPassedIn } },
+          { a: aPassedIn, b: bPassedIn },
+          true
+        );
+      });
+      it('should sanitize response with only right sanitizeResponse function', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 'some other string';
+
+        const right = {
+          sanitizeResponse(context: { a: string; b: string }) {
+            expect(context).to.deep.equal({ a: aPassedIn, b: bPassedIn });
+            return context;
+          },
+        };
+
+        const pipedSanitizeResponse = HTPipe({}, right);
+
+        await HTPipeTest(
+          pipedSanitizeResponse,
+          'sanitizeResponse',
+          { a: aPassedIn, b: bPassedIn },
+          { a: aPassedIn, b: bPassedIn },
+          true
+        );
+      });
+      it('should give error when right sanitizeResponse function context have type mismatch with left sanitizeResponse returns', async () => {
+        const left = {
+          sanitizeResponse(context: { user: { a: string; b: string } }) {
+            return context.user;
+          },
+        };
+
+        const right = {
+          sanitizeResponse(context: { a: string; b: string; some: string }) {
+            return context;
+          },
+        };
+
+        function expectErrorWithHTPipe() {
+          // @ts-expect-error
+          const pipedSanitizeResponse = HTPipe(left, right);
         }
       });
     });
