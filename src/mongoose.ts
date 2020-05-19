@@ -115,7 +115,7 @@ export function htMongooseFactory(mongoose: any) {
   // @note for docs: NEVER use _id - mongoose gives it special treatment
   // also, ALWAYS rememver to make required fields required cause mongoose will STRIP invalid fields first!
   // figure out how to make that security gotcha harder to happen
-  function WithParamsSanitized<
+  function SanitizeParamsWithMongoose<
     TSafeParam extends ReturnType<TInstance['toObject']>,
     TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>,
@@ -133,7 +133,7 @@ export function htMongooseFactory(mongoose: any) {
   }
 
   // @note: sanitize body validates modified only!  This is cause you usually will only send fields to update.
-  function WithBodySanitized<
+  function SanitizeBodyWithMongoose<
     TSafeBody extends ReturnType<TInstance['toObject']>,
     TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>,
@@ -152,7 +152,7 @@ export function htMongooseFactory(mongoose: any) {
     });
   }
 
-  function WithSaveOnDocument(propertyKeyOfDocument: string) {
+  function SaveOnDocument(propertyKeyOfDocument: string) {
     return DoWork(async (context: any) => {
       if (context[propertyKeyOfDocument]) {
         try {
@@ -168,7 +168,7 @@ export function htMongooseFactory(mongoose: any) {
     });
   }
 
-  function WithUpdateDocument(
+  function UpdateDocument(
     propertyKeyOfDocument: string,
     propertyKeyWithNewData: string = 'body'
   ) {
@@ -183,7 +183,7 @@ export function htMongooseFactory(mongoose: any) {
     });
   }
 
-  function WithResponseSanitized<
+  function SanitizeResponseWithMongoose<
     TSafeResponse extends ReturnType<TInstance['toObject']>,
     TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>
@@ -195,11 +195,7 @@ export function htMongooseFactory(mongoose: any) {
     });
   }
 
-  function WithPojoToDocument(
-    pojoKey: string,
-    modelClass: any,
-    newDocKey: string
-  ) {
+  function PojoToDocument(pojoKey: string, modelClass: any, newDocKey: string) {
     return AttachData((context: any) => {
       return {
         [newDocKey]: new modelClass(context[pojoKey]),
@@ -208,12 +204,12 @@ export function htMongooseFactory(mongoose: any) {
   }
 
   return {
-    WithBodySanitized,
-    WithParamsSanitized,
-    WithPojoToDocument,
-    WithResponseSanitized,
-    WithUpdateDocument,
-    WithSaveOnDocument,
+    SanitizeBodyWithMongoose,
+    SanitizeParamsWithMongoose,
+    PojoToDocument,
+    SanitizeResponseWithMongoose,
+    UpdateDocument,
+    SaveOnDocument,
     documentFactoryFromForRequest,
     documentFactoryFromForResponse,
     dtoSchemaObj,
