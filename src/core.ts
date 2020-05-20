@@ -1,27 +1,19 @@
 import Boom from '@hapi/boom';
 import {
+  AttachDataReqsSatisfiedOptional,
+  DoWorkReqsSatisfiedOptional,
+  FinalAuthReqsSatisfied,
+  HasAllNotRequireds,
   HasAllRequireds,
   HasAttachData,
-  HasAttachDataProperOptionals,
-  HasBodyProperOptionals,
   HasDoWork,
-  HasDoWorkProperOptionals,
   HasFinalAuthorize,
-  HasFinalAuthorizeProperOptionals,
   HasInitPreContext,
-  HasInitPreContextProperOptionals,
-  HasParamsProperOptionals,
   HasPreAuthorize,
-  HasPreauthProperOptionals,
   HasRespond,
-  HasRespondProperOptionals,
   HasSanitizeBody,
   HasSanitizeParams,
   HasSanitizeResponse,
-  HasUpToAttachDataProperOptionals,
-  HasUpToDoWorkProperOptionals,
-  HasUpToFinalAuthorizeProperOptionals,
-  HasUpToRespondProperOptionals,
   MightHaveFinalAuthorize,
   MightHavePreAuthorize,
   MightHaveRespond,
@@ -31,18 +23,16 @@ import {
   OptionallyHasInitPreContext,
   OptionallyHasSanitizeBody,
   OptionallyHasSanitizeParams,
+  PreAuthReqsSatisfied,
   PromiseOrSync,
   PromiseResolveOrSync,
+  RespondReqsSatisfied,
+  SanitizeResponseReqsSatisfied,
 } from './types';
 
 // @todo: MINOR: consider bringing this back to life so complexity of optionality is removed from executeHipthrustable
 export function withDefaultImplementations<
-  TStrategy extends OptionallyHasInitPreContext<any, any> &
-    OptionallyHasSanitizeParams<any, any> &
-    OptionallyHasSanitizeBody<any, any> &
-    HasAllRequireds &
-    OptionallyHasAttachData<any, any> &
-    OptionallyHasDoWork<any, any>
+  TStrategy extends HasAllRequireds & HasAllNotRequireds
 >(
   strategy: TStrategy
 ): {
@@ -211,41 +201,14 @@ function transformThrowPossiblyAsync<
 }
 
 export async function executeHipthrustable<
-  // @todo: MINOR: consider swapping these when withDefaultImplementations is fixed
-  /*
-  TConf extends
-    HasSanitizeResponse<any,any>
-    & HasInitPreContextProper<TConf>
-    & HasParamsProper<TConf>
-    & HasBodyProper<TConf>
-    & HasPreauthProper<TConf>
-    & HasUpToAttachDataProper<TConf>
-    & HasAttachDataProper<TConf>
-    & HasUpToFinalAuthorizeProper<TConf>
-    & HasFinalAuthorizeProper<TConf>
-    & HasUpToDoWorkProper<TConf>
-    & HasDoWorkProper<TConf>
-    & HasUpToRespondProper<TConf>
-    & HasRespondProper<TConf>,
-  */
   TConf extends HasAllRequireds &
-    OptionallyHasSanitizeParams<any, any> &
-    OptionallyHasSanitizeBody<any, any> &
-    OptionallyHasAttachData<any, any> &
-    OptionallyHasDoWork<any, any> &
-    OptionallyHasInitPreContext<any, any> &
-    HasInitPreContextProperOptionals<TConf> &
-    HasParamsProperOptionals<TConf> &
-    HasBodyProperOptionals<TConf> &
-    HasPreauthProperOptionals<TConf> &
-    HasUpToAttachDataProperOptionals<TConf> &
-    HasAttachDataProperOptionals<TConf> &
-    HasUpToFinalAuthorizeProperOptionals<TConf> &
-    HasFinalAuthorizeProperOptionals<TConf> &
-    HasUpToDoWorkProperOptionals<TConf> &
-    HasDoWorkProperOptionals<TConf> &
-    HasUpToRespondProperOptionals<TConf> &
-    HasRespondProperOptionals<TConf>,
+    HasAllNotRequireds &
+    PreAuthReqsSatisfied<TConf> &
+    AttachDataReqsSatisfiedOptional<TConf> &
+    FinalAuthReqsSatisfied<TConf> &
+    DoWorkReqsSatisfiedOptional<TConf> &
+    RespondReqsSatisfied<TConf> &
+    SanitizeResponseReqsSatisfied<TConf>,
   TUnsafe,
   TUnsafeParams,
   TUnsafeBody
