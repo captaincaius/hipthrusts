@@ -32,8 +32,8 @@ import {
 } from './types';
 
 export function withDefaultImplementations<
-  TStrategy extends HasAllRequireds &
-    HasAllNotRequireds &
+  TStrategy extends HasAllNotRequireds &
+    HasAllRequireds &
     PreAuthReqsSatisfied<TStrategy> &
     AttachDataReqsSatisfiedOptional<TStrategy> &
     FinalAuthReqsSatisfied<TStrategy> &
@@ -42,16 +42,16 @@ export function withDefaultImplementations<
     SanitizeResponseReqsSatisfied<TStrategy>
 >(strategy: TStrategy): HasAllStagesNotOptionals {
   return {
-    initPreContext: strategy.initPreContext
-      ? strategy.initPreContext
-      : () => {
-          return {};
-        },
-    sanitizeParams: strategy.sanitizeParams
-      ? strategy.sanitizeParams
-      : () => {
-          return {};
-        },
+    initPreContext:
+      strategy.initPreContext ||
+      (() => {
+        return {};
+      }),
+    sanitizeParams:
+      strategy.sanitizeParams ||
+      (() => {
+        return {};
+      }),
     sanitizeBody:
       strategy.sanitizeBody ||
       (() => {
@@ -282,9 +282,8 @@ export async function executeHipthrustable<
   try {
     // to keep executeHipthrustable from being too opinionated, it's doWork's responsibility to handle and throw client errors.
     // Any un-boom'ed errors here should be interpreted as server errors
-    const doWorkContextOnly = await Promise.resolve(
-      requestHandler.doWork(finalAuthContext)
-    );
+    const doWorkContextOnly =
+      (await Promise.resolve(requestHandler.doWork(finalAuthContext))) || {};
 
     const doWorkContext = { ...finalAuthContext, ...doWorkContextOnly };
 

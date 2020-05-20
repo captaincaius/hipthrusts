@@ -21,8 +21,8 @@ import {
 } from './types';
 
 export function hipExpressHandlerFactory<
-  TConf extends HasAllRequireds &
-    HasAllNotRequireds &
+  TConf extends HasAllNotRequireds &
+    HasAllRequireds &
     PreAuthReqsSatisfied<TConf> &
     AttachDataReqsSatisfiedOptional<TConf> &
     FinalAuthReqsSatisfied<TConf> &
