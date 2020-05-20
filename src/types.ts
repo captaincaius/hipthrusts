@@ -138,7 +138,7 @@ type Bar = IntersectProperties<Foo>;
 // type Bar = string & number 😕
 */
 
-type IntersectProperties<T extends object> = [{}] extends T
+type IntersectProperties<T extends object> = keyof T extends never
   ? {}
   : { [K in keyof T]: (arg: T[K]) => void } extends Record<
       keyof T,
