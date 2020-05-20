@@ -71,362 +71,380 @@ export function NoopFinalAuth() {
   return FinalAuthorize(() => true);
 }
 
-export function InitPreContextFrom(
-  whereToLook: string,
-  projector: (htCtx: any) => any
+export function InitPreContextFrom<
+  TWhereToLook extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut
 ) {
-  return {
-    initPreContext: (htCtx: any) =>
-      InitPreContext(projector).initPreContext(htCtx[whereToLook]),
-  };
+  return InitPreContext((htCtx: TContextIn) => projector(htCtx[whereToLook]));
 }
 
-export function InitPreContextTo(
-  projector: (htCtx: any) => any,
-  whereToStore: string
-) {
-  return {
-    initPreContext: (htCtx: any) => {
-      return {
-        [whereToStore]: InitPreContext(projector).initPreContext(htCtx),
-      };
-    },
-  };
+export function InitPreContextTo<
+  TWhereToStore extends string,
+  TContextIn extends object,
+  TContextOut extends object
+>(projector: (htCtx: TContextIn) => TContextOut, whereToStore: TWhereToStore) {
+  return InitPreContext((htCtx: TContextIn) => {
+    return { [whereToStore]: projector(htCtx) };
+  });
 }
 
-export function InitPreContextFromTo(
-  whereToLook: string,
-  projector: (htCtx: any) => any,
-  whereToStore: string
+export function InitPreContextFromTo<
+  TWhereToLook extends string,
+  TWhereToStore extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
+  whereToStore: TWhereToStore
 ) {
-  return {
-    initPreContext: (htCtx: any) => {
-      return {
-        [whereToStore]: InitPreContext(projector).initPreContext(
-          htCtx[whereToLook]
-        ),
-      };
-    },
-  };
+  return InitPreContext((htCtx: TContextIn) => {
+    return { [whereToStore]: projector(htCtx[whereToLook]) };
+  });
 }
 
-export function SanitizeParamsFrom(
-  whereToLook: string,
-  projector: (htCtx: any) => any
+export function SanitizeParamsFrom<
+  TWhereToLook extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut
 ) {
-  return {
-    sanitizeParams: (htCtx: any) =>
-      SanitizeParams(projector).sanitizeParams(htCtx[whereToLook]),
-  };
+  return SanitizeParams((htCtx: TContextIn) => projector(htCtx[whereToLook]));
 }
 
-export function SanitizeParamsTo(
-  projector: (htCtx: any) => any,
-  whereToStore: string
-) {
-  return {
-    sanitizeParams: (htCtx: any) => {
-      return {
-        [whereToStore]: SanitizeParams(projector).sanitizeParams(htCtx),
-      };
-    },
-  };
+export function SanitizeParamsTo<
+  TWhereToStore extends string,
+  TContextIn extends object,
+  TContextOut extends object
+>(projector: (htCtx: TContextIn) => TContextOut, whereToStore: TWhereToStore) {
+  return SanitizeParams((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx),
+    };
+  });
 }
 
-export function SanitizeParamsFromTo(
-  whereToLook: string,
-  projector: (htCtx: any) => any,
-  whereToStore: string
+export function SanitizeParamsFromTo<
+  TWhereToLook extends string,
+  TWhereToStore extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
+  whereToStore: TWhereToStore
 ) {
-  return {
-    sanitizeParams: (htCtx: any) => {
-      return {
-        [whereToStore]: SanitizeParams(projector).sanitizeParams(
-          htCtx[whereToLook]
-        ),
-      };
-    },
-  };
+  return SanitizeParams((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx[whereToLook]),
+    };
+  });
 }
 
-export function SanitizeBodyFrom(
-  whereToLook: string,
-  projector: (htCtx: any) => any
+export function SanitizeBodyFrom<
+  TWhereToLook extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut
 ) {
-  return {
-    sanitizeBody: (htCtx: any) =>
-      SanitizeBody(projector).sanitizeBody(htCtx[whereToLook]),
-  };
+  return SanitizeBody((htCtx: TContextIn) => projector(htCtx[whereToLook]));
 }
 
-export function SanitizeBodyTo(
-  projector: (htCtx: any) => any,
-  whereToStore: string
-) {
-  return {
-    sanitizeBody: (htCtx: any) => {
-      return {
-        [whereToStore]: SanitizeBody(projector).sanitizeBody(htCtx),
-      };
-    },
-  };
+export function SanitizeBodyTo<
+  TWhereToStore extends string,
+  TContextIn extends object,
+  TContextOut extends object
+>(projector: (htCtx: TContextIn) => TContextOut, whereToStore: TWhereToStore) {
+  return SanitizeBody((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx),
+    };
+  });
 }
 
-export function SanitizeBodyFromTo(
-  whereToLook: string,
-  projector: (htCtx: any) => any,
-  whereToStore: string
+export function SanitizeBodyFromTo<
+  TWhereToLook extends string,
+  TWhereToStore extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
+  whereToStore: TWhereToStore
 ) {
-  return {
-    sanitizeBody: (htCtx: any) => {
-      return {
-        [whereToStore]: SanitizeBody(projector).sanitizeBody(
-          htCtx[whereToLook]
-        ),
-      };
-    },
-  };
+  return SanitizeBody((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx[whereToLook]),
+    };
+  });
 }
 
-export function PreAuthorizeFrom(
-  whereToLook: string,
-  projector: (htCtx: any) => any
+export function PreAuthorizeFrom<
+  TWhereToLook extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object | boolean
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut
 ) {
-  return {
-    preAuthorize: (htCtx: any) =>
-      PreAuthorize(projector).preAuthorize(htCtx[whereToLook]),
-  };
+  return PreAuthorize((htCtx: TContextIn) => projector(htCtx[whereToLook]));
 }
 
-export function PreAuthorizeTo(
-  projector: (htCtx: any) => any,
-  whereToStore: string
-) {
-  return {
-    preAuthorize: (htCtx: any) => {
-      const preAuthorizeResult = PreAuthorize(projector).preAuthorize(htCtx);
-      return authorizationPassed(preAuthorizeResult)
-        ? { [whereToStore]: preAuthorizeResult }
-        : false;
-    },
-  };
+export function PreAuthorizeTo<
+  TWhereToStore extends string,
+  TContextIn extends object,
+  TContextOut extends object | boolean
+>(projector: (htCtx: TContextIn) => TContextOut, whereToStore: TWhereToStore) {
+  return PreAuthorize((htCtx: TContextIn) => {
+    const preAuthorizeResult = projector(htCtx);
+    return authorizationPassed(preAuthorizeResult)
+      ? {
+          [whereToStore]: preAuthorizeResult,
+        }
+      : false;
+  });
 }
 
-export function PreAuthorizeFromTo(
-  whereToLook: string,
-  projector: (htCtx: any) => any,
-  whereToStore: string
+export function PreAuthorizeFromTo<
+  TWhereToLook extends string,
+  TWhereToStore extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object | boolean
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
+  whereToStore: TWhereToStore
 ) {
-  return {
-    preAuthorize: (htCtx: any) => {
-      const preAuthorizeResult = PreAuthorize(projector).preAuthorize(
-        htCtx[whereToLook]
-      );
-      return authorizationPassed(preAuthorizeResult)
-        ? { [whereToStore]: preAuthorizeResult }
-        : false;
-    },
-  };
+  return PreAuthorize((htCtx: TContextIn) => {
+    const preAuthorizeResult = projector(htCtx[whereToLook]);
+    return authorizationPassed(preAuthorizeResult)
+      ? { [whereToStore]: preAuthorizeResult }
+      : false;
+  });
 }
 
-export function AttachDataFrom(
-  whereToLook: string,
-  projector: (htCtx: any) => any
+export function AttachDataFrom<
+  TWhereToLook extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends PromiseResolveOrSync<object>
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut
 ) {
-  return {
-    attachData: (htCtx: any) =>
-      AttachData(projector).attachData(htCtx[whereToLook]),
-  };
+  return AttachData((htCtx: TContextIn) => projector(htCtx[whereToLook]));
 }
 
-export function AttachDataTo(
-  projector: (htCtx: any) => any,
-  whereToStore: string
-) {
-  return {
-    attachData: (htCtx: any) => {
-      return {
-        [whereToStore]: AttachData(projector).attachData(htCtx),
-      };
-    },
-  };
+export function AttachDataTo<
+  TWhereToStore extends string,
+  TContextIn extends object,
+  TContextOut extends object
+>(projector: (htCtx: TContextIn) => TContextOut, whereToStore: TWhereToStore) {
+  return AttachData((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx),
+    };
+  });
 }
 
-export function AttachDataFromTo(
-  whereToLook: string,
-  projector: (htCtx: any) => any,
-  whereToStore: string
+export function AttachDataFromTo<
+  TWhereToLook extends string,
+  TWhereToStore extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
+  whereToStore: TWhereToStore
 ) {
-  return {
-    attachData: (htCtx: any) => {
-      return {
-        [whereToStore]: AttachData(projector).attachData(htCtx[whereToLook]),
-      };
-    },
-  };
+  return AttachData((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx[whereToLook]),
+    };
+  });
 }
 
-export function FinalAuthorizeFrom(
-  whereToLook: string,
-  projector: (htCtx: any) => any
+export function FinalAuthorizeFrom<
+  TWhereToLook extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends PromiseResolveOrSync<object | boolean>
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut
 ) {
-  return {
-    finalAuthorize: (htCtx: any) =>
-      FinalAuthorize(projector).finalAuthorize(htCtx[whereToLook]),
-  };
+  return FinalAuthorize((htCtx: TContextIn) => projector(htCtx[whereToLook]));
 }
 
-export function FinalAuthorizeTo(
-  projector: (htCtx: any) => any,
-  whereToStore: string
-) {
-  return {
-    finalAuthorize: (htCtx: any) => {
-      const finalAuthorizeResult = FinalAuthorize(projector).finalAuthorize(
-        htCtx
-      );
-      return authorizationPassed(finalAuthorizeResult)
-        ? {
-            [whereToStore]: FinalAuthorize(projector).finalAuthorize(htCtx),
-          }
-        : false;
-    },
-  };
+export function FinalAuthorizeTo<
+  TWhereToStore extends string,
+  TContextIn extends object,
+  TContextOut extends PromiseResolveOrSync<object | boolean>
+>(projector: (htCtx: TContextIn) => TContextOut, whereToStore: TWhereToStore) {
+  return FinalAuthorize(async (htCtx: TContextIn) => {
+    const finalAuthorizeResult = await Promise.resolve(projector(htCtx));
+    return authorizationPassed(finalAuthorizeResult)
+      ? { [whereToStore]: finalAuthorizeResult }
+      : false;
+  });
 }
 
-export function FinalAuthorizeFromTo(
-  whereToLook: string,
-  projector: (htCtx: any) => any,
-  whereToStore: string
+export function FinalAuthorizeFromTo<
+  TWhereToLook extends string,
+  TWhereToStore extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends PromiseResolveOrSync<object | boolean>
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
+  whereToStore: TWhereToStore
 ) {
-  return {
-    finalAuthorize: (htCtx: any) => {
-      const finalAuthorizeResult = FinalAuthorize(projector).finalAuthorize(
-        htCtx
-      );
-      return authorizationPassed(finalAuthorizeResult)
-        ? {
-            [whereToStore]: FinalAuthorize(projector).finalAuthorize(
-              htCtx[whereToLook]
-            ),
-          }
-        : false;
-    },
-  };
+  return FinalAuthorize(async (htCtx: TContextIn) => {
+    const finalAuthorizeResult = await Promise.resolve(
+      projector(htCtx[whereToLook])
+    );
+    return authorizationPassed(finalAuthorizeResult)
+      ? { [whereToStore]: finalAuthorizeResult }
+      : false;
+  });
 }
 
-export function DoWorkFrom(
-  whereToLook: string,
-  projector: (htCtx: any) => any
+export function DoWorkFrom<
+  TWhereToLook extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends PromiseResolveOrSync<object | void>
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut
 ) {
-  return {
-    doWork: (htCtx: any) => DoWork(projector).doWork(htCtx[whereToLook]),
-  };
+  return DoWork((htCtx: TContextIn) => projector(htCtx[whereToLook]));
 }
 
-export function DoWorkTo(projector: (htCtx: any) => any, whereToStore: string) {
-  return {
-    doWork: (htCtx: any) => {
-      return {
-        [whereToStore]: DoWork(projector).doWork(htCtx),
-      };
-    },
-  };
+export function DoWorkTo<
+  TWhereToStore extends string,
+  TContextIn extends object,
+  TContextOut extends PromiseResolveOrSync<object | void>
+>(projector: (htCtx: TContextIn) => TContextOut, whereToStore: TWhereToStore) {
+  return DoWork((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx),
+    };
+  });
 }
 
-export function DoWorkFromTo(
-  whereToLook: string,
-  projector: (htCtx: any) => any,
-  whereToStore: string
+export function DoWorkFromTo<
+  TWhereToLook extends string,
+  TWhereToStore extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends PromiseResolveOrSync<object | void>
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
+  whereToStore: TWhereToStore
 ) {
-  return {
-    doWork: (htCtx: any) => {
-      return {
-        [whereToStore]: DoWork(projector).doWork(htCtx[whereToLook]),
-      };
-    },
-  };
+  return DoWork((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx[whereToLook]),
+    };
+  });
 }
 
-export function RespondFrom(
-  whereToLook: string,
-  projector: (htCtx: any) => any,
-  successStatusCode: number
+export function RespondFrom<
+  TWhereToLook extends string,
+  TSuccessStatusCode extends number,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
+  successStatusCode: TSuccessStatusCode
 ) {
-  return {
-    respond: (htCtx: any) =>
-      Respond(projector, successStatusCode).respond(htCtx[whereToLook]),
-  };
+  return Respond(
+    (htCtx: TContextIn) => projector(htCtx[whereToLook]),
+    successStatusCode
+  );
 }
 
-export function RespondTo(
-  projector: (htCtx: any) => any,
-  whereToStore: string,
-  successStatusCode: number
+export function RespondTo<
+  TWhereToStore extends string,
+  TSuccessStatusCode extends number,
+  TContextIn extends object,
+  TContextOut extends object
+>(
+  projector: (htCtx: TContextIn) => TContextOut,
+  whereToStore: TWhereToStore,
+  successStatusCode: TSuccessStatusCode
 ) {
-  return {
-    respond: (htCtx: any) => {
-      return {
-        [whereToStore]: Respond(projector, successStatusCode).respond(htCtx),
-      };
-    },
-  };
+  return Respond((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx),
+    };
+  }, successStatusCode);
 }
 
-export function RespondFromTo(
-  whereToLook: string,
-  projector: (htCtx: any) => any,
-  whereToStore: string,
-  successStatusCode: number
+export function RespondFromTo<
+  TWhereToLook extends string,
+  TWhereToStore extends string,
+  TSuccessStatusCode extends number,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
+  whereToStore: TWhereToStore,
+  successStatusCode: TSuccessStatusCode
 ) {
-  return {
-    respond: (htCtx: any) => {
-      return {
-        [whereToStore]: Respond(projector, successStatusCode).respond(
-          htCtx[whereToLook]
-        ),
-      };
-    },
-  };
+  return Respond((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx[whereToLook]),
+    };
+  }, successStatusCode);
 }
 
-export function SanitizeResponseFrom(
-  whereToLook: string,
-  projector: (htCtx: any) => any
+export function SanitizeResponseFrom<
+  TWhereToLook extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut
 ) {
-  return {
-    sanitizeResponse: (htCtx: any) =>
-      SanitizeResponse(projector).sanitizeResponse(htCtx[whereToLook]),
-  };
+  return SanitizeResponse((htCtx: TContextIn) => projector(htCtx[whereToLook]));
 }
 
-export function SanitizeResponseTo(
-  projector: (htCtx: any) => any,
-  whereToStore: string
-) {
-  return {
-    sanitizeResponse: (htCtx: any) => {
-      return {
-        [whereToStore]: SanitizeResponse(projector).sanitizeResponse(htCtx),
-      };
-    },
-  };
+export function SanitizeResponseTo<
+  TWhereToStore extends string,
+  TContextIn extends object,
+  TContextOut extends object
+>(projector: (htCtx: TContextIn) => TContextOut, whereToStore: TWhereToStore) {
+  return SanitizeResponse(htCtx => {
+    return {
+      [whereToStore]: projector(htCtx),
+    };
+  });
 }
 
-export function SanitizeResponseFromTo(
-  whereToLook: string,
-  projector: (htCtx: any) => any,
-  whereToStore: string
+export function SanitizeResponseFromTo<
+  TWhereToLook extends string,
+  TWhereToStore extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
+  whereToStore: TWhereToStore
 ) {
-  return {
-    sanitizeResponse: (htCtx: any) => {
-      return {
-        [whereToStore]: SanitizeResponse(projector).sanitizeResponse(
-          htCtx[whereToLook]
-        ),
-      };
-    },
-  };
+  return SanitizeResponse((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx[whereToLook]),
+    };
+  });
 }
 
 type InitPreContextIn<T extends HasInitPreContext<any, any>> = Parameters<

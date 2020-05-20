@@ -152,7 +152,7 @@ export function htMongooseFactory(mongoose: any) {
     });
   }
 
-  function SaveOnDocument(propertyKeyOfDocument: string) {
+  function SaveOnDocumentFrom(propertyKeyOfDocument: string) {
     return DoWork(async (context: any) => {
       if (context[propertyKeyOfDocument]) {
         try {
@@ -168,7 +168,7 @@ export function htMongooseFactory(mongoose: any) {
     });
   }
 
-  function UpdateDocument(
+  function UpdateDocumentFromTo(
     propertyKeyOfDocument: string,
     propertyKeyWithNewData: string = 'body'
   ) {
@@ -208,8 +208,8 @@ export function htMongooseFactory(mongoose: any) {
     SanitizeParamsWithMongoose,
     PojoToDocument,
     SanitizeResponseWithMongoose,
-    UpdateDocument,
-    SaveOnDocument,
+    UpdateDocumentFromTo,
+    SaveOnDocumentFrom,
     documentFactoryFromForRequest,
     documentFactoryFromForResponse,
     dtoSchemaObj,
