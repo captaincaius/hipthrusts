@@ -197,7 +197,9 @@ export function htMongooseFactory(mongoose: any) {
 
   function WithPojoToDocument<
     TPojoKey extends string,
-    TMongooseModel extends new (...args: any[]) => TMongooseModel,
+    TMongooseModel extends new (...args: any[]) => {
+      [key in keyof TMongooseModel]: any;
+    },
     TContextIn extends { [key in TPojoKey]: any }
   >(pojoKey: TPojoKey, modelClass: TMongooseModel, newDocKey: string) {
     return WithAttached((context: TContextIn) => {
