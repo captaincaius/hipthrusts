@@ -126,14 +126,26 @@ export type HasAllStagesOptionals = OptionallyHasInitPreContext<any, any> &
   MightHaveRespond<any, any> &
   MightHaveSanitizeResponse<any, any>;
 
-type IntersectProperties<T> = [T] extends [object]
-  ? { [K in keyof T]: (arg: T[K]) => void } extends Record<
+/*
+type Funcs = {
+  a: () => void;
+  v: (text: string) => number;
+};
+type IPFuncs = IntersectProperties<Funcs>;
+// type IPFuncs = (() => void) & ((text: string) => number) 👍
+type Foo = { a: string; b: number };
+type Bar = IntersectProperties<Foo>;
+// type Bar = string & number 😕
+*/
+
+type IntersectProperties<T extends object> = [{}] extends T
+  ? {}
+  : { [K in keyof T]: (arg: T[K]) => void } extends Record<
       keyof T,
       (arg: infer A) => void
     >
-    ? A
-    : never
-  : T;
+  ? A
+  : never;
 
 type ReturnedTypeUpToPreAuthorize<TValue, TKey> = TKey extends 'body'
   ? HasSanitizeBody<any, TValue>
