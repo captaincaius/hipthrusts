@@ -1,10 +1,10 @@
 import Boom from '@hapi/boom';
 import {
-  WithAttached,
-  WithBody,
-  WithDoWork,
-  WithParams,
-  WithSafeResponse,
+  AttachData,
+  DoWork,
+  SanitizeBody,
+  SanitizeParams,
+  SanitizeResponse,
 } from './lifecycle-functions';
 
 // tslint:disable-next-line:no-var-requires
@@ -115,13 +115,13 @@ export function htMongooseFactory(mongoose: any) {
   // @note for docs: NEVER use _id - mongoose gives it special treatment
   // also, ALWAYS rememver to make required fields required cause mongoose will STRIP invalid fields first!
   // figure out how to make that security gotcha harder to happen
-  function WithParamsSanitized<
+  function SanitizeParamsWithMongoose<
     TSafeParam extends ReturnType<TInstance['toObject']>,
     TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>,
-    TUnsafeParam
+    TUnsafeParam extends object
   >(DocFactory: TDocFactory) {
-    return WithParams((unsafeParams: TUnsafeParam) => {
+    return SanitizeParams((unsafeParams: TUnsafeParam) => {
       const doc = DocFactory(unsafeParams);
       const validateErrors = doc.validateSync();
       if (validateErrors !== undefined) {
@@ -133,13 +133,13 @@ export function htMongooseFactory(mongoose: any) {
   }
 
   // @note: sanitize body validates modified only!  This is cause you usually will only send fields to update.
-  function WithBodySanitized<
+  function SanitizeBodyWithMongoose<
     TSafeBody extends ReturnType<TInstance['toObject']>,
     TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>,
-    TUnsafeBody
+    TUnsafeBody extends object
   >(DocFactory: TDocFactory) {
-    return WithBody((unsafeBody: TUnsafeBody) => {
+    return SanitizeBody((unsafeBody: TUnsafeBody) => {
       const doc = DocFactory(unsafeBody);
       const validateErrors = doc.validateSync(undefined, {
         validateModifiedOnly: true,
@@ -152,8 +152,8 @@ export function htMongooseFactory(mongoose: any) {
     });
   }
 
-  function WithSaveOnDocument(propertyKeyOfDocument: string) {
-    return WithDoWork(async (context: any) => {
+  function SaveOnDocumentFrom(propertyKeyOfDocument: string) {
+    return DoWork(async (context: any) => {
       if (context[propertyKeyOfDocument]) {
         try {
           return await context[propertyKeyOfDocument].save();
@@ -168,11 +168,11 @@ export function htMongooseFactory(mongoose: any) {
     });
   }
 
-  function WithUpdateDocument(
+  function UpdateDocumentFromTo(
     propertyKeyOfDocument: string,
     propertyKeyWithNewData: string = 'body'
   ) {
-    return WithDoWork(async (context: any) => {
+    return DoWork(async (context: any) => {
       if (context[propertyKeyOfDocument]) {
         return await context[propertyKeyOfDocument].set(
           context[propertyKeyWithNewData]
@@ -183,24 +183,20 @@ export function htMongooseFactory(mongoose: any) {
     });
   }
 
-  function WithResponseSanitized<
+  function SanitizeResponseWithMongoose<
     TSafeResponse extends ReturnType<TInstance['toObject']>,
     TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>
   >(DocFactory: TDocFactory) {
-    return WithSafeResponse((unsafeResponse: any) => {
+    return SanitizeResponse((unsafeResponse: any) => {
       const doc = DocFactory(unsafeResponse);
       // @tswtf: why do I need to force this?!
       return doc.toObject() as TSafeResponse;
     });
   }
 
-  function WithPojoToDocument(
-    pojoKey: string,
-    modelClass: any,
-    newDocKey: string
-  ) {
-    return WithAttached((context: any) => {
+  function PojoToDocument(pojoKey: string, modelClass: any, newDocKey: string) {
+    return AttachData((context: any) => {
       return {
         [newDocKey]: new modelClass(context[pojoKey]),
       };
@@ -208,12 +204,12 @@ export function htMongooseFactory(mongoose: any) {
   }
 
   return {
-    WithBodySanitized,
-    WithParamsSanitized,
-    WithPojoToDocument,
-    WithResponseSanitized,
-    WithUpdateDocument,
-    WithSaveOnDocument,
+    SanitizeBodyWithMongoose,
+    SanitizeParamsWithMongoose,
+    PojoToDocument,
+    SanitizeResponseWithMongoose,
+    UpdateDocumentFromTo,
+    SaveOnDocumentFrom,
     documentFactoryFromForRequest,
     documentFactoryFromForResponse,
     dtoSchemaObj,

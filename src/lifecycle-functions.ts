@@ -1,60 +1,84 @@
-export function WithInit(projector: (context: any) => any) {
+export function InitPreContext<
+  TContextIn extends object,
+  TContextOut extends object
+>(projector: (htCtx: TContextIn) => TContextOut) {
   return {
     initPreContext: projector,
   };
 }
 
-export function WithParams(projector: (context: any) => any) {
+export function SanitizeParams<
+  TContextIn extends object,
+  TContextOut extends object
+>(projector: (htCtx: TContextIn) => TContextOut) {
   return {
     sanitizeParams: projector,
   };
 }
 
-export function WithBody(projector: (context: any) => any) {
+export function SanitizeBody<
+  TContextIn extends object,
+  TContextOut extends object
+>(projector: (htCtx: TContextIn) => TContextOut) {
   return {
     sanitizeBody: projector,
   };
 }
 
-export function WithPreAuth(projector: (context: any) => any) {
+export function PreAuthorize<
+  TContextIn extends object,
+  TContextOut extends object | boolean
+>(projector: (htCtx: TContextIn) => TContextOut) {
   return {
     preAuthorize: projector,
   };
 }
 
-export function WithAttached(projector: (context: any) => any) {
+export function AttachData<
+  TContextIn extends object,
+  TContextOut extends object
+>(projector: (htCtx: TContextIn) => TContextOut) {
   return {
     attachData: projector,
   };
 }
 
-export function WithFinalAuth(projector: (context: any) => any) {
+export function FinalAuthorize<
+  TContextIn extends object,
+  TContextOut extends object | boolean
+>(projector: (htCtx: TContextIn) => TContextOut) {
   return {
     finalAuthorize: projector,
   };
 }
 
-export function WithDoWork(projector: (context: any) => any) {
+export function DoWork<
+  TContextIn extends object,
+  TContextOut extends object | void
+>(projector: (htCtx: TContextIn) => TContextOut) {
   return {
     doWork: projector,
   };
 }
 
-export function WithResponse<TWhereToLook extends string>(
-  whereToLook: TWhereToLook,
+export function Respond<TContextIn extends object, TContextOut extends object>(
+  projector: (htCtx: TContextIn) => TContextOut,
   successStatusCode: number
 ) {
   return {
-    respond: (context: any) => {
+    respond: (htCtx: any) => {
       return {
-        unsafeResponse: context[whereToLook],
+        unsafeResponse: projector(htCtx),
         status: successStatusCode,
       };
     },
   };
 }
 
-export function WithSafeResponse(projector: (context: any) => any) {
+export function SanitizeResponse<
+  TContextIn extends object,
+  TContextOut extends object
+>(projector: (htCtx: TContextIn) => TContextOut) {
   return {
     sanitizeResponse: projector,
   };
