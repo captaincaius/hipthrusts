@@ -119,7 +119,7 @@ export function htMongooseFactory(mongoose: any) {
     TSafeParam extends ReturnType<TInstance['toObject']>,
     TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>,
-    TUnsafeParam
+    TUnsafeParam extends object
   >(DocFactory: TDocFactory) {
     return SanitizeParams((unsafeParams: TUnsafeParam) => {
       const doc = DocFactory(unsafeParams);
@@ -137,7 +137,7 @@ export function htMongooseFactory(mongoose: any) {
     TSafeBody extends ReturnType<TInstance['toObject']>,
     TDocFactory extends DocumentFactory<any>,
     TInstance extends ReturnType<TDocFactory>,
-    TUnsafeBody
+    TUnsafeBody extends object
   >(DocFactory: TDocFactory) {
     return SanitizeBody((unsafeBody: TUnsafeBody) => {
       const doc = DocFactory(unsafeBody);

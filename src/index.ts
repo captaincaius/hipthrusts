@@ -423,7 +423,7 @@ export function SanitizeResponseTo<
   TContextIn extends object,
   TContextOut extends object
 >(projector: (htCtx: TContextIn) => TContextOut, whereToStore: TWhereToStore) {
-  return SanitizeResponse(htCtx => {
+  return SanitizeResponse((htCtx: TContextIn) => {
     return {
       [whereToStore]: projector(htCtx),
     };
