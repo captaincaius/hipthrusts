@@ -92,9 +92,8 @@ type PreAuthorizeContextIn<T extends HasPreAuthorize<any, any>> = Parameters<
 type PreAuthorizeReturn<T extends HasPreAuthorize<any, any>> = ReturnType<
   T['preAuthorize']
 >;
-type PreAuthorizeContextOut<T extends HasPreAuthorize<any, any>> = ReturnType<
-  T['preAuthorize']
->;
+type PreAuthorizeContextOut<T extends HasPreAuthorize<any, any>> = object &
+  ReturnType<T['preAuthorize']>;
 type PreAuthorizeContextOutFalseCase<
   T extends HasPreAuthorize<any, any>
 > = false & ReturnType<T['preAuthorize']>;
