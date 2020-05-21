@@ -239,10 +239,7 @@ export function AttachDataFrom<
   whereToLook: TWhereToLook,
   projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut
 ) {
-  return AttachData(
-    async (htCtx: TContextIn) =>
-      await Promise.resolve(projector(htCtx[whereToLook]))
-  );
+  return AttachData((htCtx: TContextIn) => projector(htCtx[whereToLook]));
 }
 
 export function AttachDataTo<
@@ -282,10 +279,7 @@ export function FinalAuthorizeFrom<
   whereToLook: TWhereToLook,
   projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut
 ) {
-  return FinalAuthorize(
-    async (htCtx: TContextIn) =>
-      await Promise.resolve(projector(htCtx[whereToLook]))
-  );
+  return FinalAuthorize((htCtx: TContextIn) => projector(htCtx[whereToLook]));
 }
 
 export function FinalAuthorizeTo<
@@ -329,10 +323,7 @@ export function DoWorkFrom<
   whereToLook: TWhereToLook,
   projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut
 ) {
-  return DoWork(
-    async (htCtx: TContextIn) =>
-      await Promise.resolve(projector(htCtx[whereToLook]))
-  );
+  return DoWork((htCtx: TContextIn) => projector(htCtx[whereToLook]));
 }
 
 export function DoWorkTo<
