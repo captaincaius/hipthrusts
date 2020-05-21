@@ -6,6 +6,7 @@ import {
   SanitizeParams,
   SanitizeResponse,
 } from './lifecycle-functions';
+import { Constructor } from './types';
 
 // tslint:disable-next-line:no-var-requires
 const mask = require('json-mask');
@@ -195,8 +196,12 @@ export function htMongooseFactory(mongoose: any) {
     });
   }
 
-  function PojoToDocument(pojoKey: string, modelClass: any, newDocKey: string) {
-    return AttachData((context: any) => {
+  function PojoToDocument<
+    TPojoKey extends string,
+    TMongooseModel extends Constructor<any>,
+    TContextIn extends { [key in TPojoKey]: any }
+  >(pojoKey: TPojoKey, modelClass: TMongooseModel, newDocKey: string) {
+    return AttachData((context: TContextIn) => {
       return {
         [newDocKey]: new modelClass(context[pojoKey]),
       };
