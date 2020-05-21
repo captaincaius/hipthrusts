@@ -1,27 +1,20 @@
 import Boom from '@hapi/boom';
 import {
+  AttachDataReqsSatisfiedOptional,
+  DoWorkReqsSatisfiedOptional,
+  FinalAuthReqsSatisfied,
+  HasAllNotRequireds,
   HasAllRequireds,
+  HasAllStagesNotOptionals,
   HasAttachData,
-  HasAttachDataProperOptionals,
-  HasBodyProperOptionals,
   HasDoWork,
-  HasDoWorkProperOptionals,
   HasFinalAuthorize,
-  HasFinalAuthorizeProperOptionals,
   HasInitPreContext,
-  HasInitPreContextProperOptionals,
-  HasParamsProperOptionals,
   HasPreAuthorize,
-  HasPreauthProperOptionals,
   HasRespond,
-  HasRespondProperOptionals,
   HasSanitizeBody,
   HasSanitizeParams,
   HasSanitizeResponse,
-  HasUpToAttachDataProperOptionals,
-  HasUpToDoWorkProperOptionals,
-  HasUpToFinalAuthorizeProperOptionals,
-  HasUpToRespondProperOptionals,
   MightHaveFinalAuthorize,
   MightHavePreAuthorize,
   MightHaveRespond,
@@ -31,76 +24,53 @@ import {
   OptionallyHasInitPreContext,
   OptionallyHasSanitizeBody,
   OptionallyHasSanitizeParams,
+  PreAuthReqsSatisfied,
   PromiseOrSync,
   PromiseResolveOrSync,
+  RespondReqsSatisfied,
+  SanitizeResponseReqsSatisfied,
 } from './types';
 
-// @todo: MINOR: consider bringing this back to life so complexity of optionality is removed from executeHipthrustable
 export function withDefaultImplementations<
-  TStrategy extends OptionallyHasInitPreContext<any, any> &
-    OptionallyHasSanitizeParams<any, any> &
-    OptionallyHasSanitizeBody<any, any> &
+  TStrategy extends HasAllNotRequireds &
     HasAllRequireds &
-    OptionallyHasAttachData<any, any> &
-    OptionallyHasDoWork<any, any>
->(
-  strategy: TStrategy
-): {
-  initPreContext: TStrategy extends HasInitPreContext<any, any>
-    ? TStrategy['initPreContext']
-    : () => {};
-  sanitizeParams: TStrategy extends HasSanitizeParams<any, any>
-    ? TStrategy['sanitizeParams']
-    : () => {};
-  sanitizeBody: TStrategy extends HasSanitizeBody<any, any>
-    ? TStrategy['sanitizeBody']
-    : () => {};
-  preAuthorize: TStrategy['preAuthorize'];
-  attachData: TStrategy extends HasAttachData<any, any>
-    ? TStrategy['attachData']
-    : () => {};
-  finalAuthorize: TStrategy['finalAuthorize'];
-  doWork: TStrategy extends HasDoWork<any, any>
-    ? TStrategy['doWork']
-    : () => {};
-  respond: TStrategy['respond'];
-  sanitizeResponse: TStrategy['sanitizeResponse'];
-} {
-  // @tswtf why isn't typescript smart enough to not require these type assertions below?
+    PreAuthReqsSatisfied<TStrategy> &
+    AttachDataReqsSatisfiedOptional<TStrategy> &
+    FinalAuthReqsSatisfied<TStrategy> &
+    DoWorkReqsSatisfiedOptional<TStrategy> &
+    RespondReqsSatisfied<TStrategy> &
+    SanitizeResponseReqsSatisfied<TStrategy>
+>(strategy: TStrategy): HasAllStagesNotOptionals {
   return {
-    ...strategy,
-    initPreContext: (strategy.initPreContext
-      ? strategy.initPreContext
-      : () => {
-          return {};
-        }) as TStrategy extends HasInitPreContext<any, any>
-      ? TStrategy['initPreContext']
-      : () => {},
-    sanitizeParams: (strategy.sanitizeParams
-      ? strategy.sanitizeParams
-      : () => {
-          return {};
-        }) as TStrategy extends HasSanitizeParams<any, any>
-      ? TStrategy['sanitizeParams']
-      : () => {},
-    sanitizeBody: (strategy.sanitizeBody ||
+    initPreContext:
+      strategy.initPreContext ||
       (() => {
         return {};
-      })) as TStrategy extends HasSanitizeBody<any, any>
-      ? TStrategy['sanitizeBody']
-      : () => {},
-    attachData: (strategy.attachData ||
+      }),
+    sanitizeParams:
+      strategy.sanitizeParams ||
       (() => {
         return {};
-      })) as TStrategy extends HasAttachData<any, any>
-      ? TStrategy['attachData']
-      : () => {},
-    doWork: (strategy.doWork ||
+      }),
+    sanitizeBody:
+      strategy.sanitizeBody ||
       (() => {
         return {};
-      })) as TStrategy extends HasDoWork<any, any>
-      ? TStrategy['doWork']
-      : () => {},
+      }),
+    preAuthorize: strategy.preAuthorize,
+    attachData:
+      strategy.attachData ||
+      (() => {
+        return {};
+      }),
+    finalAuthorize: strategy.finalAuthorize,
+    doWork:
+      strategy.doWork ||
+      (() => {
+        return {};
+      }),
+    respond: strategy.respond,
+    sanitizeResponse: strategy.sanitizeResponse,
   };
 }
 
@@ -211,41 +181,13 @@ function transformThrowPossiblyAsync<
 }
 
 export async function executeHipthrustable<
-  // @todo: MINOR: consider swapping these when withDefaultImplementations is fixed
-  /*
-  TConf extends
-    HasSanitizeResponse<any,any>
-    & HasInitPreContextProper<TConf>
-    & HasParamsProper<TConf>
-    & HasBodyProper<TConf>
-    & HasPreauthProper<TConf>
-    & HasUpToAttachDataProper<TConf>
-    & HasAttachDataProper<TConf>
-    & HasUpToFinalAuthorizeProper<TConf>
-    & HasFinalAuthorizeProper<TConf>
-    & HasUpToDoWorkProper<TConf>
-    & HasDoWorkProper<TConf>
-    & HasUpToRespondProper<TConf>
-    & HasRespondProper<TConf>,
-  */
-  TConf extends HasAllRequireds &
-    OptionallyHasSanitizeParams<any, any> &
-    OptionallyHasSanitizeBody<any, any> &
-    OptionallyHasAttachData<any, any> &
-    OptionallyHasDoWork<any, any> &
-    OptionallyHasInitPreContext<any, any> &
-    HasInitPreContextProperOptionals<TConf> &
-    HasParamsProperOptionals<TConf> &
-    HasBodyProperOptionals<TConf> &
-    HasPreauthProperOptionals<TConf> &
-    HasUpToAttachDataProperOptionals<TConf> &
-    HasAttachDataProperOptionals<TConf> &
-    HasUpToFinalAuthorizeProperOptionals<TConf> &
-    HasFinalAuthorizeProperOptionals<TConf> &
-    HasUpToDoWorkProperOptionals<TConf> &
-    HasDoWorkProperOptionals<TConf> &
-    HasUpToRespondProperOptionals<TConf> &
-    HasRespondProperOptionals<TConf>,
+  TConf extends HasAllStagesNotOptionals &
+    PreAuthReqsSatisfied<TConf> &
+    AttachDataReqsSatisfiedOptional<TConf> &
+    FinalAuthReqsSatisfied<TConf> &
+    DoWorkReqsSatisfiedOptional<TConf> &
+    RespondReqsSatisfied<TConf> &
+    SanitizeResponseReqsSatisfied<TConf>,
   TUnsafe,
   TUnsafeParams,
   TUnsafeBody
@@ -256,20 +198,22 @@ export async function executeHipthrustable<
   unsafeBody: TUnsafeBody
 ) {
   const badDataThrow = Boom.badData('User input sanitization failure');
-  const safeInitPreContext = requestHandler.initPreContext
-    ? transformThrowSync(badDataThrow, requestHandler.initPreContext, unsafe)
-    : {};
+  const safeInitPreContext = transformThrowSync(
+    badDataThrow,
+    requestHandler.initPreContext,
+    unsafe
+  );
   // @todo: maybe params should throw something different like 400
-  const safeParams = requestHandler.sanitizeParams
-    ? transformThrowSync(
-        badDataThrow,
-        requestHandler.sanitizeParams,
-        unsafeParams
-      )
-    : undefined;
-  const safeBody = requestHandler.sanitizeBody
-    ? transformThrowSync(badDataThrow, requestHandler.sanitizeBody, unsafeBody)
-    : undefined;
+  const safeParams = transformThrowSync(
+    badDataThrow,
+    requestHandler.sanitizeParams,
+    unsafeParams
+  );
+  const safeBody = transformThrowSync(
+    badDataThrow,
+    requestHandler.sanitizeBody,
+    unsafeBody
+  );
   const inputsContext = {
     preContext: safeInitPreContext,
     params: safeParams,
@@ -301,13 +245,12 @@ export async function executeHipthrustable<
   };
 
   const notFoundThrow = Boom.notFound('Resource not found');
-  const attachedDataContextOnly = requestHandler.attachData
-    ? (await transformThrowPossiblyAsync(
-        notFoundThrow,
-        requestHandler.attachData,
-        preAuthContext
-      )) || {}
-    : {};
+  const attachedDataContextOnly =
+    (await transformThrowPossiblyAsync(
+      notFoundThrow,
+      requestHandler.attachData,
+      preAuthContext
+    )) || {};
   const attachedDataContext = { ...preAuthContext, ...attachedDataContextOnly };
 
   const forbiddenFinalAuthThrow = Boom.forbidden(
@@ -337,13 +280,12 @@ export async function executeHipthrustable<
   };
 
   try {
-    // @todo: allow doWork to return more context instead of "true" too.  Anything falsy will be interpreted as an error.  Don't forget || {} after call
-    if (requestHandler.doWork) {
-      // to keep executeHipthrustable from being too opinionated, it's doWork's responsibility to handle and throw client errors.
-      // Any un-boom'ed errors here should be interpreted as server errors
-      await Promise.resolve(requestHandler.doWork(finalAuthContext));
-    }
-    const doWorkContext = finalAuthContext;
+    // to keep executeHipthrustable from being too opinionated, it's doWork's responsibility to handle and throw client errors.
+    // Any un-boom'ed errors here should be interpreted as server errors
+    const doWorkContextOnly =
+      (await Promise.resolve(requestHandler.doWork(finalAuthContext))) || {};
+
+    const doWorkContext = { ...finalAuthContext, ...doWorkContextOnly };
 
     const { unsafeResponse, status } = requestHandler.respond(doWorkContext);
     const safeResponse = requestHandler.sanitizeResponse(unsafeResponse);

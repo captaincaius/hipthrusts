@@ -11,5 +11,9 @@ matrix:
       node_js: 10
       before_script: skip
       script: npm run lint
+    - name: 'Build check'
+      node_js: 10
+      before_script: skip
+      script: npm run build
 notifications:
   email: false

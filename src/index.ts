@@ -10,7 +10,17 @@ import {
   isHasSanitizeParams,
   isHasSanitizeResponse,
 } from './core';
-import { WithFinalAuth, WithPreAuth } from './lifecycle-functions';
+import {
+  AttachData,
+  DoWork,
+  FinalAuthorize,
+  InitPreContext,
+  PreAuthorize,
+  Respond,
+  SanitizeBody,
+  SanitizeParams,
+  SanitizeResponse,
+} from './lifecycle-functions';
 import {
   AllStageKeys,
   HasAttachData,
@@ -53,48 +63,419 @@ export function fromWrappedInstanceMethod<
   };
 }
 
-export function WithNoopPreAuth() {
-  return WithPreAuth(() => true);
+export function NoopPreAuth() {
+  return PreAuthorize(() => true);
 }
 
 export function NoopFinalAuth() {
-  return WithFinalAuth(() => true);
+  return FinalAuthorize(() => true);
 }
 
-// @todo: implement all the other HTPipe*'s - note that each one will be slightly different based on their specifics...
-// i.e. can return bool vs not, possibly async vs sync only, mandatory vs not mandatory...
-// then the final master HTPipe will just build an object out of all the sub-HTPipe*'s
+export function InitPreContextFrom<
+  TWhereToLook extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut
+) {
+  return InitPreContext((htCtx: TContextIn) => projector(htCtx[whereToLook]));
+}
+
+export function InitPreContextTo<
+  TWhereToStore extends string,
+  TContextIn extends object,
+  TContextOut extends object
+>(projector: (htCtx: TContextIn) => TContextOut, whereToStore: TWhereToStore) {
+  return InitPreContext((htCtx: TContextIn) => {
+    return { [whereToStore]: projector(htCtx) };
+  });
+}
+
+export function InitPreContextFromTo<
+  TWhereToLook extends string,
+  TWhereToStore extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
+  whereToStore: TWhereToStore
+) {
+  return InitPreContext((htCtx: TContextIn) => {
+    return { [whereToStore]: projector(htCtx[whereToLook]) };
+  });
+}
+
+export function SanitizeParamsFrom<
+  TWhereToLook extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut
+) {
+  return SanitizeParams((htCtx: TContextIn) => projector(htCtx[whereToLook]));
+}
+
+export function SanitizeParamsTo<
+  TWhereToStore extends string,
+  TContextIn extends object,
+  TContextOut extends object
+>(projector: (htCtx: TContextIn) => TContextOut, whereToStore: TWhereToStore) {
+  return SanitizeParams((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx),
+    };
+  });
+}
+
+export function SanitizeParamsFromTo<
+  TWhereToLook extends string,
+  TWhereToStore extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
+  whereToStore: TWhereToStore
+) {
+  return SanitizeParams((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx[whereToLook]),
+    };
+  });
+}
+
+export function SanitizeBodyFrom<
+  TWhereToLook extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut
+) {
+  return SanitizeBody((htCtx: TContextIn) => projector(htCtx[whereToLook]));
+}
+
+export function SanitizeBodyTo<
+  TWhereToStore extends string,
+  TContextIn extends object,
+  TContextOut extends object
+>(projector: (htCtx: TContextIn) => TContextOut, whereToStore: TWhereToStore) {
+  return SanitizeBody((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx),
+    };
+  });
+}
+
+export function SanitizeBodyFromTo<
+  TWhereToLook extends string,
+  TWhereToStore extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
+  whereToStore: TWhereToStore
+) {
+  return SanitizeBody((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx[whereToLook]),
+    };
+  });
+}
+
+export function PreAuthorizeFrom<
+  TWhereToLook extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object | boolean
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut
+) {
+  return PreAuthorize((htCtx: TContextIn) => projector(htCtx[whereToLook]));
+}
+
+export function PreAuthorizeTo<
+  TWhereToStore extends string,
+  TContextIn extends object,
+  TContextOut extends object | boolean
+>(projector: (htCtx: TContextIn) => TContextOut, whereToStore: TWhereToStore) {
+  return PreAuthorize((htCtx: TContextIn) => {
+    const preAuthorizeResult = projector(htCtx);
+    return authorizationPassed(preAuthorizeResult)
+      ? {
+          [whereToStore]: preAuthorizeResult,
+        }
+      : false;
+  });
+}
+
+export function PreAuthorizeFromTo<
+  TWhereToLook extends string,
+  TWhereToStore extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object | boolean
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
+  whereToStore: TWhereToStore
+) {
+  return PreAuthorize((htCtx: TContextIn) => {
+    const preAuthorizeResult = projector(htCtx[whereToLook]);
+    return authorizationPassed(preAuthorizeResult)
+      ? { [whereToStore]: preAuthorizeResult }
+      : false;
+  });
+}
+
+export function AttachDataFrom<
+  TWhereToLook extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends PromiseResolveOrSync<object>
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut
+) {
+  return AttachData((htCtx: TContextIn) => projector(htCtx[whereToLook]));
+}
+
+export function AttachDataTo<
+  TWhereToStore extends string,
+  TContextIn extends object,
+  TContextOut extends object
+>(projector: (htCtx: TContextIn) => TContextOut, whereToStore: TWhereToStore) {
+  return AttachData((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx),
+    };
+  });
+}
+
+export function AttachDataFromTo<
+  TWhereToLook extends string,
+  TWhereToStore extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
+  whereToStore: TWhereToStore
+) {
+  return AttachData((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx[whereToLook]),
+    };
+  });
+}
+
+export function FinalAuthorizeFrom<
+  TWhereToLook extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends PromiseResolveOrSync<object | boolean>
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut
+) {
+  return FinalAuthorize((htCtx: TContextIn) => projector(htCtx[whereToLook]));
+}
+
+export function FinalAuthorizeTo<
+  TWhereToStore extends string,
+  TContextIn extends object,
+  TContextOut extends PromiseResolveOrSync<object | boolean>
+>(projector: (htCtx: TContextIn) => TContextOut, whereToStore: TWhereToStore) {
+  return FinalAuthorize(async (htCtx: TContextIn) => {
+    const finalAuthorizeResult = await Promise.resolve(projector(htCtx));
+    return authorizationPassed(finalAuthorizeResult)
+      ? { [whereToStore]: finalAuthorizeResult }
+      : false;
+  });
+}
+
+export function FinalAuthorizeFromTo<
+  TWhereToLook extends string,
+  TWhereToStore extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends PromiseResolveOrSync<object | boolean>
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
+  whereToStore: TWhereToStore
+) {
+  return FinalAuthorize(async (htCtx: TContextIn) => {
+    const finalAuthorizeResult = await Promise.resolve(
+      projector(htCtx[whereToLook])
+    );
+    return authorizationPassed(finalAuthorizeResult)
+      ? { [whereToStore]: finalAuthorizeResult }
+      : false;
+  });
+}
+
+export function DoWorkFrom<
+  TWhereToLook extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends PromiseResolveOrSync<object | void>
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut
+) {
+  return DoWork((htCtx: TContextIn) => projector(htCtx[whereToLook]));
+}
+
+export function DoWorkTo<
+  TWhereToStore extends string,
+  TContextIn extends object,
+  TContextOut extends PromiseResolveOrSync<object | void>
+>(projector: (htCtx: TContextIn) => TContextOut, whereToStore: TWhereToStore) {
+  return DoWork((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx),
+    };
+  });
+}
+
+export function DoWorkFromTo<
+  TWhereToLook extends string,
+  TWhereToStore extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends PromiseResolveOrSync<object | void>
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
+  whereToStore: TWhereToStore
+) {
+  return DoWork((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx[whereToLook]),
+    };
+  });
+}
+
+export function RespondFrom<
+  TWhereToLook extends string,
+  TSuccessStatusCode extends number,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
+  successStatusCode: TSuccessStatusCode
+) {
+  return Respond(
+    (htCtx: TContextIn) => projector(htCtx[whereToLook]),
+    successStatusCode
+  );
+}
+
+export function RespondTo<
+  TWhereToStore extends string,
+  TSuccessStatusCode extends number,
+  TContextIn extends object,
+  TContextOut extends object
+>(
+  projector: (htCtx: TContextIn) => TContextOut,
+  whereToStore: TWhereToStore,
+  successStatusCode: TSuccessStatusCode
+) {
+  return Respond((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx),
+    };
+  }, successStatusCode);
+}
+
+export function RespondFromTo<
+  TWhereToLook extends string,
+  TWhereToStore extends string,
+  TSuccessStatusCode extends number,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
+  whereToStore: TWhereToStore,
+  successStatusCode: TSuccessStatusCode
+) {
+  return Respond((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx[whereToLook]),
+    };
+  }, successStatusCode);
+}
+
+export function SanitizeResponseFrom<
+  TWhereToLook extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut
+) {
+  return SanitizeResponse((htCtx: TContextIn) => projector(htCtx[whereToLook]));
+}
+
+export function SanitizeResponseTo<
+  TWhereToStore extends string,
+  TContextIn extends object,
+  TContextOut extends object
+>(projector: (htCtx: TContextIn) => TContextOut, whereToStore: TWhereToStore) {
+  return SanitizeResponse((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx),
+    };
+  });
+}
+
+export function SanitizeResponseFromTo<
+  TWhereToLook extends string,
+  TWhereToStore extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
+  whereToStore: TWhereToStore
+) {
+  return SanitizeResponse((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx[whereToLook]),
+    };
+  });
+}
 
 type InitPreContextIn<T extends HasInitPreContext<any, any>> = Parameters<
   T['initPreContext']
 >[0];
-type InitPreContextOut<T extends HasInitPreContext<any, any>> = ReturnType<
+type InitPreContextReturn<T extends HasInitPreContext<any, any>> = ReturnType<
   T['initPreContext']
 >;
 
 type SanitizeParamsContextIn<
   T extends HasSanitizeParams<any, any>
 > = Parameters<T['sanitizeParams']>[0];
-type SanitizeParamsContextOut<
-  T extends HasSanitizeParams<any, any>
-> = ReturnType<T['sanitizeParams']>;
+type SanitizeParamsReturn<T extends HasSanitizeParams<any, any>> = ReturnType<
+  T['sanitizeParams']
+>;
 
 type SanitizeBodyContextIn<T extends HasSanitizeBody<any, any>> = Parameters<
   T['sanitizeBody']
 >[0];
-type SanitizeBodyContextOut<T extends HasSanitizeBody<any, any>> = ReturnType<
+type SanitizeBodyReturn<T extends HasSanitizeBody<any, any>> = ReturnType<
   T['sanitizeBody']
 >;
 
 type PreAuthorizeContextIn<T extends HasPreAuthorize<any, any>> = Parameters<
   T['preAuthorize']
 >[0];
-type PreAuthorizeContextOut<T extends HasPreAuthorize<any, any>> = ReturnType<
+type PreAuthorizeReturn<T extends HasPreAuthorize<any, any>> = ReturnType<
   T['preAuthorize']
 >;
-type PreAuthorizeContextOutObjectCase<
-  T extends HasPreAuthorize<any, any>
-> = ReturnType<T['preAuthorize']>;
+type PreAuthorizeContextOut<T extends HasPreAuthorize<any, any>> = object &
+  ReturnType<T['preAuthorize']>;
 type PreAuthorizeContextOutFalseCase<
   T extends HasPreAuthorize<any, any>
 > = false & ReturnType<T['preAuthorize']>;
@@ -102,19 +483,18 @@ type PreAuthorizeContextOutFalseCase<
 type AttachDataIn<T extends HasAttachData<any, any>> = Parameters<
   T['attachData']
 >[0];
-type AttachDataOut<T extends HasAttachData<any, any>> = PromiseResolveOrSync<
+type AttachDataReturn<T extends HasAttachData<any, any>> = PromiseResolveOrSync<
   ReturnType<T['attachData']>
 >;
 
 type FinalAuthorizeContextIn<
   T extends HasFinalAuthorize<any, any>
 > = Parameters<T['finalAuthorize']>[0];
-type FinalAuthorizeContextOut<
+type FinalAuthorizeReturn<
   T extends HasFinalAuthorize<any, any>
 > = PromiseResolveOrSync<ReturnType<T['finalAuthorize']>>;
-type FinalAuthorizeContextOutObjectCase<
-  T extends HasFinalAuthorize<any, any>
-> = object & PromiseResolveOrSync<ReturnType<T['finalAuthorize']>>;
+type FinalAuthorizeContextOut<T extends HasFinalAuthorize<any, any>> = object &
+  PromiseResolveOrSync<ReturnType<T['finalAuthorize']>>;
 type FinalAuthorizeContextOutFalseCase<
   T extends HasFinalAuthorize<any, any>
 > = false & PromiseResolveOrSync<ReturnType<T['finalAuthorize']>>;
@@ -122,23 +502,21 @@ type FinalAuthorizeContextOutFalseCase<
 type DoWorkContextIn<T extends HasDoWork<any, any>> = Parameters<
   T['doWork']
 >[0];
-type DoWorkContextOut<T extends HasDoWork<any, any>> = PromiseResolveOrSync<
+type DoWorkReturn<T extends HasDoWork<any, any>> = PromiseResolveOrSync<
   ReturnType<T['doWork']>
 >;
-type DoWorkContextOutObjectCase<T extends HasDoWork<any, any>> = object &
+type DoWorkContextOut<T extends HasDoWork<any, any>> = object &
   PromiseResolveOrSync<ReturnType<T['doWork']>>;
 
 type RespondContextIn<T extends HasRespond<any, any>> = Parameters<
   T['respond']
 >[0];
-type RespondContextOut<T extends HasRespond<any, any>> = ReturnType<
-  T['respond']
->;
+type RespondReturn<T extends HasRespond<any, any>> = ReturnType<T['respond']>;
 
 type SanitizeResponseContextIn<
   T extends HasSanitizeResponse<any, any>
 > = Parameters<T['sanitizeResponse']>[0];
-type SanitizeResponseContextOut<
+type SanitizeResponseReturn<
   T extends HasSanitizeResponse<any, any>
 > = ReturnType<T['sanitizeResponse']>;
 
@@ -150,9 +528,9 @@ type PipedPreContext<TLeft, TRight> = [TLeft] extends [
   ? [TRight] extends [HasInitPreContext<any, any>]
     ? HasInitPreContext<
         InitPreContextIn<TLeft> &
-          Omit<InitPreContextIn<TRight>, keyof InitPreContextOut<TLeft>>,
-        InitPreContextOut<TRight> &
-          Omit<InitPreContextOut<TLeft>, keyof InitPreContextOut<TRight>>
+          Omit<InitPreContextIn<TRight>, keyof InitPreContextReturn<TLeft>>,
+        InitPreContextReturn<TRight> &
+          Omit<InitPreContextReturn<TLeft>, keyof InitPreContextReturn<TRight>>
       >
     : { initPreContext: TLeft['initPreContext'] }
   : [TRight] extends [HasInitPreContext<any, any>]
@@ -167,7 +545,7 @@ type PipedSanitizeParams<TLeft, TRight> = [TLeft] extends [
   ? [TRight] extends [HasSanitizeParams<any, any>]
     ? HasSanitizeParams<
         SanitizeParamsContextIn<TLeft>,
-        SanitizeParamsContextOut<TRight>
+        SanitizeParamsReturn<TRight>
       >
     : { sanitizeParams: TLeft['sanitizeParams'] }
   : [TRight] extends [HasSanitizeParams<any, any>]
@@ -180,10 +558,7 @@ type PipedSanitizeBody<TLeft, TRight> = [TLeft] extends [
   HasSanitizeBody<any, any>
 ]
   ? [TRight] extends [HasSanitizeBody<any, any>]
-    ? HasSanitizeBody<
-        SanitizeBodyContextIn<TLeft>,
-        SanitizeBodyContextOut<TRight>
-      >
+    ? HasSanitizeBody<SanitizeBodyContextIn<TLeft>, SanitizeBodyReturn<TRight>>
     : { sanitizeBody: TLeft['sanitizeBody'] }
   : [TRight] extends [HasSanitizeBody<any, any>]
   ? { sanitizeBody: TRight['sanitizeBody'] }
@@ -199,27 +574,27 @@ type PipedPreAuthorize<TLeft, TRight> = [TLeft] extends [
         PreAuthorizeContextIn<TLeft> &
           Omit<
             PreAuthorizeContextIn<TRight>,
-            PreAuthorizeContextOut<TLeft> extends boolean
+            PreAuthorizeReturn<TLeft> extends boolean
               ? keyof {}
-              : keyof PreAuthorizeContextOut<TLeft>
+              : keyof PreAuthorizeReturn<TLeft>
           >,
-        PreAuthorizeContextOut<TLeft> extends boolean
-          ? PreAuthorizeContextOut<TRight> extends boolean
+        PreAuthorizeReturn<TLeft> extends boolean
+          ? PreAuthorizeReturn<TRight> extends boolean
             ? boolean // BOTH left AND right have preAuthorize that returns ONLY booleans - never objects
             :
-                | PreAuthorizeContextOutObjectCase<TRight> // left's preAuthorize returns ONLY booleans but right's might return objects
+                | PreAuthorizeContextOut<TRight> // left's preAuthorize returns ONLY booleans but right's might return objects
                 | (PreAuthorizeContextOutFalseCase<TLeft> & false)
                 | (PreAuthorizeContextOutFalseCase<TRight> & false)
-          : PreAuthorizeContextOut<TRight> extends boolean
+          : PreAuthorizeReturn<TRight> extends boolean
           ?
-              | PreAuthorizeContextOutObjectCase<TLeft> // right's preAuthorize returns ONLY booleans but left's might return objects
+              | PreAuthorizeContextOut<TLeft> // right's preAuthorize returns ONLY booleans but left's might return objects
               | (PreAuthorizeContextOutFalseCase<TLeft> & false)
               | (PreAuthorizeContextOutFalseCase<TRight> & false)
           :
-              | (PreAuthorizeContextOutObjectCase<TRight> & // NEITHER left NOR right's preAuthorize return strictly boolean - so both might return objects
+              | (PreAuthorizeContextOut<TRight> & // NEITHER left NOR right's preAuthorize return strictly boolean - so both might return objects
                   Omit<
-                    PreAuthorizeContextOutObjectCase<TLeft>,
-                    keyof PreAuthorizeContextOutObjectCase<TRight>
+                    PreAuthorizeContextOut<TLeft>,
+                    keyof PreAuthorizeContextOut<TRight>
                   >)
               | (PreAuthorizeContextOutFalseCase<TLeft> & false)
               | (PreAuthorizeContextOutFalseCase<TRight> & false)
@@ -235,9 +610,9 @@ type PipedAttachData<TLeft, TRight> = [TLeft] extends [HasAttachData<any, any>]
   ? [TRight] extends [HasAttachData<any, any>]
     ? HasAttachData<
         AttachDataIn<TLeft> &
-          Omit<AttachDataIn<TRight>, keyof AttachDataOut<TLeft>>,
-        AttachDataOut<TRight> &
-          Omit<AttachDataOut<TLeft>, keyof AttachDataOut<TRight>>
+          Omit<AttachDataIn<TRight>, keyof AttachDataReturn<TLeft>>,
+        AttachDataReturn<TRight> &
+          Omit<AttachDataReturn<TLeft>, keyof AttachDataReturn<TRight>>
       >
     : { attachData: TLeft['attachData'] }
   : [TRight] extends [HasAttachData<any, any>]
@@ -254,27 +629,27 @@ type PipedFinalAuthorize<TLeft, TRight> = [TLeft] extends [
         FinalAuthorizeContextIn<TLeft> &
           Omit<
             FinalAuthorizeContextIn<TRight>,
-            FinalAuthorizeContextOut<TLeft> extends boolean
+            FinalAuthorizeReturn<TLeft> extends boolean
               ? keyof {}
-              : keyof FinalAuthorizeContextOut<TLeft>
+              : keyof FinalAuthorizeReturn<TLeft>
           >,
-        FinalAuthorizeContextOut<TLeft> extends boolean
-          ? FinalAuthorizeContextOut<TRight> extends boolean
+        FinalAuthorizeReturn<TLeft> extends boolean
+          ? FinalAuthorizeReturn<TRight> extends boolean
             ? boolean // BOTH left AND right have finalAuthorize that returns ONLY booleans - never objects
             :
-                | FinalAuthorizeContextOutObjectCase<TRight> // left's finalAuthorize returns ONLY booleans but right's might return objects
+                | FinalAuthorizeContextOut<TRight> // left's finalAuthorize returns ONLY booleans but right's might return objects
                 | (FinalAuthorizeContextOutFalseCase<TLeft> & false)
                 | (FinalAuthorizeContextOutFalseCase<TRight> & false)
-          : FinalAuthorizeContextOut<TRight> extends boolean
+          : FinalAuthorizeReturn<TRight> extends boolean
           ?
-              | FinalAuthorizeContextOutObjectCase<TLeft> // right's finalAuthorize returns ONLY booleans but left's might return objects
+              | FinalAuthorizeContextOut<TLeft> // right's finalAuthorize returns ONLY booleans but left's might return objects
               | (FinalAuthorizeContextOutFalseCase<TLeft> & false)
               | (FinalAuthorizeContextOutFalseCase<TRight> & false)
           :
-              | (FinalAuthorizeContextOutObjectCase<TRight> & // NEITHER left NOR right's finalAuthorize return strictly boolean - so both might return objects
+              | (FinalAuthorizeContextOut<TRight> & // NEITHER left NOR right's finalAuthorize return strictly boolean - so both might return objects
                   Omit<
-                    FinalAuthorizeContextOutObjectCase<TLeft>,
-                    keyof FinalAuthorizeContextOutObjectCase<TRight>
+                    FinalAuthorizeContextOut<TLeft>,
+                    keyof FinalAuthorizeContextOut<TRight>
                   >)
               | (FinalAuthorizeContextOutFalseCase<TLeft> & false)
               | (FinalAuthorizeContextOutFalseCase<TRight> & false)
@@ -292,21 +667,18 @@ type PipedDoWork<TLeft, TRight> = [TLeft] extends [HasDoWork<any, any>]
         DoWorkContextIn<TLeft> &
           Omit<
             DoWorkContextIn<TRight>,
-            DoWorkContextOut<TLeft> extends void
+            DoWorkReturn<TLeft> extends void
               ? keyof {}
-              : keyof DoWorkContextOut<TLeft>
+              : keyof DoWorkReturn<TLeft>
           >,
-        DoWorkContextOut<TLeft> extends void
-          ? DoWorkContextOut<TRight> extends void
+        DoWorkReturn<TLeft> extends void
+          ? DoWorkReturn<TRight> extends void
             ? void // BOTH left AND right have doWork that returns ONLY void - never objects
-            : DoWorkContextOutObjectCase<TRight> // left's doWork returns ONLY void but right's might return objects
-          : DoWorkContextOut<TRight> extends void
-          ? DoWorkContextOutObjectCase<TLeft> // right's doWork returns ONLY void but left's might return objects
-          : DoWorkContextOutObjectCase<TRight> & // NEITHER left NOR right's doWork return void - so both might return objects
-              Omit<
-                DoWorkContextOutObjectCase<TLeft>,
-                keyof DoWorkContextOutObjectCase<TRight>
-              >
+            : DoWorkContextOut<TRight> // left's doWork returns ONLY void but right's might return objects
+          : DoWorkReturn<TRight> extends void
+          ? DoWorkContextOut<TLeft> // right's doWork returns ONLY void but left's might return objects
+          : DoWorkContextOut<TRight> & // NEITHER left NOR right's doWork return void - so both might return objects
+              Omit<DoWorkContextOut<TLeft>, keyof DoWorkContextOut<TRight>>
       >
     : { doWork: TLeft['doWork'] }
   : [TRight] extends [HasDoWork<any, any>]
@@ -317,7 +689,7 @@ type PipedDoWork<TLeft, TRight> = [TLeft] extends [HasDoWork<any, any>]
 // https://github.com/Microsoft/TypeScript/issues/29368#issuecomment-453529532
 type PipedRespond<TLeft, TRight> = [TLeft] extends [HasRespond<any, any>]
   ? [TRight] extends [HasRespond<any, any>]
-    ? HasRespond<RespondContextIn<TLeft>, RespondContextOut<TRight>>
+    ? HasRespond<RespondContextIn<TLeft>, RespondReturn<TRight>>
     : { respond: TLeft['respond'] }
   : [TRight] extends [HasRespond<any, any>]
   ? { respond: TRight['respond'] }
@@ -331,7 +703,7 @@ type PipedSanitizeResponse<TLeft, TRight> = [TLeft] extends [
   ? [TRight] extends [HasSanitizeResponse<any, any>]
     ? HasSanitizeResponse<
         SanitizeResponseContextIn<TLeft>,
-        SanitizeResponseContextOut<TRight>
+        SanitizeResponseReturn<TRight>
       >
     : { sanitizeResponse: TLeft['sanitizeResponse'] }
   : [TRight] extends [HasSanitizeResponse<any, any>]
@@ -680,11 +1052,7 @@ export function HTPipe(...objs: any[]) {
     return {};
   }
   if (objs.length === 1) {
-    // @todo: consider removing this explicitness and repetition by calling HTPipe(obj[0], {}) instead
-    return {
-      initPreContext: objs[0].initPreContext,
-      attachData: objs[0].attachData,
-    };
+    return HTPipe(objs[0], {});
   }
   if (objs.length === 2) {
     const left = objs[0];
