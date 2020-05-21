@@ -247,9 +247,9 @@ export function AttachDataTo<
   TContextIn extends object,
   TContextOut extends object
 >(projector: (htCtx: TContextIn) => TContextOut, whereToStore: TWhereToStore) {
-  return AttachData((htCtx: TContextIn) => {
+  return AttachData(async (htCtx: TContextIn) => {
     return {
-      [whereToStore]: projector(htCtx),
+      [whereToStore]: await Promise.resolve(projector(htCtx)),
     };
   });
 }
@@ -264,9 +264,9 @@ export function AttachDataFromTo<
   projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
   whereToStore: TWhereToStore
 ) {
-  return AttachData((htCtx: TContextIn) => {
+  return AttachData(async (htCtx: TContextIn) => {
     return {
-      [whereToStore]: projector(htCtx[whereToLook]),
+      [whereToStore]: await Promise.resolve(projector(htCtx[whereToLook])),
     };
   });
 }
@@ -331,9 +331,9 @@ export function DoWorkTo<
   TContextIn extends object,
   TContextOut extends PromiseResolveOrSync<object | void>
 >(projector: (htCtx: TContextIn) => TContextOut, whereToStore: TWhereToStore) {
-  return DoWork((htCtx: TContextIn) => {
+  return DoWork(async (htCtx: TContextIn) => {
     return {
-      [whereToStore]: projector(htCtx),
+      [whereToStore]: await Promise.resolve(projector(htCtx)),
     };
   });
 }
@@ -348,9 +348,9 @@ export function DoWorkFromTo<
   projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
   whereToStore: TWhereToStore
 ) {
-  return DoWork((htCtx: TContextIn) => {
+  return DoWork(async (htCtx: TContextIn) => {
     return {
-      [whereToStore]: projector(htCtx[whereToLook]),
+      [whereToStore]: await Promise.resolve(projector(htCtx[whereToLook])),
     };
   });
 }
