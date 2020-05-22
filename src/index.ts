@@ -8,6 +8,7 @@ import {
   isHasRespond,
   isHasSanitizeBody,
   isHasSanitizeParams,
+  isHasSanitizeQueryParams,
   isHasSanitizeResponse,
 } from './core';
 import {
@@ -19,6 +20,7 @@ import {
   Respond,
   SanitizeBody,
   SanitizeParams,
+  SanitizeQueryParams,
   SanitizeResponse,
 } from './lifecycle-functions';
 import {
@@ -31,6 +33,7 @@ import {
   HasRespond,
   HasSanitizeBody,
   HasSanitizeParams,
+  HasSanitizeQueryParams,
   HasSanitizeResponse,
   MightHaveFinalAuthorize,
   MightHavePreAuthorize,
@@ -41,6 +44,7 @@ import {
   OptionallyHasInitPreContext,
   OptionallyHasSanitizeBody,
   OptionallyHasSanitizeParams,
+  OptionallyHasSanitizeQueryParams,
   PromiseResolveOrSync,
 } from './types';
 
@@ -141,6 +145,48 @@ export function SanitizeParamsFromTo<
   whereToStore: TWhereToStore
 ) {
   return SanitizeParams((htCtx: TContextIn) => {
+    return {
+      [whereToStore]: projector(htCtx[whereToLook]),
+    };
+  });
+}
+
+export function SanitizeQueryParamsFrom<
+  TWhereToLook extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut
+) {
+  return SanitizeQueryParams((htCtx: TContextIn) =>
+    projector(htCtx[whereToLook])
+  );
+}
+
+export function SanitizeQueryParamsTo<
+  TWhereToStore extends string,
+  TContextIn extends object,
+  TContextOut extends object
+>(projector: (htCtx: TContextIn) => TContextOut, whereToStore: TWhereToStore) {
+  return SanitizeQueryParams((htCtx: any) => {
+    return {
+      [whereToStore]: projector(htCtx),
+    };
+  });
+}
+
+export function SanitizeQueryParamsFromTo<
+  TWhereToLook extends string,
+  TWhereToStore extends string,
+  TContextIn extends { [key in TWhereToLook]: TContextIn[TWhereToLook] },
+  TContextOut extends object
+>(
+  whereToLook: TWhereToLook,
+  projector: (htCtx: TContextIn[TWhereToLook]) => TContextOut,
+  whereToStore: TWhereToStore
+) {
+  return SanitizeQueryParams((htCtx: TContextIn) => {
     return {
       [whereToStore]: projector(htCtx[whereToLook]),
     };
@@ -461,6 +507,13 @@ type SanitizeParamsReturn<T extends HasSanitizeParams<any, any>> = ReturnType<
   T['sanitizeParams']
 >;
 
+type SanitizeQueryParamsContextIn<
+  T extends HasSanitizeQueryParams<any, any>
+> = Parameters<T['sanitizeQueryParams']>[0];
+type SanitizeQueryParamsReturn<
+  T extends HasSanitizeQueryParams<any, any>
+> = ReturnType<T['sanitizeQueryParams']>;
+
 type SanitizeBodyContextIn<T extends HasSanitizeBody<any, any>> = Parameters<
   T['sanitizeBody']
 >[0];
@@ -550,6 +603,21 @@ type PipedSanitizeParams<TLeft, TRight> = [TLeft] extends [
     : { sanitizeParams: TLeft['sanitizeParams'] }
   : [TRight] extends [HasSanitizeParams<any, any>]
   ? { sanitizeParams: TRight['sanitizeParams'] }
+  : {};
+
+// @note must wrap types with arrays to avoid distribution over naked type conditionals blowing up exponentially - see
+// https://github.com/Microsoft/TypeScript/issues/29368#issuecomment-453529532
+type PipedSanitizeQueryParams<TLeft, TRight> = [TLeft] extends [
+  HasSanitizeQueryParams<any, any>
+]
+  ? [TRight] extends [HasSanitizeQueryParams<any, any>]
+    ? HasSanitizeQueryParams<
+        SanitizeQueryParamsContextIn<TLeft>,
+        SanitizeQueryParamsReturn<TRight>
+      >
+    : { sanitizeQueryParams: TLeft['sanitizeQueryParams'] }
+  : [TRight] extends [HasSanitizeQueryParams<any, any>]
+  ? { sanitizeQueryParams: TRight['sanitizeQueryParams'] }
   : {};
 
 // @note must wrap types with arrays to avoid distribution over naked type conditionals blowing up exponentially - see
@@ -731,6 +799,16 @@ type ClashlessSanitizeParams<TLeft, TRight> = OptionallyHasSanitizeParams<
     : any
 >;
 
+type ClashlessSanitizeQueryParams<
+  TLeft,
+  TRight
+> = OptionallyHasSanitizeQueryParams<
+  any,
+  TRight extends HasSanitizeQueryParams<any, any>
+    ? Parameters<TRight['sanitizeQueryParams']>[0]
+    : any
+>;
+
 type ClashlessSanitizeBody<TLeft, TRight> = OptionallyHasSanitizeBody<
   any,
   TRight extends HasSanitizeBody<any, any>
@@ -820,6 +898,7 @@ export function HTPipe(): {};
 export function HTPipe<
   T extends OptionallyHasInitPreContext<any, any> &
     OptionallyHasSanitizeParams<any, any> &
+    OptionallyHasSanitizeQueryParams<any, any> &
     OptionallyHasSanitizeBody<any, any> &
     MightHavePreAuthorize<any, any> &
     OptionallyHasAttachData<any, any> &
@@ -827,7 +906,6 @@ export function HTPipe<
     OptionallyHasDoWork<any, any> &
     MightHaveRespond<any, any> &
     MightHaveSanitizeResponse<any, any>
-  // @fixme: refactor - export a union type in types.ts for this
 >(obj: T): Pick<T, AllStageKeys>;
 
 // two parameters with automatic type guessing or right - all or nothing!
@@ -835,6 +913,7 @@ export function HTPipe<
 export function HTPipe<
   TLeft extends OptionallyHasInitPreContext<any, any> &
     OptionallyHasSanitizeParams<any, any> &
+    OptionallyHasSanitizeQueryParams<any, any> &
     OptionallyHasSanitizeBody<any, any> &
     MightHavePreAuthorize<any, any> &
     OptionallyHasAttachData<any, any> &
@@ -847,6 +926,12 @@ export function HTPipe<
     : {}) &
     (TLeft extends HasSanitizeParams<any, any>
       ? OptionallyHasSanitizeParams<ReturnType<TLeft['sanitizeParams']>, any>
+      : {}) &
+    (TLeft extends HasSanitizeQueryParams<any, any>
+      ? OptionallyHasSanitizeQueryParams<
+          ReturnType<TLeft['sanitizeQueryParams']>,
+          any
+        >
       : {}) &
     (TLeft extends HasSanitizeBody<any, any>
       ? OptionallyHasSanitizeBody<ReturnType<TLeft['sanitizeBody']>, any>
@@ -883,6 +968,7 @@ export function HTPipe<
   right: TRight
 ): PipedPreContext<TLeft, TRight> &
   PipedSanitizeParams<TLeft, TRight> &
+  PipedSanitizeQueryParams<TLeft, TRight> &
   PipedSanitizeBody<TLeft, TRight> &
   PipedPreAuthorize<TLeft, TRight> &
   PipedAttachData<TLeft, TRight> &
@@ -895,6 +981,7 @@ export function HTPipe<
 export function HTPipe<
   TLeft extends ClashlessInitPreContext<TLeft, TRight> &
     ClashlessSanitizeParams<TLeft, TRight> &
+    ClashlessSanitizeQueryParams<TLeft, TRight> &
     ClashlessSanitizeBody<TLeft, TRight> &
     ClashlessPreAuthorize<TLeft, TRight> &
     ClashlessAttachData<TLeft, TRight> &
@@ -904,6 +991,7 @@ export function HTPipe<
     ClashlessSanitizeResponse<TLeft, TRight>,
   TRight extends OptionallyHasInitPreContext<any, any> &
     OptionallyHasSanitizeParams<any, any> &
+    OptionallyHasSanitizeQueryParams<any, any> &
     OptionallyHasSanitizeBody<any, any> &
     MightHavePreAuthorize<any, any> &
     OptionallyHasAttachData<any, any> &
@@ -916,6 +1004,7 @@ export function HTPipe<
   right: TRight
 ): PipedPreContext<TLeft, TRight> &
   PipedSanitizeParams<TLeft, TRight> &
+  PipedSanitizeQueryParams<TLeft, TRight> &
   PipedSanitizeBody<TLeft, TRight> &
   PipedPreAuthorize<TLeft, TRight> &
   PipedAttachData<TLeft, TRight> &
@@ -928,6 +1017,7 @@ export function HTPipe<
 export function HTPipe<
   T3 extends ClashlessInitPreContext<T3, PipedPreContext<T2, T1>> &
     ClashlessSanitizeParams<T3, PipedSanitizeParams<T2, T1>> &
+    ClashlessSanitizeQueryParams<T3, PipedSanitizeQueryParams<T2, T1>> &
     ClashlessSanitizeBody<T3, PipedSanitizeBody<T2, T1>> &
     ClashlessPreAuthorize<T3, PipedPreAuthorize<T2, T1>> &
     ClashlessAttachData<T3, PipedAttachData<T2, T1>> &
@@ -937,6 +1027,7 @@ export function HTPipe<
     ClashlessSanitizeResponse<T3, PipedSanitizeResponse<T2, T1>>,
   T2 extends ClashlessInitPreContext<T2, T1> &
     ClashlessSanitizeParams<T2, T1> &
+    ClashlessSanitizeQueryParams<T2, T1> &
     ClashlessSanitizeBody<T2, T1> &
     ClashlessPreAuthorize<T2, T1> &
     ClashlessAttachData<T2, T1> &
@@ -946,6 +1037,7 @@ export function HTPipe<
     ClashlessSanitizeResponse<T2, T1>,
   T1 extends OptionallyHasInitPreContext<any, any> &
     OptionallyHasSanitizeParams<any, any> &
+    OptionallyHasSanitizeQueryParams<any, any> &
     OptionallyHasSanitizeBody<any, any> &
     MightHavePreAuthorize<any, any> &
     OptionallyHasAttachData<any, any> &
@@ -959,6 +1051,7 @@ export function HTPipe<
   obj1: T1
 ): PipedPreContext<T3, PipedPreContext<T2, T1>> &
   PipedSanitizeParams<T3, PipedSanitizeParams<T2, T1>> &
+  PipedSanitizeQueryParams<T3, PipedSanitizeQueryParams<T2, T1>> &
   PipedSanitizeBody<T3, PipedSanitizeBody<T2, T1>> &
   PipedPreAuthorize<T3, PipedPreAuthorize<T2, T1>> &
   PipedAttachData<T3, PipedAttachData<T2, T1>> &
@@ -976,6 +1069,10 @@ export function HTPipe<
     ClashlessSanitizeParams<
       T4,
       PipedSanitizeParams<T3, PipedSanitizeParams<T2, T1>>
+    > &
+    ClashlessSanitizeQueryParams<
+      T4,
+      PipedSanitizeQueryParams<T3, PipedSanitizeQueryParams<T2, T1>>
     > &
     ClashlessSanitizeBody<
       T4,
@@ -998,6 +1095,7 @@ export function HTPipe<
     >,
   T3 extends ClashlessInitPreContext<T3, PipedPreContext<T2, T1>> &
     ClashlessSanitizeParams<T3, PipedSanitizeParams<T2, T1>> &
+    ClashlessSanitizeQueryParams<T3, PipedSanitizeQueryParams<T2, T1>> &
     ClashlessSanitizeBody<T3, PipedSanitizeBody<T2, T1>> &
     ClashlessPreAuthorize<T3, PipedPreAuthorize<T2, T1>> &
     ClashlessAttachData<T3, PipedAttachData<T2, T1>> &
@@ -1007,6 +1105,7 @@ export function HTPipe<
     ClashlessSanitizeResponse<T3, PipedSanitizeResponse<T2, T1>>,
   T2 extends ClashlessInitPreContext<T2, T1> &
     ClashlessSanitizeParams<T2, T1> &
+    ClashlessSanitizeQueryParams<T2, T1> &
     ClashlessSanitizeBody<T2, T1> &
     ClashlessPreAuthorize<T2, T1> &
     ClashlessAttachData<T2, T1> &
@@ -1016,6 +1115,7 @@ export function HTPipe<
     ClashlessSanitizeResponse<T2, T1>,
   T1 extends OptionallyHasInitPreContext<any, any> &
     OptionallyHasSanitizeParams<any, any> &
+    OptionallyHasSanitizeQueryParams<any, any> &
     OptionallyHasSanitizeBody<any, any> &
     MightHavePreAuthorize<any, any> &
     OptionallyHasAttachData<any, any> &
@@ -1032,6 +1132,10 @@ export function HTPipe<
   PipedSanitizeParams<
     T4,
     PipedSanitizeParams<T3, PipedSanitizeParams<T2, T1>>
+  > &
+  PipedSanitizeQueryParams<
+    T4,
+    PipedSanitizeQueryParams<T3, PipedSanitizeQueryParams<T2, T1>>
   > &
   PipedSanitizeBody<T4, PipedSanitizeBody<T3, PipedSanitizeBody<T2, T1>>> &
   PipedPreAuthorize<T4, PipedPreAuthorize<T3, PipedPreAuthorize<T2, T1>>> &
@@ -1095,6 +1199,20 @@ export function HTPipe(...objs: any[]) {
         : isHasSanitizeParams(right)
         ? { sanitizeParams: right.sanitizeParams }
         : {}) as PipedSanitizeParams<any, any>),
+      ...((isHasSanitizeQueryParams(left) && isHasSanitizeQueryParams(right)
+        ? {
+            sanitizeQueryParams: (htCtx: any) => {
+              const leftOut = left.sanitizeQueryParams(htCtx) || {};
+              const rightIn = leftOut;
+              const rightOut = right.sanitizeQueryParams(rightIn) || {};
+              return rightOut as {};
+            },
+          }
+        : isHasSanitizeQueryParams(left)
+        ? { sanitizeQueryParams: left.sanitizeQueryParams }
+        : isHasSanitizeQueryParams(right)
+        ? { sanitizeQueryParams: right.sanitizeQueryParams }
+        : {}) as PipedSanitizeQueryParams<any, any>),
       ...((isHasSanitizeBody(left) && isHasSanitizeBody(right)
         ? {
             sanitizeBody: (context: any) => {

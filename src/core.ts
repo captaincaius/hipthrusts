@@ -14,6 +14,7 @@ import {
   HasRespond,
   HasSanitizeBody,
   HasSanitizeParams,
+  HasSanitizeQueryParams,
   HasSanitizeResponse,
   MightHaveFinalAuthorize,
   MightHavePreAuthorize,
@@ -24,6 +25,7 @@ import {
   OptionallyHasInitPreContext,
   OptionallyHasSanitizeBody,
   OptionallyHasSanitizeParams,
+  OptionallyHasSanitizeQueryParams,
   PreAuthReqsSatisfied,
   PromiseOrSync,
   PromiseResolveOrSync,
@@ -49,6 +51,11 @@ export function withDefaultImplementations<
       }),
     sanitizeParams:
       strategy.sanitizeParams ||
+      (() => {
+        return {};
+      }),
+    sanitizeQueryParams:
+      strategy.sanitizeQueryParams ||
       (() => {
         return {};
       }),
@@ -80,34 +87,16 @@ export function isHasInitPreContext<TContextIn, TContextOut>(
   return !!(thing && thing.initPreContext);
 }
 
-export function isHasAttachData<TContextIn, TContextOut>(
-  thing: OptionallyHasAttachData<TContextIn, TContextOut>
-): thing is HasAttachData<TContextIn, TContextOut> {
-  return !!(thing && thing.attachData);
-}
-
-export function isHasDoWork<TContextIn, TContextOut>(
-  thing: OptionallyHasDoWork<TContextIn, TContextOut>
-): thing is HasDoWork<TContextIn, TContextOut> {
-  return !!(thing && thing.doWork);
-}
-
-export function isHasFinalAuthorize<TContextIn, TContextOut>(
-  thing: MightHaveFinalAuthorize<TContextIn, TContextOut>
-): thing is HasFinalAuthorize<TContextIn, TContextOut> {
-  return !!(thing && thing.finalAuthorize);
-}
-
-export function isHasPreAuthorize<TContextIn, TContextOut>(
-  thing: MightHavePreAuthorize<TContextIn, TContextOut>
-): thing is HasPreAuthorize<TContextIn, TContextOut> {
-  return !!(thing && thing.preAuthorize);
-}
-
 export function isHasSanitizeParams<TContextIn, TContextOut>(
   thing: OptionallyHasSanitizeParams<TContextIn, TContextOut>
 ): thing is HasSanitizeParams<TContextIn, TContextOut> {
   return !!(thing && thing.sanitizeParams);
+}
+
+export function isHasSanitizeQueryParams<TContextIn, TContextOut>(
+  thing: OptionallyHasSanitizeQueryParams<TContextIn, TContextOut>
+): thing is HasSanitizeQueryParams<TContextIn, TContextOut> {
+  return !!(thing && thing.sanitizeQueryParams);
 }
 
 export function isHasSanitizeBody<TContextIn, TContextOut>(
@@ -116,16 +105,40 @@ export function isHasSanitizeBody<TContextIn, TContextOut>(
   return !!(thing && thing.sanitizeBody);
 }
 
-export function isHasSanitizeResponse<TContextIn, TContextOut>(
-  thing: MightHaveSanitizeResponse<TContextIn, TContextOut>
-): thing is HasSanitizeResponse<TContextIn, TContextOut> {
-  return !!(thing && thing.sanitizeResponse);
+export function isHasPreAuthorize<TContextIn, TContextOut>(
+  thing: MightHavePreAuthorize<TContextIn, TContextOut>
+): thing is HasPreAuthorize<TContextIn, TContextOut> {
+  return !!(thing && thing.preAuthorize);
+}
+
+export function isHasAttachData<TContextIn, TContextOut>(
+  thing: OptionallyHasAttachData<TContextIn, TContextOut>
+): thing is HasAttachData<TContextIn, TContextOut> {
+  return !!(thing && thing.attachData);
+}
+
+export function isHasFinalAuthorize<TContextIn, TContextOut>(
+  thing: MightHaveFinalAuthorize<TContextIn, TContextOut>
+): thing is HasFinalAuthorize<TContextIn, TContextOut> {
+  return !!(thing && thing.finalAuthorize);
+}
+
+export function isHasDoWork<TContextIn, TContextOut>(
+  thing: OptionallyHasDoWork<TContextIn, TContextOut>
+): thing is HasDoWork<TContextIn, TContextOut> {
+  return !!(thing && thing.doWork);
 }
 
 export function isHasRespond<TContextIn, TContextOut>(
   thing: MightHaveRespond<TContextIn, TContextOut>
 ): thing is HasRespond<TContextIn, TContextOut> {
   return !!(thing && thing.respond);
+}
+
+export function isHasSanitizeResponse<TContextIn, TContextOut>(
+  thing: MightHaveSanitizeResponse<TContextIn, TContextOut>
+): thing is HasSanitizeResponse<TContextIn, TContextOut> {
+  return !!(thing && thing.sanitizeResponse);
 }
 
 export function authorizationPassed<TAuthOut extends boolean | object>(
@@ -190,11 +203,13 @@ export async function executeHipthrustable<
     SanitizeResponseReqsSatisfied<TConf>,
   TUnsafe,
   TUnsafeParams,
+  TUnsafeQueryParams,
   TUnsafeBody
 >(
   requestHandler: TConf,
   unsafe: TUnsafe,
   unsafeParams: TUnsafeParams,
+  unsafeQueryParams: TUnsafeQueryParams,
   unsafeBody: TUnsafeBody
 ) {
   const badDataThrow = Boom.badData('User input sanitization failure');
@@ -209,6 +224,11 @@ export async function executeHipthrustable<
     requestHandler.sanitizeParams,
     unsafeParams
   );
+  const safeQueryParams = transformThrowSync(
+    badDataThrow,
+    requestHandler.sanitizeQueryParams,
+    unsafeQueryParams
+  );
   const safeBody = transformThrowSync(
     badDataThrow,
     requestHandler.sanitizeBody,
@@ -217,6 +237,7 @@ export async function executeHipthrustable<
   const inputsContext = {
     preContext: safeInitPreContext,
     params: safeParams,
+    queryParams: safeQueryParams,
     body: safeBody,
   };
 

@@ -4,6 +4,7 @@ import {
   DoWork,
   SanitizeBody,
   SanitizeParams,
+  SanitizeQueryParams,
   SanitizeResponse,
 } from './lifecycle-functions';
 import { Constructor } from './types';
@@ -133,6 +134,22 @@ export function htMongooseFactory(mongoose: any) {
     });
   }
 
+  function SanitizeQueryParamsWithMongoose<
+    TSafeQueryParam extends ReturnType<TInstance['toObject']>,
+    TDocFactory extends DocumentFactory<any>,
+    TInstance extends ReturnType<TDocFactory>,
+    TUnsafeQueryParam extends object
+  >(DocFactory: TDocFactory) {
+    return SanitizeQueryParams((unsafeQueryParams: TUnsafeQueryParam) => {
+      const doc = DocFactory(unsafeQueryParams);
+      const validateErrors = doc.validateSync();
+      if (validateErrors !== undefined) {
+        throw Boom.badRequest('Query params not valid');
+      }
+      return doc.toObject({ transform: stripIdTransform }) as TSafeQueryParam;
+    });
+  }
+
   // @note: sanitize body validates modified only!  This is cause you usually will only send fields to update.
   function SanitizeBodyWithMongoose<
     TSafeBody extends ReturnType<TInstance['toObject']>,
@@ -211,6 +228,7 @@ export function htMongooseFactory(mongoose: any) {
   return {
     SanitizeBodyWithMongoose,
     SanitizeParamsWithMongoose,
+    SanitizeQueryParamsWithMongoose,
     PojoToDocument,
     SanitizeResponseWithMongoose,
     UpdateDocumentFromTo,
