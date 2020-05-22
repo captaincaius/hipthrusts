@@ -995,96 +995,92 @@ describe('HipThrusTS', () => {
       });
     });
     describe('sanitizers filtration functionality', () => {
-      const sanitizersFiltrationFunctionalityTestConstants = {
-        aPassedIn: 'some string',
-        bPassedIn: 'some other string',
-      };
+      function sanitizersFiltrationTestData<
+        TStage extends 'sanitizeParams' | 'sanitizeBody' | 'sanitizeResponse'
+      >(stage: TStage) {
+        const testConstants = {
+          aPassedIn: 'some string',
+          bPassedIn: 'some other string',
+        };
+
+        const leftProjector = (context: {
+          someObj: { a: string; b: string };
+        }) => {
+          expect(context).to.deep.equal({
+            someObj: {
+              a: testConstants.aPassedIn,
+              b: testConstants.bPassedIn,
+            },
+          });
+          return context.someObj;
+        };
+
+        const rightProjector = (context: { a: string; b: string }) => {
+          expect(context).to.not.has.property('someObj');
+          expect(context).to.deep.equal({
+            a: testConstants.aPassedIn,
+            b: testConstants.bPassedIn,
+          });
+          return { b: context.b };
+        };
+
+        const testInput = {
+          someObj: {
+            a: testConstants.aPassedIn,
+            b: testConstants.bPassedIn,
+          },
+        };
+        const testOutput = { b: testConstants.bPassedIn };
+
+        return {
+          testConstants,
+          left: {
+            [stage]: leftProjector,
+          } as Record<TStage, typeof leftProjector>,
+          right: {
+            [stage]: rightProjector,
+          } as Record<TStage, typeof rightProjector>,
+          testInput,
+          testOutput,
+        };
+      }
 
       it('sanitizeParams filtration functionality', async () => {
-        const left = {
-          sanitizeParams(context: { someObj: { a: string; b: string } }) {
-            expect(context).to.deep.equal({
-              someObj: {
-                a: sanitizersFiltrationFunctionalityTestConstants.aPassedIn,
-                b: sanitizersFiltrationFunctionalityTestConstants.bPassedIn,
-              },
-            });
-            return context.someObj;
-          },
-        };
-
-        const right = {
-          sanitizeParams(context: { a: string; b: string }) {
-            expect(context).to.not.has.property('someObj');
-            expect(context).to.deep.equal({
-              a: sanitizersFiltrationFunctionalityTestConstants.aPassedIn,
-              b: sanitizersFiltrationFunctionalityTestConstants.bPassedIn,
-            });
-            return { b: context.b };
-          },
-        };
-
-        const pipedSanitizeParams = HTPipe(left, right);
-
+        const testedLifecycleStage = 'sanitizeParams';
         await HTPipeTest(
-          pipedSanitizeParams,
-          'sanitizeParams',
-          {
-            someObj: {
-              a: sanitizersFiltrationFunctionalityTestConstants.aPassedIn,
-              b: sanitizersFiltrationFunctionalityTestConstants.bPassedIn,
-            },
-          },
-          { b: sanitizersFiltrationFunctionalityTestConstants.bPassedIn },
+          HTPipe(
+            sanitizersFiltrationTestData(testedLifecycleStage).left,
+            sanitizersFiltrationTestData(testedLifecycleStage).right
+          ),
+          testedLifecycleStage,
+          sanitizersFiltrationTestData(testedLifecycleStage).testInput,
+          sanitizersFiltrationTestData(testedLifecycleStage).testOutput,
           true
         );
       });
       it('sanitizeBody filtration functionality', async () => {
-        const left = {
-          sanitizeBody(context: { someObj: { a: string; b: string } }) {
-            expect(context).to.deep.equal({
-              someObj: {
-                a: sanitizersFiltrationFunctionalityTestConstants.aPassedIn,
-                b: sanitizersFiltrationFunctionalityTestConstants.bPassedIn,
-              },
-            });
-            return context.someObj;
-          },
-        };
-
-        const right = {
-          sanitizeBody(context: { a: string; b: string }) {
-            expect(context).to.not.has.property('someObj');
-            expect(context).to.deep.equal({
-              a: sanitizersFiltrationFunctionalityTestConstants.aPassedIn,
-              b: sanitizersFiltrationFunctionalityTestConstants.bPassedIn,
-            });
-            return { b: context.b };
-          },
-        };
-
-        const pipedSanitizeBody = HTPipe(left, right);
-
+        const testedLifecycleStage = 'sanitizeBody';
         await HTPipeTest(
-          pipedSanitizeBody,
-          'sanitizeBody',
-          {
-            someObj: {
-              a: sanitizersFiltrationFunctionalityTestConstants.aPassedIn,
-              b: sanitizersFiltrationFunctionalityTestConstants.bPassedIn,
-            },
-          },
-          { b: sanitizersFiltrationFunctionalityTestConstants.bPassedIn },
+          HTPipe(
+            sanitizersFiltrationTestData(testedLifecycleStage).left,
+            sanitizersFiltrationTestData(testedLifecycleStage).right
+          ),
+          testedLifecycleStage,
+          sanitizersFiltrationTestData(testedLifecycleStage).testInput,
+          sanitizersFiltrationTestData(testedLifecycleStage).testOutput,
           true
         );
       });
       it('respond filtration functionality', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 'some other string';
+
         const left = {
           respond(context: { someObj: { a: string; b: string } }) {
             expect(context).to.deep.equal({
               someObj: {
-                a: sanitizersFiltrationFunctionalityTestConstants.aPassedIn,
-                b: sanitizersFiltrationFunctionalityTestConstants.bPassedIn,
+                a: aPassedIn,
+                b: bPassedIn,
               },
             });
             return { unsafeResponse: context.someObj };
@@ -1095,8 +1091,8 @@ describe('HipThrusTS', () => {
           respond(context: { a: string; b: string }) {
             expect(context).to.not.has.property('someObj');
             expect(context).to.deep.equal({
-              a: sanitizersFiltrationFunctionalityTestConstants.aPassedIn,
-              b: sanitizersFiltrationFunctionalityTestConstants.bPassedIn,
+              a: aPassedIn,
+              b: bPassedIn,
             });
             return { unsafeResponse: { b: context.b } };
           },
@@ -1109,54 +1105,28 @@ describe('HipThrusTS', () => {
           'respond',
           {
             someObj: {
-              a: sanitizersFiltrationFunctionalityTestConstants.aPassedIn,
-              b: sanitizersFiltrationFunctionalityTestConstants.bPassedIn,
+              a: aPassedIn,
+              b: bPassedIn,
             },
           },
           {
             unsafeResponse: {
-              b: sanitizersFiltrationFunctionalityTestConstants.bPassedIn,
+              b: bPassedIn,
             },
           },
           true
         );
       });
       it('sanitizeResponse filtration functionality', async () => {
-        const left = {
-          sanitizeResponse(context: { someObj: { a: string; b: string } }) {
-            expect(context).to.deep.equal({
-              someObj: {
-                a: sanitizersFiltrationFunctionalityTestConstants.aPassedIn,
-                b: sanitizersFiltrationFunctionalityTestConstants.bPassedIn,
-              },
-            });
-            return context.someObj;
-          },
-        };
-
-        const right = {
-          sanitizeResponse(context: { a: string; b: string }) {
-            expect(context).to.not.has.property('someObj');
-            expect(context).to.deep.equal({
-              a: sanitizersFiltrationFunctionalityTestConstants.aPassedIn,
-              b: sanitizersFiltrationFunctionalityTestConstants.bPassedIn,
-            });
-            return { b: context.b };
-          },
-        };
-
-        const pipedSanitizeResponse = HTPipe(left, right);
-
+        const testedLifecycleStage = 'sanitizeResponse';
         await HTPipeTest(
-          pipedSanitizeResponse,
-          'sanitizeResponse',
-          {
-            someObj: {
-              a: sanitizersFiltrationFunctionalityTestConstants.aPassedIn,
-              b: sanitizersFiltrationFunctionalityTestConstants.bPassedIn,
-            },
-          },
-          { b: sanitizersFiltrationFunctionalityTestConstants.bPassedIn },
+          HTPipe(
+            sanitizersFiltrationTestData(testedLifecycleStage).left,
+            sanitizersFiltrationTestData(testedLifecycleStage).right
+          ),
+          testedLifecycleStage,
+          sanitizersFiltrationTestData(testedLifecycleStage).testInput,
+          sanitizersFiltrationTestData(testedLifecycleStage).testOutput,
           true
         );
       });
