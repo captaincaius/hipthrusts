@@ -985,7 +985,11 @@ describe('HipThrusTS', () => {
     });
     describe('sanitizers filtration functionality', () => {
       function sanitizersFiltrationTestData<
-        TStage extends 'sanitizeParams' | 'sanitizeBody' | 'sanitizeResponse'
+        TStage extends
+          | 'sanitizeParams'
+          | 'sanitizeQueryParams'
+          | 'sanitizeBody'
+          | 'sanitizeResponse'
       >(stage: TStage) {
         const testConstants = {
           aPassedIn: 'some string',
@@ -1036,6 +1040,19 @@ describe('HipThrusTS', () => {
 
       it('sanitizeParams filtration functionality', async () => {
         const testedLifecycleStage = 'sanitizeParams';
+        await HTPipeTest(
+          HTPipe(
+            sanitizersFiltrationTestData(testedLifecycleStage).left,
+            sanitizersFiltrationTestData(testedLifecycleStage).right
+          ),
+          testedLifecycleStage,
+          sanitizersFiltrationTestData(testedLifecycleStage).testInput,
+          sanitizersFiltrationTestData(testedLifecycleStage).testOutput,
+          true
+        );
+      });
+      it('sanitizeQueryParams filtration functionality', async () => {
+        const testedLifecycleStage = 'sanitizeQueryParams';
         await HTPipeTest(
           HTPipe(
             sanitizersFiltrationTestData(testedLifecycleStage).left,
