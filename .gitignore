@@ -7,3 +7,4 @@ lib
 .vscode
 .nyc_output
 coverage
+test-build
