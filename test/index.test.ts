@@ -983,6 +983,143 @@ describe('HipThrusTS', () => {
         }
       });
     });
+    describe('sanitizers filtration functionality', () => {
+      function sanitizersFiltrationTestData<
+        TStage extends 'sanitizeParams' | 'sanitizeBody' | 'sanitizeResponse'
+      >(stage: TStage) {
+        const testConstants = {
+          aPassedIn: 'some string',
+          bPassedIn: 'some other string',
+        };
+
+        const leftProjector = (context: {
+          someObj: { a: string; b: string };
+        }) => {
+          expect(context).to.deep.equal({
+            someObj: {
+              a: testConstants.aPassedIn,
+              b: testConstants.bPassedIn,
+            },
+          });
+          return context.someObj;
+        };
+
+        const rightProjector = (context: { a: string; b: string }) => {
+          expect(context).to.not.has.property('someObj');
+          expect(context).to.deep.equal({
+            a: testConstants.aPassedIn,
+            b: testConstants.bPassedIn,
+          });
+          return { b: context.b };
+        };
+
+        const testInput = {
+          someObj: {
+            a: testConstants.aPassedIn,
+            b: testConstants.bPassedIn,
+          },
+        };
+        const testOutput = { b: testConstants.bPassedIn };
+
+        return {
+          testConstants,
+          left: {
+            [stage]: leftProjector,
+          } as Record<TStage, typeof leftProjector>,
+          right: {
+            [stage]: rightProjector,
+          } as Record<TStage, typeof rightProjector>,
+          testInput,
+          testOutput,
+        };
+      }
+
+      it('sanitizeParams filtration functionality', async () => {
+        const testedLifecycleStage = 'sanitizeParams';
+        await HTPipeTest(
+          HTPipe(
+            sanitizersFiltrationTestData(testedLifecycleStage).left,
+            sanitizersFiltrationTestData(testedLifecycleStage).right
+          ),
+          testedLifecycleStage,
+          sanitizersFiltrationTestData(testedLifecycleStage).testInput,
+          sanitizersFiltrationTestData(testedLifecycleStage).testOutput,
+          true
+        );
+      });
+      it('sanitizeBody filtration functionality', async () => {
+        const testedLifecycleStage = 'sanitizeBody';
+        await HTPipeTest(
+          HTPipe(
+            sanitizersFiltrationTestData(testedLifecycleStage).left,
+            sanitizersFiltrationTestData(testedLifecycleStage).right
+          ),
+          testedLifecycleStage,
+          sanitizersFiltrationTestData(testedLifecycleStage).testInput,
+          sanitizersFiltrationTestData(testedLifecycleStage).testOutput,
+          true
+        );
+      });
+      it('respond filtration functionality', async () => {
+        const aPassedIn = 'some string';
+        const bPassedIn = 'some other string';
+
+        const left = {
+          respond(context: { someObj: { a: string; b: string } }) {
+            expect(context).to.deep.equal({
+              someObj: {
+                a: aPassedIn,
+                b: bPassedIn,
+              },
+            });
+            return { unsafeResponse: context.someObj };
+          },
+        };
+
+        const right = {
+          respond(context: { a: string; b: string }) {
+            expect(context).to.not.has.property('someObj');
+            expect(context).to.deep.equal({
+              a: aPassedIn,
+              b: bPassedIn,
+            });
+            return { unsafeResponse: { b: context.b } };
+          },
+        };
+
+        const pipedRespond = HTPipe(left, right);
+
+        await HTPipeTest(
+          pipedRespond,
+          'respond',
+          {
+            someObj: {
+              a: aPassedIn,
+              b: bPassedIn,
+            },
+          },
+          {
+            unsafeResponse: {
+              b: bPassedIn,
+            },
+          },
+          true
+        );
+      });
+      it('sanitizeResponse filtration functionality', async () => {
+        const testedLifecycleStage = 'sanitizeResponse';
+        await HTPipeTest(
+          HTPipe(
+            sanitizersFiltrationTestData(testedLifecycleStage).left,
+            sanitizersFiltrationTestData(testedLifecycleStage).right
+          ),
+          testedLifecycleStage,
+          sanitizersFiltrationTestData(testedLifecycleStage).testInput,
+          sanitizersFiltrationTestData(testedLifecycleStage).testOutput,
+          true
+        );
+      });
+    });
     describe('hipExpressHandlerFactory', () => {
       it('should pass when we have all correct lifecycles', () => {
         const handlingStrategy = {

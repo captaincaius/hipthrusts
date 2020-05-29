@@ -564,7 +564,9 @@ type DoWorkContextOut<T extends HasDoWork<any, any>> = object &
 type RespondContextIn<T extends HasRespond<any, any>> = Parameters<
   T['respond']
 >[0];
-type RespondReturn<T extends HasRespond<any, any>> = ReturnType<T['respond']>;
+type RespondReturn<T extends HasRespond<any, any>> = ReturnType<
+  T['respond']
+>['unsafeResponse'];
 
 type SanitizeResponseContextIn<
   T extends HasSanitizeResponse<any, any>
@@ -1360,10 +1362,10 @@ export function HTPipe(...objs: any[]) {
               const rightOut = right.respond(leftOut.unsafeResponse);
               return {
                 unsafeResponse: rightOut.unsafeResponse,
-                status:
-                  rightOut.status === undefined
-                    ? leftOut.status
-                    : rightOut.status,
+                ...((rightOut &&
+                  rightOut.status && { status: rightOut.status }) ||
+                  (leftOut && leftOut.status && { status: leftOut.status }) ||
+                  {}),
               };
             },
           }
