@@ -591,7 +591,7 @@ describe('HipThrusTS', () => {
         expect(errorReturned).to.exist;
       });
     });
-    describe('HTPipe2', () => {
+    describe('HTPipe', () => {
       it('works with three operators', () => {
         const left = {
           attachData(context: { a: string }) {
@@ -613,385 +613,507 @@ describe('HipThrusTS', () => {
 
         const triple = HTPipe(left, midNotCovered, rightFullyCovered);
       });
-      it('attaches properly typed data from left and right sync data attacher', async () => {
-        const aPassedIn = 'some string';
-        const bPassedIn = 4;
-        const cReturned = 6;
-        const left = {
-          attachData(context: { a: string }) {
-            expect(context.a).to.be.equal(aPassedIn);
-            return { b: bPassedIn };
-          },
+
+      function basicPipedCaseTest<
+        TStage extends AllStageKeys,
+        TReturnSync extends 'sync' | 'async'
+      >(stage: TStage, returnSync: TReturnSync) {
+        const testConstants = {
+          aPassedIn: 'some string',
+          bPassedIn: 4,
+          cReturned: 6,
         };
 
-        const rightFullyCovered = {
-          attachData(context: { b: number }) {
-            expect(context.b).to.be.equal(bPassedIn);
-            return { c: cReturned };
-          },
+        const leftProjector = (htCtx: { a: string }) => {
+          expect(htCtx.a).to.be.equal(testConstants.aPassedIn);
+          return returnSync === 'sync'
+            ? { b: testConstants.bPassedIn }
+            : Promise.resolve({ b: testConstants.bPassedIn });
         };
 
-        const pipedAtoBC = HTPipe(left, rightFullyCovered);
-
-        await HTPipeTest(
-          pipedAtoBC,
-          'attachData',
-          { a: aPassedIn },
-          { b: bPassedIn, c: cReturned },
-          true
-        );
-      });
-      it('attaches right sync output instead of left sync output if right output sync transform left output type', async () => {
-        const aPassedIn = 5;
-        const bPassedIn = 'some string';
-        const bReturned = 4;
-
-        const left = {
-          attachData(context: { a: number }) {
-            expect(context.a).to.be.equal(aPassedIn);
-            return { b: bPassedIn };
-          },
+        const rightProjector = (htCtx: { b: number }) => {
+          expect(htCtx.b).to.be.equal(testConstants.bPassedIn);
+          return returnSync === 'sync'
+            ? { c: testConstants.cReturned }
+            : Promise.resolve({ c: testConstants.cReturned });
         };
 
-        const rightTransformLeftOutputType = {
-          attachData(context: { b: string }) {
-            expect(context.b).to.be.equal(bPassedIn);
-            return { b: bReturned };
-          },
+        const testInput = {
+          a: testConstants.aPassedIn,
         };
 
-        const pipedAToBStringToBNumber = HTPipe(
-          left,
-          rightTransformLeftOutputType
-        );
-
-        await HTPipeTest(
-          pipedAToBStringToBNumber,
-          'attachData',
-          { a: aPassedIn },
-          { b: bReturned },
-          true
-        );
-      });
-      it('attaches properly typed data from left sync data attacher and right not fully covered sync data attacher', async () => {
-        const aPassedIn = 'some string';
-        const bReturned = 4;
-        const otherPassedIn = 'other string';
-        const cReturned = 6;
-
-        const left = {
-          attachData(context: { a: string }) {
-            expect(context.a).to.be.equal(aPassedIn);
-            return { b: bReturned };
-          },
+        const testOutput = {
+          b: testConstants.bPassedIn,
+          c: testConstants.cReturned,
         };
 
-        const rightPartiallyCovered = {
-          attachData(context: { b: number; other: string }) {
-            expect(context.other).to.be.equal(otherPassedIn);
-            expect(context.b).to.be.equal(bReturned);
-            return { c: cReturned };
-          },
+        return {
+          left: {
+            [stage]: leftProjector,
+          } as Record<TStage, typeof leftProjector>,
+          right: {
+            [stage]: rightProjector,
+          } as Record<TStage, typeof rightProjector>,
+          testInput,
+          testOutput,
+        };
+      }
+
+      function transformedTypeCaseTest<
+        TStage extends AllStageKeys,
+        TReturnSync extends 'sync' | 'async'
+      >(stage: TStage, returnSync: TReturnSync) {
+        const testConstants = {
+          aPassedIn: 5,
+          bPassedIn: 'some string',
+          bReturned: 4,
         };
 
-        const pipedAOtoBC1 = HTPipe(left, rightPartiallyCovered);
-
-        await HTPipeTest(
-          pipedAOtoBC1,
-          'attachData',
-          { a: aPassedIn, other: otherPassedIn },
-          { b: bReturned, c: cReturned },
-          true
-        );
-      });
-      it('attaches data from left sync data attached and right not covered sync data attacher', async () => {
-        const aPassedIn = 'some string';
-        const otherPassedIn = 'other string';
-        const bReturned = 4;
-        const cReturned = 6;
-
-        const left = {
-          attachData(context: { a: string }) {
-            expect(context.a).to.be.equal(aPassedIn);
-            return { b: bReturned };
-          },
-        };
-        const rightNotCovered = {
-          attachData(context: { other: string }) {
-            expect(context.other).to.be.equal(otherPassedIn);
-            return { c: cReturned };
-          },
+        const leftProjector = (htCtx: { a: number }) => {
+          expect(htCtx.a).to.be.equal(testConstants.aPassedIn);
+          return returnSync === 'sync'
+            ? { b: testConstants.bPassedIn }
+            : Promise.resolve({ b: testConstants.bPassedIn });
         };
 
-        const pipedNotCovered = HTPipe(left, rightNotCovered);
-
-        await HTPipeTest(
-          pipedNotCovered,
-          'attachData',
-          { a: aPassedIn, other: otherPassedIn },
-          { b: bReturned, c: cReturned },
-          true
-        );
-      });
-      it('attaches properly typed data from left sync data attacher only', async () => {
-        const aPassedIn = 'some string';
-        const bReturned = 4;
-
-        const left = {
-          attachData(context: { a: string }) {
-            expect(context.a).to.be.equals(aPassedIn);
-            return { b: bReturned };
-          },
+        const rightProjector = (htCtx: { b: string }) => {
+          expect(htCtx.b).to.be.equal(testConstants.bPassedIn);
+          return returnSync === 'sync'
+            ? { b: testConstants.bReturned }
+            : Promise.resolve({ b: testConstants.bReturned });
         };
 
-        const pipedLeftOnly = HTPipe(left, {});
-
-        await HTPipeTest(
-          pipedLeftOnly,
-          'attachData',
-          { a: aPassedIn },
-          { b: bReturned },
-          true
-        );
-      });
-      it('attaches properly typed data from right sync data attacher only', async () => {
-        const bPassedIn = 5;
-        const otherPassedIn = 'other string';
-        const cReturned = 4;
-
-        const rightPartiallyCovered = {
-          attachData(context: { b: number; other: string }) {
-            expect(context.b).to.be.equal(bPassedIn);
-            expect(context.other).to.be.equal(otherPassedIn);
-            return { c: cReturned };
-          },
+        const testInput = {
+          a: testConstants.aPassedIn,
         };
 
-        const pipedRightOnly = HTPipe({}, rightPartiallyCovered);
-
-        await HTPipeTest(
-          pipedRightOnly,
-          'attachData',
-          { b: bPassedIn, other: otherPassedIn },
-          { c: cReturned },
-          true
-        );
-      });
-      it('no attaches data when left and right is empty objects', () => {
-        const pipedWithEmptyObjectsOnly = HTPipe({}, {});
-
-        type assignableToCorrect = {} extends typeof pipedWithEmptyObjectsOnly
-          ? true
-          : false;
-        type assignableFromCorrect = typeof pipedWithEmptyObjectsOnly extends {}
-          ? true
-          : false;
-        // @ts-expect-error
-        const assignableToCorrect: assignableToCorrect = false;
-        // @ts-expect-error
-        const assignableFromCorrect: assignableFromCorrect = false;
-
-        expect(pipedWithEmptyObjectsOnly).to.be.eql({});
-      });
-      it('no attaches data when left sync outputs have type mismatch with right inputs', () => {
-        const leftBad = {
-          attachData(context: { a: string }) {
-            return { b: 'bad' };
-          },
-        };
-        const rightFullyCovered = {
-          attachData(context: { b: number }) {
-            return { c: 4 };
-          },
+        const testOutput = {
+          b: testConstants.bReturned,
         };
 
-        function expectErrorWithHTPipe2() {
+        return {
+          left: {
+            [stage]: leftProjector,
+          } as Record<TStage, typeof leftProjector>,
+          right: {
+            [stage]: rightProjector,
+          } as Record<TStage, typeof rightProjector>,
+          testInput,
+          testOutput,
+        };
+      }
+
+      function notFullyCoveredCaseTest<
+        TStage extends AllStageKeys,
+        TReturnSync extends 'sync' | 'async'
+      >(stage: TStage, returnSync: TReturnSync) {
+        const testConstants = {
+          aPassedIn: 'some string',
+          bReturned: 4,
+          otherPassedIn: 'other string',
+          cReturned: 6,
+        };
+
+        const leftProjector = (htCtx: { a: string }) => {
+          expect(htCtx.a).to.be.equal(testConstants.aPassedIn);
+          return returnSync === 'sync'
+            ? { b: testConstants.bReturned }
+            : Promise.resolve({ b: testConstants.bReturned });
+        };
+
+        const rightProjector = (context: { b: number; other: string }) => {
+          expect(context.other).to.be.equal(testConstants.otherPassedIn);
+          expect(context.b).to.be.equal(testConstants.bReturned);
+          return returnSync === 'sync'
+            ? { c: testConstants.cReturned }
+            : Promise.resolve({ c: testConstants.cReturned });
+        };
+
+        const testInput = {
+          a: testConstants.aPassedIn,
+          other: testConstants.otherPassedIn,
+        };
+
+        const testOutput = {
+          b: testConstants.bReturned,
+          c: testConstants.cReturned,
+        };
+
+        return {
+          left: {
+            [stage]: leftProjector,
+          } as Record<TStage, typeof leftProjector>,
+          right: {
+            [stage]: rightProjector,
+          } as Record<TStage, typeof rightProjector>,
+          testInput,
+          testOutput,
+        };
+      }
+
+      function notCoveredCaseTest<
+        TStage extends AllStageKeys,
+        TReturnSync extends 'sync' | 'async'
+      >(stage: TStage, returnSync: TReturnSync) {
+        const testConstants = {
+          aPassedIn: 'some string',
+          otherPassedIn: 'other string',
+          bReturned: 4,
+          cReturned: 6,
+        };
+
+        const leftProjector = (htCtx: { a: string }) => {
+          expect(htCtx.a).to.be.equal(testConstants.aPassedIn);
+          return returnSync === 'sync'
+            ? { b: testConstants.bReturned }
+            : Promise.resolve({ b: testConstants.bReturned });
+        };
+
+        const rightProjector = (htCtx: { other: string }) => {
+          expect(htCtx.other).to.be.equal(testConstants.otherPassedIn);
+          return returnSync === 'sync'
+            ? { c: testConstants.cReturned }
+            : Promise.resolve({ c: testConstants.cReturned });
+        };
+
+        const testInput = {
+          a: testConstants.aPassedIn,
+          other: testConstants.otherPassedIn,
+        };
+
+        const testOutput = {
+          b: testConstants.bReturned,
+          c: testConstants.cReturned,
+        };
+
+        return {
+          left: {
+            [stage]: leftProjector,
+          } as Record<TStage, typeof leftProjector>,
+          right: {
+            [stage]: rightProjector,
+          } as Record<TStage, typeof rightProjector>,
+          testInput,
+          testOutput,
+        };
+      }
+
+      function leftOnlyCaseTest<
+        TStage extends AllStageKeys,
+        TReturnSync extends 'sync' | 'async'
+      >(stage: TStage, returnSync: TReturnSync) {
+        const testConstants = {
+          aPassedIn: 'some string',
+          bReturned: 4,
+        };
+
+        const leftProjector = (htCtx: { a: string }) => {
+          expect(htCtx.a).to.be.equals(testConstants.aPassedIn);
+          return returnSync
+            ? { b: testConstants.bReturned }
+            : Promise.resolve({ b: testConstants.bReturned });
+        };
+
+        const rightProjector = {};
+
+        const testInput = {
+          a: testConstants.aPassedIn,
+        };
+
+        const testOutput = {
+          b: testConstants.bReturned,
+        };
+
+        return {
+          left: {
+            [stage]: leftProjector,
+          } as Record<TStage, typeof leftProjector>,
+          right: rightProjector,
+          testInput,
+          testOutput,
+        };
+      }
+
+      function rightOnlyCaseTest<
+        TStage extends AllStageKeys,
+        TReturnSync extends 'sync' | 'async'
+      >(stage: TStage, returnSync: TReturnSync) {
+        const testConstants = {
+          bPassedIn: 5,
+          otherPassedIn: 'other string',
+          cReturned: 4,
+        };
+
+        const leftProjector = {};
+
+        const rightProjector = (htCtx: { b: number; other: string }) => {
+          expect(htCtx.b).to.be.equal(testConstants.bPassedIn);
+          expect(htCtx.other).to.be.equal(testConstants.otherPassedIn);
+          return returnSync === 'sync'
+            ? { c: testConstants.cReturned }
+            : Promise.resolve({ c: testConstants.cReturned });
+        };
+
+        const testInput = {
+          b: testConstants.bPassedIn,
+          other: testConstants.otherPassedIn,
+        };
+
+        const testOutput = {
+          c: testConstants.cReturned,
+        };
+
+        return {
+          left: leftProjector,
+          right: {
+            [stage]: rightProjector,
+          } as Record<TStage, typeof rightProjector>,
+          testInput,
+          testOutput,
+        };
+      }
+
+      function errorCaseTest<
+        TStage extends AllStageKeys,
+        TReturnSync extends 'sync' | 'async'
+      >(stage: TStage, returnSync: TReturnSync) {
+        const testConstants = {
+          bReturned: 'bad',
+          cReturned: 4,
+        };
+
+        const leftProjector = (htCtx: { a: string }) => {
+          return returnSync === 'sync'
+            ? { b: testConstants.bReturned }
+            : Promise.resolve({ b: testConstants.bReturned });
+        };
+
+        const rightProjector = (htCtx: { b: number }) => {
+          return returnSync === 'sync'
+            ? { c: testConstants.cReturned }
+            : Promise.resolve({ c: testConstants.cReturned });
+        };
+
+        return {
+          left: {
+            [stage]: leftProjector,
+          } as Record<TStage, typeof leftProjector>,
+          right: {
+            [stage]: rightProjector,
+          } as Record<TStage, typeof rightProjector>,
+        };
+      }
+
+      describe('piped attachData tests', () => {
+        it('attaches properly typed data from left and right sync data attacher', async () => {
+          const lifecycleStage = 'attachData';
+          const stageSync = 'sync';
+          await HTPipeTest(
+            HTPipe(
+              basicPipedCaseTest(lifecycleStage, stageSync).left,
+              basicPipedCaseTest(lifecycleStage, stageSync).right
+            ),
+            lifecycleStage,
+            basicPipedCaseTest(lifecycleStage, stageSync).testInput,
+            basicPipedCaseTest(lifecycleStage, stageSync).testOutput,
+            true
+          );
+        });
+        it('successfully handles the same key returned from left and right but with the type transformed - piping two async attachData', async () => {
+          const lifecycleStage = 'attachData';
+          const stageSync = 'sync';
+          await HTPipeTest(
+            HTPipe(
+              transformedTypeCaseTest(lifecycleStage, stageSync).left,
+              transformedTypeCaseTest(lifecycleStage, stageSync).right
+            ),
+            lifecycleStage,
+            transformedTypeCaseTest(lifecycleStage, stageSync).testInput,
+            transformedTypeCaseTest(lifecycleStage, stageSync).testOutput,
+            true
+          );
+        });
+        it('attaches properly typed data from left sync data attacher and right not fully covered sync data attacher', async () => {
+          const lifecycleStage = 'attachData';
+          const stageSync = 'sync';
+          await HTPipeTest(
+            HTPipe(
+              notFullyCoveredCaseTest(lifecycleStage, stageSync).left,
+              notFullyCoveredCaseTest(lifecycleStage, stageSync).right
+            ),
+            lifecycleStage,
+            notFullyCoveredCaseTest(lifecycleStage, stageSync).testInput,
+            notFullyCoveredCaseTest(lifecycleStage, stageSync).testOutput,
+            true
+          );
+        });
+        it('attaches data from left sync data attached and right not covered sync data attacher', async () => {
+          const lifecycleStage = 'attachData';
+          const stageSync = 'sync';
+          await HTPipeTest(
+            HTPipe(
+              notCoveredCaseTest(lifecycleStage, stageSync).left,
+              notCoveredCaseTest(lifecycleStage, stageSync).right
+            ),
+            lifecycleStage,
+            notCoveredCaseTest(lifecycleStage, stageSync).testInput,
+            notCoveredCaseTest(lifecycleStage, stageSync).testOutput,
+            true
+          );
+        });
+        it('attaches properly typed data from left sync data attacher only', async () => {
+          const lifecycleStage = 'attachData';
+          const stageSync = 'sync';
+          await HTPipeTest(
+            HTPipe(
+              leftOnlyCaseTest(lifecycleStage, stageSync).left,
+              leftOnlyCaseTest(lifecycleStage, stageSync).right
+            ),
+            lifecycleStage,
+            leftOnlyCaseTest(lifecycleStage, stageSync).testInput,
+            leftOnlyCaseTest(lifecycleStage, stageSync).testOutput,
+            true
+          );
+        });
+        it('attaches properly typed data from right sync data attacher only', async () => {
+          const lifecycleStage = 'attachData';
+          const stageSync = 'sync';
+          await HTPipeTest(
+            HTPipe(
+              rightOnlyCaseTest(lifecycleStage, stageSync).left,
+              rightOnlyCaseTest(lifecycleStage, stageSync).right
+            ),
+            lifecycleStage,
+            rightOnlyCaseTest(lifecycleStage, stageSync).testInput,
+            rightOnlyCaseTest(lifecycleStage, stageSync).testOutput,
+            true
+          );
+        });
+        it('no attaches data when left and right is empty objects', () => {
+          const pipedWithEmptyObjectsOnly = HTPipe({}, {});
+
+          type assignableToCorrect = {} extends typeof pipedWithEmptyObjectsOnly
+            ? true
+            : false;
+          type assignableFromCorrect = typeof pipedWithEmptyObjectsOnly extends {}
+            ? true
+            : false;
           // @ts-expect-error
-          const pipedError = HTPipe(leftBad, rightFullyCovered);
-        }
-      });
-
-      // async paths
-
-      it('attaches properly typed data from left and right async data attacher', async () => {
-        const aPassedIn = 'some string';
-        const bPassedIn = 4;
-        const cReturned = 6;
-
-        const left = {
-          attachData(context: { a: string }) {
-            expect(context.a).to.be.equal(aPassedIn);
-            return Promise.resolve({ b: bPassedIn });
-          },
-        };
-
-        const rightFullyCovered = {
-          attachData(context: { b: number }) {
-            expect(context.b).to.be.equal(bPassedIn);
-            return Promise.resolve({ c: cReturned });
-          },
-        };
-
-        const pipedAtoBC = HTPipe(left, rightFullyCovered);
-
-        await HTPipeTest(
-          pipedAtoBC,
-          'attachData',
-          { a: aPassedIn },
-          { b: bPassedIn, c: cReturned },
-          true
-        );
-      });
-      it('attaches right async output instead of left async output if right output async transform left output type', async () => {
-        const aPassedIn = 5;
-        const bPassedIn = 'some string';
-        const bReturned = 6;
-
-        const left = {
-          attachData(context: { a: number }) {
-            expect(context.a).to.be.equal(aPassedIn);
-            return Promise.resolve({ b: bPassedIn });
-          },
-        };
-
-        const rightTransformLeftOutputType = {
-          attachData(context: { b: string }) {
-            expect(context.b).to.be.equal(bPassedIn);
-            return Promise.resolve({ b: bReturned });
-          },
-        };
-
-        const pipedAToBStringToBNumber = HTPipe(
-          left,
-          rightTransformLeftOutputType
-        );
-
-        await HTPipeTest(
-          pipedAToBStringToBNumber,
-          'attachData',
-          { a: aPassedIn },
-          { b: bReturned },
-          true
-        );
-      });
-      it('attaches properly typed data from left async data attacher and right not fully covered async data attacher', async () => {
-        const aPassedIn = 'some string';
-        const bPassedIn = 4;
-        const otherPassedIn = 'other string';
-        const cReturned = 6;
-
-        const left = {
-          attachData(context: { a: string }) {
-            expect(context.a).to.be.equal(aPassedIn);
-            return Promise.resolve({ b: bPassedIn });
-          },
-        };
-        const rightPartiallyCovered = {
-          attachData(context: { b: number; other: string }) {
-            expect(context.b).to.be.equal(bPassedIn);
-            expect(context.other).to.be.equal(otherPassedIn);
-            return Promise.resolve({ c: cReturned });
-          },
-        };
-        const pipedAOtoBC1 = HTPipe(left, rightPartiallyCovered);
-
-        await HTPipeTest(
-          pipedAOtoBC1,
-          'attachData',
-          { a: aPassedIn, other: otherPassedIn },
-          { b: bPassedIn, c: cReturned },
-          true
-        );
-      });
-      it('attaches data from left async data attached and right not covered async data attacher', async () => {
-        const aPassedIn = 'some string';
-        const otherPassedIn = 'other string';
-        const bReturned = 4;
-        const cReturned = 6;
-
-        const left = {
-          attachData(context: { a: string }) {
-            expect(context.a).to.be.equal(aPassedIn);
-            return Promise.resolve({ b: bReturned });
-          },
-        };
-        const rightNotCovered = {
-          attachData(context: { other: string }) {
-            expect(context.other).to.be.equal(otherPassedIn);
-            return Promise.resolve({ c: cReturned });
-          },
-        };
-
-        const pipedNotCovered = HTPipe(left, rightNotCovered);
-
-        await HTPipeTest(
-          pipedNotCovered,
-          'attachData',
-          { a: aPassedIn, other: otherPassedIn },
-          { b: bReturned, c: cReturned },
-          true
-        );
-      });
-      it('attaches properly typed data from left async data attacher only', async () => {
-        const aPassedIn = 'some string';
-        const bReturned = 4;
-
-        const left = {
-          attachData(context: { a: string }) {
-            expect(context.a).to.be.equal(aPassedIn);
-            return Promise.resolve({ b: bReturned });
-          },
-        };
-
-        const pipedLeftOnly = HTPipe(left, {});
-
-        await HTPipeTest(
-          pipedLeftOnly,
-          'attachData',
-          { a: aPassedIn },
-          { b: bReturned },
-          true
-        );
-      });
-      it('attaches properly typed data from right async data attacher only', async () => {
-        const bPassedIn = 6;
-        const otherPassedIn = 'other string';
-        const cReturned = 4;
-
-        const rightPartiallyCovered = {
-          attachData(context: { b: number; other: string }) {
-            expect(context.b).to.be.equal(bPassedIn);
-            expect(context.other).to.be.equal(otherPassedIn);
-            return Promise.resolve({ c: cReturned });
-          },
-        };
-
-        const pipedRightOnly = HTPipe({}, rightPartiallyCovered);
-
-        await HTPipeTest(
-          pipedRightOnly,
-          'attachData',
-          { b: bPassedIn, other: otherPassedIn },
-          { c: cReturned },
-          true
-        );
-      });
-      it('no attaches data when left async outputs have type mismatch with right inputs', () => {
-        const leftBad = {
-          attachData(context: { a: string }) {
-            return Promise.resolve({ b: 'bad' });
-          },
-        };
-        const rightFullyCovered = {
-          attachData(context: { b: number }) {
-            return Promise.resolve({ c: 4 });
-          },
-        };
-
-        function expectErrorWithHTPipe2() {
+          const assignableToCorrect: assignableToCorrect = false;
           // @ts-expect-error
-          const pipedError = HTPipe(leftBad, rightFullyCovered);
-        }
+          const assignableFromCorrect: assignableFromCorrect = false;
+
+          expect(pipedWithEmptyObjectsOnly).to.be.eql({});
+        });
+        it('no attaches data when left sync outputs have type mismatch with right inputs', () => {
+          const lifecycleStage = 'attachData';
+          const stageSync = 'sync';
+          function expectErrorWithHTPipe() {
+            // @ts-expect-error
+            const pipedError = HTPipe(
+              errorCaseTest(lifecycleStage, stageSync).left,
+              errorCaseTest(lifecycleStage, stageSync).right
+            );
+          }
+        });
+
+        // async paths
+
+        it('attaches properly typed data from left and right async data attacher', async () => {
+          const lifecycleStage = 'attachData';
+          const stageSync = 'async';
+          await HTPipeTest(
+            HTPipe(
+              basicPipedCaseTest(lifecycleStage, stageSync).left,
+              basicPipedCaseTest(lifecycleStage, stageSync).right
+            ),
+            lifecycleStage,
+            basicPipedCaseTest(lifecycleStage, stageSync).testInput,
+            basicPipedCaseTest(lifecycleStage, stageSync).testOutput,
+            true
+          );
+        });
+        it('attaches right async output instead of left async output if right output async transform left output type', async () => {
+          const lifecycleStage = 'attachData';
+          const stageAsync = 'async';
+          await HTPipeTest(
+            HTPipe(
+              transformedTypeCaseTest(lifecycleStage, stageAsync).left,
+              transformedTypeCaseTest(lifecycleStage, stageAsync).right
+            ),
+            lifecycleStage,
+            transformedTypeCaseTest(lifecycleStage, stageAsync).testInput,
+            transformedTypeCaseTest(lifecycleStage, stageAsync).testOutput,
+            true
+          );
+        });
+        it('attaches properly typed data from left async data attacher and right not fully covered async data attacher', async () => {
+          const lifecycleStage = 'attachData';
+          const stageSync = 'async';
+          await HTPipeTest(
+            HTPipe(
+              notFullyCoveredCaseTest(lifecycleStage, stageSync).left,
+              notFullyCoveredCaseTest(lifecycleStage, stageSync).right
+            ),
+            lifecycleStage,
+            notFullyCoveredCaseTest(lifecycleStage, stageSync).testInput,
+            notFullyCoveredCaseTest(lifecycleStage, stageSync).testOutput,
+            true
+          );
+        });
+        it('attaches data from left async data attached and right not covered async data attacher', async () => {
+          const lifecycleStage = 'attachData';
+          const stageSync = 'async';
+          await HTPipeTest(
+            HTPipe(
+              notCoveredCaseTest(lifecycleStage, stageSync).left,
+              notCoveredCaseTest(lifecycleStage, stageSync).right
+            ),
+            lifecycleStage,
+            notCoveredCaseTest(lifecycleStage, stageSync).testInput,
+            notCoveredCaseTest(lifecycleStage, stageSync).testOutput,
+            true
+          );
+        });
+        it('attaches properly typed data from left async data attacher only', async () => {
+          const lifecycleStage = 'attachData';
+          const stageSync = 'async';
+          await HTPipeTest(
+            HTPipe(
+              leftOnlyCaseTest(lifecycleStage, stageSync).left,
+              leftOnlyCaseTest(lifecycleStage, stageSync).right
+            ),
+            lifecycleStage,
+            leftOnlyCaseTest(lifecycleStage, stageSync).testInput,
+            leftOnlyCaseTest(lifecycleStage, stageSync).testOutput,
+            true
+          );
+        });
+        it('attaches properly typed data from right async data attacher only', async () => {
+          const lifecycleStage = 'attachData';
+          const stageSync = 'async';
+          await HTPipeTest(
+            HTPipe(
+              rightOnlyCaseTest(lifecycleStage, stageSync).left,
+              rightOnlyCaseTest(lifecycleStage, stageSync).right
+            ),
+            lifecycleStage,
+            rightOnlyCaseTest(lifecycleStage, stageSync).testInput,
+            rightOnlyCaseTest(lifecycleStage, stageSync).testOutput,
+            true
+          );
+        });
+        it('no attaches data when left async outputs have type mismatch with right inputs', () => {
+          const lifecycleStage = 'attachData';
+          const stageSync = 'async';
+          function expectErrorWithHTPipe() {
+            // @ts-expect-error
+            const pipedError = HTPipe(
+              errorCaseTest(lifecycleStage, stageSync).left,
+              errorCaseTest(lifecycleStage, stageSync).right
+            );
+          }
+        });
       });
     });
     describe('sanitizers filtration functionality', () => {
