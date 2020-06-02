@@ -614,28 +614,51 @@ describe('HipThrusTS', () => {
         const triple = HTPipe(left, midNotCovered, rightFullyCovered);
       });
 
+      const basicPipedCaseTestConstants = {
+        aPassedIn: 'some string',
+        bPassedIn: 4,
+        cReturned: 6,
+      };
+
+      const basicPipedCaseTestSyncReturns = {
+        leftProjectorReturn: { b: basicPipedCaseTestConstants.bPassedIn },
+        rightProjectorReturn: { c: basicPipedCaseTestConstants.cReturned },
+      };
+
+      const basicPipedCaseTestAsyncReturns = {
+        leftProjectorReturn: Promise.resolve(
+          basicPipedCaseTestSyncReturns.leftProjectorReturn
+        ),
+        rightProjectorReturn: Promise.resolve(
+          basicPipedCaseTestSyncReturns.rightProjectorReturn
+        ),
+      };
+
       function basicPipedCaseTest<
         TStage extends AllStageKeys,
-        TReturnSync extends 'sync' | 'async'
-      >(stage: TStage, returnSync: TReturnSync) {
-        const testConstants = {
-          aPassedIn: 'some string',
-          bPassedIn: 4,
-          cReturned: 6,
-        };
-
+        TTestConstants extends {
+          aPassedIn: string;
+          bPassedIn: number;
+          cReturned: number;
+        },
+        TLeftProjectorReturn,
+        TRightProjectorReturn
+      >(
+        stage: TStage,
+        testConstants: TTestConstants,
+        projectorReturns: {
+          leftProjectorReturn: TLeftProjectorReturn;
+          rightProjectorReturn: TRightProjectorReturn;
+        }
+      ) {
         const leftProjector = (htCtx: { a: string }) => {
           expect(htCtx.a).to.be.equal(testConstants.aPassedIn);
-          return returnSync === 'sync'
-            ? { b: testConstants.bPassedIn }
-            : Promise.resolve({ b: testConstants.bPassedIn });
+          return projectorReturns.leftProjectorReturn;
         };
 
         const rightProjector = (htCtx: { b: number }) => {
           expect(htCtx.b).to.be.equal(testConstants.bPassedIn);
-          return returnSync === 'sync'
-            ? { c: testConstants.cReturned }
-            : Promise.resolve({ c: testConstants.cReturned });
+          return projectorReturns.rightProjectorReturn;
         };
 
         const testInput = {
@@ -659,28 +682,51 @@ describe('HipThrusTS', () => {
         };
       }
 
+      const transformedTypeCaseTestConstants = {
+        aPassedIn: 5,
+        bPassedIn: 'some string',
+        bReturned: 4,
+      };
+
+      const transformedTypeCaseTestProjectorSyncReturns = {
+        leftProjectorReturn: { b: transformedTypeCaseTestConstants.bPassedIn },
+        rightProjectorReturn: { b: transformedTypeCaseTestConstants.bReturned },
+      };
+
+      const transformedTypeCaseTestProjectorAsyncReturns = {
+        leftProjectorReturn: Promise.resolve(
+          transformedTypeCaseTestProjectorSyncReturns.leftProjectorReturn
+        ),
+        rightProjectorReturn: Promise.resolve(
+          transformedTypeCaseTestProjectorSyncReturns.rightProjectorReturn
+        ),
+      };
+
       function transformedTypeCaseTest<
         TStage extends AllStageKeys,
-        TReturnSync extends 'sync' | 'async'
-      >(stage: TStage, returnSync: TReturnSync) {
-        const testConstants = {
-          aPassedIn: 5,
-          bPassedIn: 'some string',
-          bReturned: 4,
-        };
-
+        TTestConstants extends {
+          aPassedIn: number;
+          bPassedIn: string;
+          bReturned: number;
+        },
+        TLeftProjectorReturn,
+        TRightProjectorReturn
+      >(
+        stage: TStage,
+        testConstants: TTestConstants,
+        projectorReturns: {
+          leftProjectorReturn: TLeftProjectorReturn;
+          rightProjectorReturn: TRightProjectorReturn;
+        }
+      ) {
         const leftProjector = (htCtx: { a: number }) => {
           expect(htCtx.a).to.be.equal(testConstants.aPassedIn);
-          return returnSync === 'sync'
-            ? { b: testConstants.bPassedIn }
-            : Promise.resolve({ b: testConstants.bPassedIn });
+          return projectorReturns.leftProjectorReturn;
         };
 
         const rightProjector = (htCtx: { b: string }) => {
           expect(htCtx.b).to.be.equal(testConstants.bPassedIn);
-          return returnSync === 'sync'
-            ? { b: testConstants.bReturned }
-            : Promise.resolve({ b: testConstants.bReturned });
+          return projectorReturns.rightProjectorReturn;
         };
 
         const testInput = {
@@ -703,30 +749,54 @@ describe('HipThrusTS', () => {
         };
       }
 
+      const notFullyCoveredCaseTestConstants = {
+        aPassedIn: 'some string',
+        bReturned: 4,
+        otherPassedIn: 'other string',
+        cReturned: 6,
+      };
+
+      const notFullyCoveredCaseTestProjectorsSyncReturns = {
+        leftProjectorReturn: { b: notFullyCoveredCaseTestConstants.bReturned },
+        rightProjectorReturn: { c: notFullyCoveredCaseTestConstants.cReturned },
+      };
+
+      const notFullyCoveredCaseTestProjectorsAsyncReturns = {
+        leftProjectorReturn: Promise.resolve(
+          notFullyCoveredCaseTestProjectorsSyncReturns.leftProjectorReturn
+        ),
+        rightProjectorReturn: Promise.resolve(
+          notFullyCoveredCaseTestProjectorsSyncReturns.rightProjectorReturn
+        ),
+      };
+
       function notFullyCoveredCaseTest<
         TStage extends AllStageKeys,
-        TReturnSync extends 'sync' | 'async'
-      >(stage: TStage, returnSync: TReturnSync) {
-        const testConstants = {
-          aPassedIn: 'some string',
-          bReturned: 4,
-          otherPassedIn: 'other string',
-          cReturned: 6,
-        };
-
+        TTestConstants extends {
+          aPassedIn: string;
+          bReturned: number;
+          otherPassedIn: string;
+          cReturned: number;
+        },
+        TLeftProjectorReturn,
+        TRightProjectorReturn
+      >(
+        stage: TStage,
+        testConstants: TTestConstants,
+        projectorReturns: {
+          leftProjectorReturn: TLeftProjectorReturn;
+          rightProjectorReturn: TRightProjectorReturn;
+        }
+      ) {
         const leftProjector = (htCtx: { a: string }) => {
           expect(htCtx.a).to.be.equal(testConstants.aPassedIn);
-          return returnSync === 'sync'
-            ? { b: testConstants.bReturned }
-            : Promise.resolve({ b: testConstants.bReturned });
+          return projectorReturns.leftProjectorReturn;
         };
 
         const rightProjector = (context: { b: number; other: string }) => {
           expect(context.other).to.be.equal(testConstants.otherPassedIn);
           expect(context.b).to.be.equal(testConstants.bReturned);
-          return returnSync === 'sync'
-            ? { c: testConstants.cReturned }
-            : Promise.resolve({ c: testConstants.cReturned });
+          return projectorReturns.rightProjectorReturn;
         };
 
         const testInput = {
@@ -751,29 +821,53 @@ describe('HipThrusTS', () => {
         };
       }
 
+      const notCoveredCaseTestConstants = {
+        aPassedIn: 'some string',
+        otherPassedIn: 'other string',
+        bReturned: 4,
+        cReturned: 6,
+      };
+
+      const notCoveredCaseTestProjectorSyncReturns = {
+        leftProjectorReturn: { b: notCoveredCaseTestConstants.bReturned },
+        rightProjectorReturn: { c: notCoveredCaseTestConstants.cReturned },
+      };
+
+      const notCoveredCaseTestProjectorAsyncReturns = {
+        leftProjectorReturn: Promise.resolve(
+          notCoveredCaseTestProjectorSyncReturns.leftProjectorReturn
+        ),
+        rightProjectorReturn: Promise.resolve(
+          notCoveredCaseTestProjectorSyncReturns.rightProjectorReturn
+        ),
+      };
+
       function notCoveredCaseTest<
         TStage extends AllStageKeys,
-        TReturnSync extends 'sync' | 'async'
-      >(stage: TStage, returnSync: TReturnSync) {
-        const testConstants = {
-          aPassedIn: 'some string',
-          otherPassedIn: 'other string',
-          bReturned: 4,
-          cReturned: 6,
-        };
-
+        TTestConstants extends {
+          aPassedIn: string;
+          otherPassedIn: string;
+          bReturned: number;
+          cReturned: number;
+        },
+        TLeftProjectorReturn,
+        TRightProjectorReturn
+      >(
+        stage: TStage,
+        testConstants: TTestConstants,
+        projectorReturns: {
+          leftProjectorReturn: TLeftProjectorReturn;
+          rightProjectorReturn: TRightProjectorReturn;
+        }
+      ) {
         const leftProjector = (htCtx: { a: string }) => {
           expect(htCtx.a).to.be.equal(testConstants.aPassedIn);
-          return returnSync === 'sync'
-            ? { b: testConstants.bReturned }
-            : Promise.resolve({ b: testConstants.bReturned });
+          return projectorReturns.leftProjectorReturn;
         };
 
         const rightProjector = (htCtx: { other: string }) => {
           expect(htCtx.other).to.be.equal(testConstants.otherPassedIn);
-          return returnSync === 'sync'
-            ? { c: testConstants.cReturned }
-            : Promise.resolve({ c: testConstants.cReturned });
+          return projectorReturns.rightProjectorReturn;
         };
 
         const testInput = {
@@ -798,20 +892,33 @@ describe('HipThrusTS', () => {
         };
       }
 
+      const leftOnlyCaseTestConstants = {
+        aPassedIn: 'some string',
+        bReturned: 4,
+      };
+
+      const leftOnlyCaseTestProjectorSyncReturn = {
+        b: leftOnlyCaseTestConstants.bReturned,
+      };
+      const leftOnlyCaseTestProjectorAsyncReturn = Promise.resolve(
+        leftOnlyCaseTestProjectorSyncReturn
+      );
+
       function leftOnlyCaseTest<
         TStage extends AllStageKeys,
-        TReturnSync extends 'sync' | 'async'
-      >(stage: TStage, returnSync: TReturnSync) {
-        const testConstants = {
-          aPassedIn: 'some string',
-          bReturned: 4,
-        };
-
+        TTestConstants extends {
+          aPassedIn: string;
+          bReturned: number;
+        },
+        TLeftProjectorReturn
+      >(
+        stage: TStage,
+        testConstants: TTestConstants,
+        leftProjectorReturn: TLeftProjectorReturn
+      ) {
         const leftProjector = (htCtx: { a: string }) => {
           expect(htCtx.a).to.be.equals(testConstants.aPassedIn);
-          return returnSync
-            ? { b: testConstants.bReturned }
-            : Promise.resolve({ b: testConstants.bReturned });
+          return leftProjectorReturn;
         };
 
         const rightProjector = {};
@@ -834,24 +941,38 @@ describe('HipThrusTS', () => {
         };
       }
 
+      const rightOnlyCaseTestConstants = {
+        bPassedIn: 5,
+        otherPassedIn: 'other string',
+        cReturned: 4,
+      };
+
+      const rightOnlyCaseTestProjectorSyncReturn = {
+        c: rightOnlyCaseTestConstants.cReturned,
+      };
+      const rightOnlyCaseTestProjectorAsyncReturn = Promise.resolve(
+        rightOnlyCaseTestProjectorSyncReturn
+      );
+
       function rightOnlyCaseTest<
         TStage extends AllStageKeys,
-        TReturnSync extends 'sync' | 'async'
-      >(stage: TStage, returnSync: TReturnSync) {
-        const testConstants = {
-          bPassedIn: 5,
-          otherPassedIn: 'other string',
-          cReturned: 4,
-        };
-
+        TTestConstants extends {
+          bPassedIn: number;
+          otherPassedIn: string;
+          cReturned: number;
+        },
+        TRightProjectorReturn
+      >(
+        stage: TStage,
+        testConstants: TTestConstants,
+        rightProjectorReturn: TRightProjectorReturn
+      ) {
         const leftProjector = {};
 
         const rightProjector = (htCtx: { b: number; other: string }) => {
           expect(htCtx.b).to.be.equal(testConstants.bPassedIn);
           expect(htCtx.other).to.be.equal(testConstants.otherPassedIn);
-          return returnSync === 'sync'
-            ? { c: testConstants.cReturned }
-            : Promise.resolve({ c: testConstants.cReturned });
+          return rightProjectorReturn;
         };
 
         const testInput = {
@@ -873,25 +994,47 @@ describe('HipThrusTS', () => {
         };
       }
 
+      const errorCaseTestConstants = {
+        bReturned: 'bad',
+        cReturned: 4,
+      };
+
+      const errorCaseTestProjectorsSyncReturns = {
+        leftProjectorReturn: { b: errorCaseTestConstants.bReturned },
+        rightProjectorReturn: { c: errorCaseTestConstants.cReturned },
+      };
+
+      const errorCaseTestProjectorsAsyncReturns = {
+        leftProjectorReturn: Promise.resolve(
+          errorCaseTestProjectorsSyncReturns.leftProjectorReturn
+        ),
+        rightProjectorReturn: Promise.resolve(
+          errorCaseTestProjectorsSyncReturns.rightProjectorReturn
+        ),
+      };
+
       function errorCaseTest<
         TStage extends AllStageKeys,
-        TReturnSync extends 'sync' | 'async'
-      >(stage: TStage, returnSync: TReturnSync) {
-        const testConstants = {
-          bReturned: 'bad',
-          cReturned: 4,
-        };
-
+        TTestConstants extends {
+          bReturned: string;
+          cReturned: number;
+        },
+        TLeftProjectorReturn,
+        TRightProjectorReturn
+      >(
+        stage: TStage,
+        testConstants: TTestConstants,
+        projectorReturns: {
+          leftProjectorReturn: TLeftProjectorReturn;
+          rightProjectorReturn: TRightProjectorReturn;
+        }
+      ) {
         const leftProjector = (htCtx: { a: string }) => {
-          return returnSync === 'sync'
-            ? { b: testConstants.bReturned }
-            : Promise.resolve({ b: testConstants.bReturned });
+          return projectorReturns.leftProjectorReturn;
         };
 
         const rightProjector = (htCtx: { b: number }) => {
-          return returnSync === 'sync'
-            ? { c: testConstants.cReturned }
-            : Promise.resolve({ c: testConstants.cReturned });
+          return projectorReturns.rightProjectorReturn;
         };
 
         return {
@@ -904,88 +1047,389 @@ describe('HipThrusTS', () => {
         };
       }
 
-      describe('piped attachData tests', () => {
-        it('attaches properly typed data from left and right sync data attacher', async () => {
-          const lifecycleStage = 'attachData';
-          const stageSync = 'sync';
+      describe('piped initPreContext tests', () => {
+        it('piped properly typed data from left and right params', async () => {
+          const lifecycleStage = 'initPreContext';
           await HTPipeTest(
             HTPipe(
-              basicPipedCaseTest(lifecycleStage, stageSync).left,
-              basicPipedCaseTest(lifecycleStage, stageSync).right
+              basicPipedCaseTest(
+                lifecycleStage,
+                basicPipedCaseTestConstants,
+                basicPipedCaseTestSyncReturns
+              ).left,
+              basicPipedCaseTest(
+                lifecycleStage,
+                basicPipedCaseTestConstants,
+                basicPipedCaseTestSyncReturns
+              ).right
             ),
             lifecycleStage,
-            basicPipedCaseTest(lifecycleStage, stageSync).testInput,
-            basicPipedCaseTest(lifecycleStage, stageSync).testOutput,
+            basicPipedCaseTest(
+              lifecycleStage,
+              basicPipedCaseTestConstants,
+              basicPipedCaseTestSyncReturns
+            ).testInput,
+            basicPipedCaseTest(
+              lifecycleStage,
+              basicPipedCaseTestConstants,
+              basicPipedCaseTestSyncReturns
+            ).testOutput,
             true
           );
         });
-        it('successfully handles the same key returned from left and right but with the type transformed - piping two async attachData', async () => {
-          const lifecycleStage = 'attachData';
-          const stageSync = 'sync';
+        it('successfully handles the same key returned from left and right but with the type transformed - piping two initPreContext', async () => {
+          const lifecycleStage = 'initPreContext';
           await HTPipeTest(
             HTPipe(
-              transformedTypeCaseTest(lifecycleStage, stageSync).left,
-              transformedTypeCaseTest(lifecycleStage, stageSync).right
+              transformedTypeCaseTest(
+                lifecycleStage,
+                transformedTypeCaseTestConstants,
+                transformedTypeCaseTestProjectorSyncReturns
+              ).left,
+              transformedTypeCaseTest(
+                lifecycleStage,
+                transformedTypeCaseTestConstants,
+                transformedTypeCaseTestProjectorSyncReturns
+              ).right
             ),
             lifecycleStage,
-            transformedTypeCaseTest(lifecycleStage, stageSync).testInput,
-            transformedTypeCaseTest(lifecycleStage, stageSync).testOutput,
+            transformedTypeCaseTest(
+              lifecycleStage,
+              transformedTypeCaseTestConstants,
+              transformedTypeCaseTestProjectorSyncReturns
+            ).testInput,
+            transformedTypeCaseTest(
+              lifecycleStage,
+              transformedTypeCaseTestConstants,
+              transformedTypeCaseTestProjectorSyncReturns
+            ).testOutput,
+            true
+          );
+        });
+        it('piping properly typed data from left and right not fully covered initPreContext', async () => {
+          const lifecycleStage = 'initPreContext';
+          await HTPipeTest(
+            HTPipe(
+              notFullyCoveredCaseTest(
+                lifecycleStage,
+                notFullyCoveredCaseTestConstants,
+                notFullyCoveredCaseTestProjectorsSyncReturns
+              ).left,
+              notFullyCoveredCaseTest(
+                lifecycleStage,
+                notFullyCoveredCaseTestConstants,
+                notFullyCoveredCaseTestProjectorsSyncReturns
+              ).right
+            ),
+            lifecycleStage,
+            notFullyCoveredCaseTest(
+              lifecycleStage,
+              notFullyCoveredCaseTestConstants,
+              notFullyCoveredCaseTestProjectorsSyncReturns
+            ).testInput,
+            notFullyCoveredCaseTest(
+              lifecycleStage,
+              notFullyCoveredCaseTestConstants,
+              notFullyCoveredCaseTestProjectorsSyncReturns
+            ).testOutput,
+            true
+          );
+        });
+        it('piping from left and right not covered initPreContext', async () => {
+          const lifecycleStage = 'initPreContext';
+          await HTPipeTest(
+            HTPipe(
+              notCoveredCaseTest(
+                lifecycleStage,
+                notCoveredCaseTestConstants,
+                notCoveredCaseTestProjectorSyncReturns
+              ).left,
+              notCoveredCaseTest(
+                lifecycleStage,
+                notCoveredCaseTestConstants,
+                notCoveredCaseTestProjectorSyncReturns
+              ).right
+            ),
+            lifecycleStage,
+            notCoveredCaseTest(
+              lifecycleStage,
+              notCoveredCaseTestConstants,
+              notCoveredCaseTestProjectorSyncReturns
+            ).testInput,
+            notCoveredCaseTest(
+              lifecycleStage,
+              notCoveredCaseTestConstants,
+              notCoveredCaseTestProjectorSyncReturns
+            ).testOutput,
+            true
+          );
+        });
+        it('piping properly typed data from left initPreContext only', async () => {
+          const lifecycleStage = 'initPreContext';
+          await HTPipeTest(
+            HTPipe(
+              leftOnlyCaseTest(
+                lifecycleStage,
+                leftOnlyCaseTestConstants,
+                leftOnlyCaseTestProjectorSyncReturn
+              ).left,
+              leftOnlyCaseTest(
+                lifecycleStage,
+                leftOnlyCaseTestConstants,
+                leftOnlyCaseTestProjectorSyncReturn
+              ).right
+            ),
+            lifecycleStage,
+            leftOnlyCaseTest(
+              lifecycleStage,
+              leftOnlyCaseTestConstants,
+              leftOnlyCaseTestProjectorSyncReturn
+            ).testInput,
+            leftOnlyCaseTest(
+              lifecycleStage,
+              leftOnlyCaseTestConstants,
+              leftOnlyCaseTestProjectorSyncReturn
+            ).testOutput,
+            true
+          );
+        });
+        it('piping properly typed data from right initPreContext only', async () => {
+          const lifecycleStage = 'initPreContext';
+          await HTPipeTest(
+            HTPipe(
+              rightOnlyCaseTest(
+                lifecycleStage,
+                rightOnlyCaseTestConstants,
+                rightOnlyCaseTestProjectorSyncReturn
+              ).left,
+              rightOnlyCaseTest(
+                lifecycleStage,
+                rightOnlyCaseTestConstants,
+                rightOnlyCaseTestProjectorSyncReturn
+              ).right
+            ),
+            lifecycleStage,
+            rightOnlyCaseTest(
+              lifecycleStage,
+              rightOnlyCaseTestConstants,
+              rightOnlyCaseTestProjectorSyncReturn
+            ).testInput,
+            rightOnlyCaseTest(
+              lifecycleStage,
+              rightOnlyCaseTestConstants,
+              rightOnlyCaseTestProjectorSyncReturn
+            ).testOutput,
+            true
+          );
+        });
+        it('pipe should return empty object when left and right is empty objects', () => {
+          const pipedWithEmptyObjectsOnly = HTPipe({}, {});
+
+          type assignableToCorrect = {} extends typeof pipedWithEmptyObjectsOnly
+            ? true
+            : false;
+          type assignableFromCorrect = typeof pipedWithEmptyObjectsOnly extends {}
+            ? true
+            : false;
+          // @ts-expect-error
+          const assignableToCorrect: assignableToCorrect = false;
+          // @ts-expect-error
+          const assignableFromCorrect: assignableFromCorrect = false;
+
+          expect(pipedWithEmptyObjectsOnly).to.be.eql({});
+        });
+        it('pipe should give error when left outputs have type mismatch with right inputs', () => {
+          const lifecycleStage = 'initPreContext';
+          function expectErrorWithHTPipe() {
+            // @ts-expect-error
+            const pipedError = HTPipe(
+              errorCaseTest(
+                lifecycleStage,
+                errorCaseTestConstants,
+                errorCaseTestProjectorsSyncReturns
+              ).left,
+              errorCaseTest(
+                lifecycleStage,
+                errorCaseTestConstants,
+                errorCaseTestProjectorsSyncReturns
+              ).right
+            );
+          }
+        });
+      });
+
+      describe('piped attachData tests', () => {
+        it('attaches properly typed data from left and right sync data attacher', async () => {
+          const lifecycleStage = 'attachData';
+          await HTPipeTest(
+            HTPipe(
+              basicPipedCaseTest(
+                lifecycleStage,
+                basicPipedCaseTestConstants,
+                basicPipedCaseTestSyncReturns
+              ).left,
+              basicPipedCaseTest(
+                lifecycleStage,
+                basicPipedCaseTestConstants,
+                basicPipedCaseTestSyncReturns
+              ).right
+            ),
+            lifecycleStage,
+            basicPipedCaseTest(
+              lifecycleStage,
+              basicPipedCaseTestConstants,
+              basicPipedCaseTestSyncReturns
+            ).testInput,
+            basicPipedCaseTest(
+              lifecycleStage,
+              basicPipedCaseTestConstants,
+              basicPipedCaseTestSyncReturns
+            ).testOutput,
+            true
+          );
+        });
+        it('successfully handles the same key returned from left and right but with the type transformed - piping two sync attachData', async () => {
+          const lifecycleStage = 'attachData';
+          await HTPipeTest(
+            HTPipe(
+              transformedTypeCaseTest(
+                lifecycleStage,
+                transformedTypeCaseTestConstants,
+                transformedTypeCaseTestProjectorSyncReturns
+              ).left,
+              transformedTypeCaseTest(
+                lifecycleStage,
+                transformedTypeCaseTestConstants,
+                transformedTypeCaseTestProjectorSyncReturns
+              ).right
+            ),
+            lifecycleStage,
+            transformedTypeCaseTest(
+              lifecycleStage,
+              transformedTypeCaseTestConstants,
+              transformedTypeCaseTestProjectorSyncReturns
+            ).testInput,
+            transformedTypeCaseTest(
+              lifecycleStage,
+              transformedTypeCaseTestConstants,
+              transformedTypeCaseTestProjectorSyncReturns
+            ).testOutput,
             true
           );
         });
         it('attaches properly typed data from left sync data attacher and right not fully covered sync data attacher', async () => {
           const lifecycleStage = 'attachData';
-          const stageSync = 'sync';
           await HTPipeTest(
             HTPipe(
-              notFullyCoveredCaseTest(lifecycleStage, stageSync).left,
-              notFullyCoveredCaseTest(lifecycleStage, stageSync).right
+              notFullyCoveredCaseTest(
+                lifecycleStage,
+                notFullyCoveredCaseTestConstants,
+                notFullyCoveredCaseTestProjectorsSyncReturns
+              ).left,
+              notFullyCoveredCaseTest(
+                lifecycleStage,
+                notFullyCoveredCaseTestConstants,
+                notFullyCoveredCaseTestProjectorsSyncReturns
+              ).right
             ),
             lifecycleStage,
-            notFullyCoveredCaseTest(lifecycleStage, stageSync).testInput,
-            notFullyCoveredCaseTest(lifecycleStage, stageSync).testOutput,
+            notFullyCoveredCaseTest(
+              lifecycleStage,
+              notFullyCoveredCaseTestConstants,
+              notFullyCoveredCaseTestProjectorsSyncReturns
+            ).testInput,
+            notFullyCoveredCaseTest(
+              lifecycleStage,
+              notFullyCoveredCaseTestConstants,
+              notFullyCoveredCaseTestProjectorsSyncReturns
+            ).testOutput,
             true
           );
         });
         it('attaches data from left sync data attached and right not covered sync data attacher', async () => {
           const lifecycleStage = 'attachData';
-          const stageSync = 'sync';
           await HTPipeTest(
             HTPipe(
-              notCoveredCaseTest(lifecycleStage, stageSync).left,
-              notCoveredCaseTest(lifecycleStage, stageSync).right
+              notCoveredCaseTest(
+                lifecycleStage,
+                notCoveredCaseTestConstants,
+                notCoveredCaseTestProjectorSyncReturns
+              ).left,
+              notCoveredCaseTest(
+                lifecycleStage,
+                notCoveredCaseTestConstants,
+                notCoveredCaseTestProjectorSyncReturns
+              ).right
             ),
             lifecycleStage,
-            notCoveredCaseTest(lifecycleStage, stageSync).testInput,
-            notCoveredCaseTest(lifecycleStage, stageSync).testOutput,
+            notCoveredCaseTest(
+              lifecycleStage,
+              notCoveredCaseTestConstants,
+              notCoveredCaseTestProjectorSyncReturns
+            ).testInput,
+            notCoveredCaseTest(
+              lifecycleStage,
+              notCoveredCaseTestConstants,
+              notCoveredCaseTestProjectorSyncReturns
+            ).testOutput,
             true
           );
         });
         it('attaches properly typed data from left sync data attacher only', async () => {
           const lifecycleStage = 'attachData';
-          const stageSync = 'sync';
           await HTPipeTest(
             HTPipe(
-              leftOnlyCaseTest(lifecycleStage, stageSync).left,
-              leftOnlyCaseTest(lifecycleStage, stageSync).right
+              leftOnlyCaseTest(
+                lifecycleStage,
+                leftOnlyCaseTestConstants,
+                leftOnlyCaseTestProjectorSyncReturn
+              ).left,
+              leftOnlyCaseTest(
+                lifecycleStage,
+                leftOnlyCaseTestConstants,
+                leftOnlyCaseTestProjectorSyncReturn
+              ).right
             ),
             lifecycleStage,
-            leftOnlyCaseTest(lifecycleStage, stageSync).testInput,
-            leftOnlyCaseTest(lifecycleStage, stageSync).testOutput,
+            leftOnlyCaseTest(
+              lifecycleStage,
+              leftOnlyCaseTestConstants,
+              leftOnlyCaseTestProjectorSyncReturn
+            ).testInput,
+            leftOnlyCaseTest(
+              lifecycleStage,
+              leftOnlyCaseTestConstants,
+              leftOnlyCaseTestProjectorSyncReturn
+            ).testOutput,
             true
           );
         });
         it('attaches properly typed data from right sync data attacher only', async () => {
           const lifecycleStage = 'attachData';
-          const stageSync = 'sync';
           await HTPipeTest(
             HTPipe(
-              rightOnlyCaseTest(lifecycleStage, stageSync).left,
-              rightOnlyCaseTest(lifecycleStage, stageSync).right
+              rightOnlyCaseTest(
+                lifecycleStage,
+                rightOnlyCaseTestConstants,
+                rightOnlyCaseTestProjectorSyncReturn
+              ).left,
+              rightOnlyCaseTest(
+                lifecycleStage,
+                rightOnlyCaseTestConstants,
+                rightOnlyCaseTestProjectorSyncReturn
+              ).right
             ),
             lifecycleStage,
-            rightOnlyCaseTest(lifecycleStage, stageSync).testInput,
-            rightOnlyCaseTest(lifecycleStage, stageSync).testOutput,
+            rightOnlyCaseTest(
+              lifecycleStage,
+              rightOnlyCaseTestConstants,
+              rightOnlyCaseTestProjectorSyncReturn
+            ).testInput,
+            rightOnlyCaseTest(
+              lifecycleStage,
+              rightOnlyCaseTestConstants,
+              rightOnlyCaseTestProjectorSyncReturn
+            ).testOutput,
             true
           );
         });
@@ -1007,12 +1451,19 @@ describe('HipThrusTS', () => {
         });
         it('no attaches data when left sync outputs have type mismatch with right inputs', () => {
           const lifecycleStage = 'attachData';
-          const stageSync = 'sync';
           function expectErrorWithHTPipe() {
             // @ts-expect-error
             const pipedError = HTPipe(
-              errorCaseTest(lifecycleStage, stageSync).left,
-              errorCaseTest(lifecycleStage, stageSync).right
+              errorCaseTest(
+                lifecycleStage,
+                errorCaseTestConstants,
+                errorCaseTestProjectorsSyncReturns
+              ).left,
+              errorCaseTest(
+                lifecycleStage,
+                errorCaseTestConstants,
+                errorCaseTestProjectorsSyncReturns
+              ).right
             );
           }
         });
@@ -1021,96 +1472,193 @@ describe('HipThrusTS', () => {
 
         it('attaches properly typed data from left and right async data attacher', async () => {
           const lifecycleStage = 'attachData';
-          const stageSync = 'async';
           await HTPipeTest(
             HTPipe(
-              basicPipedCaseTest(lifecycleStage, stageSync).left,
-              basicPipedCaseTest(lifecycleStage, stageSync).right
+              basicPipedCaseTest(
+                lifecycleStage,
+                basicPipedCaseTestConstants,
+                basicPipedCaseTestAsyncReturns
+              ).left,
+              basicPipedCaseTest(
+                lifecycleStage,
+                basicPipedCaseTestConstants,
+                basicPipedCaseTestAsyncReturns
+              ).right
             ),
             lifecycleStage,
-            basicPipedCaseTest(lifecycleStage, stageSync).testInput,
-            basicPipedCaseTest(lifecycleStage, stageSync).testOutput,
+            basicPipedCaseTest(
+              lifecycleStage,
+              basicPipedCaseTestConstants,
+              basicPipedCaseTestAsyncReturns
+            ).testInput,
+            basicPipedCaseTest(
+              lifecycleStage,
+              basicPipedCaseTestConstants,
+              basicPipedCaseTestAsyncReturns
+            ).testOutput,
             true
           );
         });
         it('attaches right async output instead of left async output if right output async transform left output type', async () => {
           const lifecycleStage = 'attachData';
-          const stageAsync = 'async';
           await HTPipeTest(
             HTPipe(
-              transformedTypeCaseTest(lifecycleStage, stageAsync).left,
-              transformedTypeCaseTest(lifecycleStage, stageAsync).right
+              transformedTypeCaseTest(
+                lifecycleStage,
+                transformedTypeCaseTestConstants,
+                transformedTypeCaseTestProjectorAsyncReturns
+              ).left,
+              transformedTypeCaseTest(
+                lifecycleStage,
+                transformedTypeCaseTestConstants,
+                transformedTypeCaseTestProjectorAsyncReturns
+              ).right
             ),
             lifecycleStage,
-            transformedTypeCaseTest(lifecycleStage, stageAsync).testInput,
-            transformedTypeCaseTest(lifecycleStage, stageAsync).testOutput,
+            transformedTypeCaseTest(
+              lifecycleStage,
+              transformedTypeCaseTestConstants,
+              transformedTypeCaseTestProjectorAsyncReturns
+            ).testInput,
+            transformedTypeCaseTest(
+              lifecycleStage,
+              transformedTypeCaseTestConstants,
+              transformedTypeCaseTestProjectorAsyncReturns
+            ).testOutput,
             true
           );
         });
         it('attaches properly typed data from left async data attacher and right not fully covered async data attacher', async () => {
           const lifecycleStage = 'attachData';
-          const stageSync = 'async';
           await HTPipeTest(
             HTPipe(
-              notFullyCoveredCaseTest(lifecycleStage, stageSync).left,
-              notFullyCoveredCaseTest(lifecycleStage, stageSync).right
+              notFullyCoveredCaseTest(
+                lifecycleStage,
+                notFullyCoveredCaseTestConstants,
+                notFullyCoveredCaseTestProjectorsAsyncReturns
+              ).left,
+              notFullyCoveredCaseTest(
+                lifecycleStage,
+                notFullyCoveredCaseTestConstants,
+                notFullyCoveredCaseTestProjectorsAsyncReturns
+              ).right
             ),
             lifecycleStage,
-            notFullyCoveredCaseTest(lifecycleStage, stageSync).testInput,
-            notFullyCoveredCaseTest(lifecycleStage, stageSync).testOutput,
+            notFullyCoveredCaseTest(
+              lifecycleStage,
+              notFullyCoveredCaseTestConstants,
+              notFullyCoveredCaseTestProjectorsAsyncReturns
+            ).testInput,
+            notFullyCoveredCaseTest(
+              lifecycleStage,
+              notFullyCoveredCaseTestConstants,
+              notFullyCoveredCaseTestProjectorsAsyncReturns
+            ).testOutput,
             true
           );
         });
         it('attaches data from left async data attached and right not covered async data attacher', async () => {
           const lifecycleStage = 'attachData';
-          const stageSync = 'async';
           await HTPipeTest(
             HTPipe(
-              notCoveredCaseTest(lifecycleStage, stageSync).left,
-              notCoveredCaseTest(lifecycleStage, stageSync).right
+              notCoveredCaseTest(
+                lifecycleStage,
+                notCoveredCaseTestConstants,
+                notCoveredCaseTestProjectorAsyncReturns
+              ).left,
+              notCoveredCaseTest(
+                lifecycleStage,
+                notCoveredCaseTestConstants,
+                notCoveredCaseTestProjectorAsyncReturns
+              ).right
             ),
             lifecycleStage,
-            notCoveredCaseTest(lifecycleStage, stageSync).testInput,
-            notCoveredCaseTest(lifecycleStage, stageSync).testOutput,
+            notCoveredCaseTest(
+              lifecycleStage,
+              notCoveredCaseTestConstants,
+              notCoveredCaseTestProjectorAsyncReturns
+            ).testInput,
+            notCoveredCaseTest(
+              lifecycleStage,
+              notCoveredCaseTestConstants,
+              notCoveredCaseTestProjectorAsyncReturns
+            ).testOutput,
             true
           );
         });
         it('attaches properly typed data from left async data attacher only', async () => {
           const lifecycleStage = 'attachData';
-          const stageSync = 'async';
           await HTPipeTest(
             HTPipe(
-              leftOnlyCaseTest(lifecycleStage, stageSync).left,
-              leftOnlyCaseTest(lifecycleStage, stageSync).right
+              leftOnlyCaseTest(
+                lifecycleStage,
+                leftOnlyCaseTestConstants,
+                leftOnlyCaseTestProjectorAsyncReturn
+              ).left,
+              leftOnlyCaseTest(
+                lifecycleStage,
+                leftOnlyCaseTestConstants,
+                leftOnlyCaseTestProjectorAsyncReturn
+              ).right
             ),
             lifecycleStage,
-            leftOnlyCaseTest(lifecycleStage, stageSync).testInput,
-            leftOnlyCaseTest(lifecycleStage, stageSync).testOutput,
+            leftOnlyCaseTest(
+              lifecycleStage,
+              leftOnlyCaseTestConstants,
+              leftOnlyCaseTestProjectorAsyncReturn
+            ).testInput,
+            leftOnlyCaseTest(
+              lifecycleStage,
+              leftOnlyCaseTestConstants,
+              leftOnlyCaseTestProjectorAsyncReturn
+            ).testOutput,
             true
           );
         });
         it('attaches properly typed data from right async data attacher only', async () => {
           const lifecycleStage = 'attachData';
-          const stageSync = 'async';
           await HTPipeTest(
             HTPipe(
-              rightOnlyCaseTest(lifecycleStage, stageSync).left,
-              rightOnlyCaseTest(lifecycleStage, stageSync).right
+              rightOnlyCaseTest(
+                lifecycleStage,
+                rightOnlyCaseTestConstants,
+                rightOnlyCaseTestProjectorAsyncReturn
+              ).left,
+              rightOnlyCaseTest(
+                lifecycleStage,
+                rightOnlyCaseTestConstants,
+                rightOnlyCaseTestProjectorAsyncReturn
+              ).right
             ),
             lifecycleStage,
-            rightOnlyCaseTest(lifecycleStage, stageSync).testInput,
-            rightOnlyCaseTest(lifecycleStage, stageSync).testOutput,
+            rightOnlyCaseTest(
+              lifecycleStage,
+              rightOnlyCaseTestConstants,
+              rightOnlyCaseTestProjectorAsyncReturn
+            ).testInput,
+            rightOnlyCaseTest(
+              lifecycleStage,
+              rightOnlyCaseTestConstants,
+              rightOnlyCaseTestProjectorAsyncReturn
+            ).testOutput,
             true
           );
         });
         it('no attaches data when left async outputs have type mismatch with right inputs', () => {
           const lifecycleStage = 'attachData';
-          const stageSync = 'async';
           function expectErrorWithHTPipe() {
             // @ts-expect-error
             const pipedError = HTPipe(
-              errorCaseTest(lifecycleStage, stageSync).left,
-              errorCaseTest(lifecycleStage, stageSync).right
+              errorCaseTest(
+                lifecycleStage,
+                errorCaseTestConstants,
+                errorCaseTestProjectorsAsyncReturns
+              ).left,
+              errorCaseTest(
+                lifecycleStage,
+                errorCaseTestConstants,
+                errorCaseTestProjectorsAsyncReturns
+              ).right
             );
           }
         });
