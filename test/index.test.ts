@@ -8,6 +8,7 @@ import { hipExpressHandlerFactory, HTPipe } from '../src';
 import {
   AllAsyncStageKeys,
   AllStageKeys,
+  HasAllStagesOptionals,
   HasAttachData,
   HasDoWork,
   HasFinalAuthorize,
@@ -16,16 +17,8 @@ import {
   HasRespond,
   HasSanitizeBody,
   HasSanitizeParams,
+  HasSanitizeQueryParams,
   HasSanitizeResponse,
-  MightHaveFinalAuthorize,
-  MightHavePreAuthorize,
-  MightHaveRespond,
-  MightHaveSanitizeResponse,
-  OptionallyHasAttachData,
-  OptionallyHasDoWork,
-  OptionallyHasInitPreContext,
-  OptionallyHasSanitizeBody,
-  OptionallyHasSanitizeParams,
   PromiseResolveOrSync,
 } from '../src/types';
 
@@ -44,15 +37,7 @@ type ReturnTypeFromStage<
   : ReturnType<T>;
 
 async function HTPipeTest<
-  TPipe extends OptionallyHasInitPreContext<any, any> &
-    OptionallyHasSanitizeParams<any, any> &
-    OptionallyHasSanitizeBody<any, any> &
-    MightHavePreAuthorize<any, any> &
-    OptionallyHasAttachData<any, any> &
-    MightHaveFinalAuthorize<any, any> &
-    OptionallyHasDoWork<any, any> &
-    MightHaveRespond<any, any> &
-    MightHaveSanitizeResponse<any, any>,
+  TPipe extends HasAllStagesOptionals,
   TPipeIn,
   TPipeOut,
   TStage extends AllStageKeys,
@@ -62,6 +47,10 @@ async function HTPipeTest<
       : never
     : TStage extends 'sanitizeParams'
     ? TPipe extends HasSanitizeParams<any, any>
+      ? TPipe[TStage]
+      : never
+    : TStage extends 'sanitizeQueryParams'
+    ? TPipe extends HasSanitizeQueryParams<any, any>
       ? TPipe[TStage]
       : never
     : TStage extends 'sanitizeBody'
@@ -1118,7 +1107,11 @@ describe('HipThrusTS', () => {
     });
     describe('sanitizers filtration functionality', () => {
       function sanitizersFiltrationTestData<
-        TStage extends 'sanitizeParams' | 'sanitizeBody' | 'sanitizeResponse'
+        TStage extends
+          | 'sanitizeParams'
+          | 'sanitizeQueryParams'
+          | 'sanitizeBody'
+          | 'sanitizeResponse'
       >(stage: TStage) {
         const testConstants = {
           aPassedIn: 'some string',
@@ -1169,6 +1162,19 @@ describe('HipThrusTS', () => {
 
       it('sanitizeParams filtration functionality', async () => {
         const testedLifecycleStage = 'sanitizeParams';
+        await HTPipeTest(
+          HTPipe(
+            sanitizersFiltrationTestData(testedLifecycleStage).left,
+            sanitizersFiltrationTestData(testedLifecycleStage).right
+          ),
+          testedLifecycleStage,
+          sanitizersFiltrationTestData(testedLifecycleStage).testInput,
+          sanitizersFiltrationTestData(testedLifecycleStage).testOutput,
+          true
+        );
+      });
+      it('sanitizeQueryParams filtration functionality', async () => {
+        const testedLifecycleStage = 'sanitizeQueryParams';
         await HTPipeTest(
           HTPipe(
             sanitizersFiltrationTestData(testedLifecycleStage).left,

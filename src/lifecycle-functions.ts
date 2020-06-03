@@ -16,6 +16,15 @@ export function SanitizeParams<
   };
 }
 
+export function SanitizeQueryParams<
+  TContextIn extends object,
+  TContextOut extends object
+>(projector: (htCtx: TContextIn) => TContextOut) {
+  return {
+    sanitizeQueryParams: projector,
+  };
+}
+
 export function SanitizeBody<
   TContextIn extends object,
   TContextOut extends object
