@@ -8,6 +8,7 @@ import { hipExpressHandlerFactory, HTPipe } from '../src';
 import {
   AllAsyncStageKeys,
   AllStageKeys,
+  HasAllStagesOptionals,
   HasAttachData,
   HasDoWork,
   HasFinalAuthorize,
@@ -16,16 +17,8 @@ import {
   HasRespond,
   HasSanitizeBody,
   HasSanitizeParams,
+  HasSanitizeQueryParams,
   HasSanitizeResponse,
-  MightHaveFinalAuthorize,
-  MightHavePreAuthorize,
-  MightHaveRespond,
-  MightHaveSanitizeResponse,
-  OptionallyHasAttachData,
-  OptionallyHasDoWork,
-  OptionallyHasInitPreContext,
-  OptionallyHasSanitizeBody,
-  OptionallyHasSanitizeParams,
   PromiseResolveOrSync,
 } from '../src/types';
 
@@ -44,15 +37,7 @@ type ReturnTypeFromStage<
   : ReturnType<T>;
 
 async function HTPipeTest<
-  TPipe extends OptionallyHasInitPreContext<any, any> &
-    OptionallyHasSanitizeParams<any, any> &
-    OptionallyHasSanitizeBody<any, any> &
-    MightHavePreAuthorize<any, any> &
-    OptionallyHasAttachData<any, any> &
-    MightHaveFinalAuthorize<any, any> &
-    OptionallyHasDoWork<any, any> &
-    MightHaveRespond<any, any> &
-    MightHaveSanitizeResponse<any, any>,
+  TPipe extends HasAllStagesOptionals,
   TPipeIn,
   TPipeOut,
   TStage extends AllStageKeys,
@@ -62,6 +47,10 @@ async function HTPipeTest<
       : never
     : TStage extends 'sanitizeParams'
     ? TPipe extends HasSanitizeParams<any, any>
+      ? TPipe[TStage]
+      : never
+    : TStage extends 'sanitizeQueryParams'
+    ? TPipe extends HasSanitizeQueryParams<any, any>
       ? TPipe[TStage]
       : never
     : TStage extends 'sanitizeBody'

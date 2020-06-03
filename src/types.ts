@@ -12,6 +12,7 @@ export type AllAsyncStageKeys = 'attachData' | 'finalAuthorize' | 'doWork';
 export type AllSyncStageKeys =
   | 'initPreContext'
   | 'sanitizeParams'
+  | 'sanitizeQueryParams'
   | 'sanitizeBody'
   | 'preAuthorize'
   | 'respond'
@@ -35,6 +36,21 @@ export interface OptionallyHasSanitizeParams<TUnsafeParams, TSafeParams> {
 
 export interface HasSanitizeParams<TUnsafeParams, TSafeParams> {
   sanitizeParams: (unsafeParams: TUnsafeParams) => TSafeParams;
+}
+
+export interface OptionallyHasSanitizeQueryParams<
+  TUnsafeQueryParams,
+  TSafeQueryParams
+> {
+  sanitizeQueryParams?: (
+    unsafeQueryParams: TUnsafeQueryParams
+  ) => TSafeQueryParams;
+}
+
+export interface HasSanitizeQueryParams<TUnsafeQueryParams, TSafeQueryParams> {
+  sanitizeQueryParams: (
+    unsafeQueryParams: TUnsafeQueryParams
+  ) => TSafeQueryParams;
 }
 
 export interface OptionallyHasSanitizeBody<TUnsafeBody, TSafeBody> {
@@ -102,12 +118,14 @@ export type HasAllRequireds = HasPreAuthorize<any, any> &
 
 export type HasAllNotRequireds = OptionallyHasInitPreContext<any, any> &
   OptionallyHasSanitizeParams<any, any> &
+  OptionallyHasSanitizeQueryParams<any, any> &
   OptionallyHasSanitizeBody<any, any> &
   OptionallyHasAttachData<any, any> &
   OptionallyHasDoWork<any, any>;
 
 export type HasAllStagesNotOptionals = HasInitPreContext<any, any> &
   HasSanitizeParams<any, any> &
+  HasSanitizeQueryParams<any, any> &
   HasSanitizeBody<any, any> &
   HasPreAuthorize<any, any> &
   HasAttachData<any, any> &
@@ -118,6 +136,7 @@ export type HasAllStagesNotOptionals = HasInitPreContext<any, any> &
 
 export type HasAllStagesOptionals = OptionallyHasInitPreContext<any, any> &
   OptionallyHasSanitizeParams<any, any> &
+  OptionallyHasSanitizeQueryParams<any, any> &
   OptionallyHasSanitizeBody<any, any> &
   MightHavePreAuthorize<any, any> &
   OptionallyHasAttachData<any, any> &
@@ -151,6 +170,8 @@ type ReturnedTypeUpToPreAuthorize<TValue, TKey> = TKey extends 'body'
   ? HasSanitizeBody<any, TValue>
   : TKey extends 'params'
   ? HasSanitizeParams<any, TValue>
+  : TKey extends 'queryParams'
+  ? HasSanitizeQueryParams<any, TValue>
   : TKey extends 'preContext'
   ? HasInitPreContext<any, TValue>
   : {};
@@ -178,7 +199,7 @@ type ReturnedSomewhereUpToAttachData<
   ? HasPreAuthorize<any, Record<TKey, TValue>>
   : never;
 
-type AllInitKeys = 'preContext' | 'params' | 'body';
+type AllInitKeys = 'preContext' | 'params' | 'queryParams' | 'body';
 
 export type AttachDataReqsSatisfiedOptional<T> = IntersectProperties<
   {

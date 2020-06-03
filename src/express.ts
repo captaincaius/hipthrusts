@@ -42,6 +42,7 @@ export function hipExpressHandlerFactory<
         fullHipthrustable,
         { req, res },
         req.params,
+        req.query,
         req.body
       );
       res.status(status).json(response);
