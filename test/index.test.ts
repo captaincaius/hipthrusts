@@ -665,6 +665,19 @@ describe('HipThrusTS', () => {
           };
         }
 
+        it('initPreContext test', async () => {
+          const lifecycleStage = 'initPreContext';
+          await HTPipeTest(
+            HTPipe(
+              fullyCoveredCaseTest(lifecycleStage).left,
+              fullyCoveredCaseTest(lifecycleStage).right
+            ),
+            lifecycleStage,
+            fullyCoveredCaseTest(lifecycleStage).testInput,
+            fullyCoveredCaseTest(lifecycleStage).testOutput,
+            true
+          );
+        });
         it('attachData test sync', async () => {
           const lifecycleStage = 'attachData';
           await HTPipeTest(
@@ -738,6 +751,20 @@ describe('HipThrusTS', () => {
             testOutput,
           };
         }
+
+        it('initPreContext test', async () => {
+          const lifecycleStage = 'initPreContext';
+          await HTPipeTest(
+            HTPipe(
+              transformedTypeCaseTest(lifecycleStage).left,
+              transformedTypeCaseTest(lifecycleStage).right
+            ),
+            lifecycleStage,
+            transformedTypeCaseTest(lifecycleStage).testInput,
+            transformedTypeCaseTest(lifecycleStage).testOutput,
+            true
+          );
+        });
         it('attachData sync', async () => {
           const lifecycleStage = 'attachData';
           await HTPipeTest(
@@ -816,6 +843,19 @@ describe('HipThrusTS', () => {
           };
         }
 
+        it('initPreContext test', async () => {
+          const lifecycleStage = 'initPreContext';
+          await HTPipeTest(
+            HTPipe(
+              notFullyCoveredCaseTest(lifecycleStage).left,
+              notFullyCoveredCaseTest(lifecycleStage).right
+            ),
+            lifecycleStage,
+            notFullyCoveredCaseTest(lifecycleStage).testInput,
+            notFullyCoveredCaseTest(lifecycleStage).testOutput,
+            true
+          );
+        });
         it('attachData sync', async () => {
           const lifecycleStage = 'attachData';
           await HTPipeTest(
@@ -893,6 +933,19 @@ describe('HipThrusTS', () => {
           };
         }
 
+        it('initPreContext test', async () => {
+          const lifecycleStage = 'initPreContext';
+          await HTPipeTest(
+            HTPipe(
+              notCoveredCaseTest(lifecycleStage).left,
+              notCoveredCaseTest(lifecycleStage).right
+            ),
+            lifecycleStage,
+            notCoveredCaseTest(lifecycleStage).testInput,
+            notCoveredCaseTest(lifecycleStage).testOutput,
+            true
+          );
+        });
         it('attachData sync', async () => {
           const lifecycleStage = 'attachData';
           await HTPipeTest(
@@ -959,6 +1012,19 @@ describe('HipThrusTS', () => {
           };
         }
 
+        it('initPreContext test', async () => {
+          const lifecycleStage = 'initPreContext';
+          await HTPipeTest(
+            HTPipe(
+              leftOnlyCaseTest(lifecycleStage).left,
+              leftOnlyCaseTest(lifecycleStage).right
+            ),
+            lifecycleStage,
+            leftOnlyCaseTest(lifecycleStage).testInput,
+            leftOnlyCaseTest(lifecycleStage).testOutput,
+            true
+          );
+        });
         it('attachData sync', async () => {
           const lifecycleStage = 'attachData';
           await HTPipeTest(
@@ -1025,6 +1091,19 @@ describe('HipThrusTS', () => {
           };
         }
 
+        it('initPreContext test', async () => {
+          const lifecycleStage = 'initPreContext';
+          await HTPipeTest(
+            HTPipe(
+              rightOnlyCaseTest(lifecycleStage).left,
+              rightOnlyCaseTest(lifecycleStage).right
+            ),
+            lifecycleStage,
+            rightOnlyCaseTest(lifecycleStage).testInput,
+            rightOnlyCaseTest(lifecycleStage).testOutput,
+            true
+          );
+        });
         it('attachData sync', async () => {
           const lifecycleStage = 'attachData';
           await HTPipeTest(
@@ -1081,6 +1160,16 @@ describe('HipThrusTS', () => {
           };
         }
 
+        it('initPreContext test', async () => {
+          const lifecycleStage = 'initPreContext';
+          function expectErrorWithHTPipe() {
+            // @ts-expect-error
+            const pipedError = HTPipe(
+              errorCaseTest(lifecycleStage).left,
+              errorCaseTest(lifecycleStage).right
+            );
+          }
+        });
         it('attachData sync', async () => {
           it('no attaches data when left sync outputs have type mismatch with right inputs', () => {
             const lifecycleStage = 'attachData';
