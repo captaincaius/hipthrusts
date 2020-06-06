@@ -91,14 +91,22 @@ async function HTPipeTest<
         : never
       : never
     : never,
-  TPipeInExpected = TPipeIn,
-  TPipeOutExpected = TPipeOut
+  TPipeInRequired,
+  TPipeOutRequired,
+  TPipeInExpected = undefined extends TPipeInRequired
+    ? TPipeIn
+    : TPipeInRequired,
+  TPipeOutExpected = undefined extends TPipeOutRequired
+    ? TPipeOut
+    : TPipeOutRequired
 >(
   pipe: TPipe,
   lifecycleStage: TStage,
   pipeIn: TPipeIn,
   pipeOut: TPipeOut,
-  valid: TValid
+  valid: TValid,
+  pipeInRequired?: TPipeInRequired,
+  pipeOutRequired?: TPipeOutRequired
 ) {
   const pipedLifecycleStage = pipe[lifecycleStage];
 
@@ -576,6 +584,130 @@ describe('HipThrusTS', () => {
         } catch (err) {
           errorReturned = err;
         }
+        // tslint:disable-next-line:no-unused-expression
+        expect(errorReturned).to.exist;
+      });
+      it('should pass when pipeIn accept more parameters then it really using', async () => {
+        const aPassedIn = 'some string';
+        const bReturned = 4;
+        const cReturned = 6;
+
+        await HTPipeTest(
+          {
+            attachData: (context: { a: string }) => {
+              return {
+                aOut: context.a,
+                c: cReturned,
+                b: bReturned,
+              };
+            },
+          },
+          'attachData',
+          { a: aPassedIn, g: 'some unneccessary string' },
+          { aOut: aPassedIn, b: bReturned, c: cReturned },
+          true,
+          { a: aPassedIn },
+          { aOut: aPassedIn, b: bReturned, c: cReturned }
+        );
+      });
+      it('should give error when pipeIn missing one of required params', async () => {
+        const aPassedIn = 'some string';
+        const bReturned = 4;
+        const cReturned = 6;
+
+        let errorReturned;
+
+        try {
+          await HTPipeTest(
+            {
+              attachData: (context: { a: string }) => {
+                return {
+                  aOut: context.a,
+                  c: cReturned,
+                  b: bReturned,
+                };
+              },
+            },
+            'attachData',
+            {},
+            { aOut: aPassedIn, b: bReturned, c: cReturned },
+            true,
+            { a: aPassedIn },
+            { aOut: aPassedIn, b: bReturned, c: cReturned }
+          );
+        } catch (err) {
+          errorReturned = err;
+        }
+
+        // tslint:disable-next-line:no-unused-expression
+        expect(errorReturned).to.exist;
+      });
+      it('should give error when pipeOut have more object properties then return object of lifecycle function', async () => {
+        const aPassedIn = 'some string';
+        const bReturned = 4;
+        const cReturned = 6;
+
+        let errorReturned;
+
+        try {
+          await HTPipeTest(
+            {
+              attachData: (context: { a: string }) => {
+                return {
+                  aOut: context.a,
+                  c: cReturned,
+                  b: bReturned,
+                };
+              },
+            },
+            'attachData',
+            { a: aPassedIn },
+            {
+              aOut: aPassedIn,
+              b: bReturned,
+              c: cReturned,
+              g: 'some unneccessary string',
+            },
+            true,
+            { a: aPassedIn },
+            { aOut: aPassedIn, b: bReturned, c: cReturned }
+          );
+        } catch (err) {
+          errorReturned = err;
+        }
+
+        // tslint:disable-next-line:no-unused-expression
+        expect(errorReturned).to.exist;
+      });
+      it('should give error when pipeOut have less object properties then return object of lifecycle function', async () => {
+        const aPassedIn = 'some string';
+        const bReturned = 4;
+        const cReturned = 6;
+
+        let errorReturned;
+
+        try {
+          await HTPipeTest(
+            {
+              attachData: (context: { a: string }) => {
+                return {
+                  aOut: context.a,
+                  c: cReturned,
+                  b: bReturned,
+                };
+              },
+            },
+            'attachData',
+            { a: aPassedIn },
+            { aOut: aPassedIn, b: bReturned },
+            true,
+            { a: aPassedIn },
+            { aOut: aPassedIn, b: bReturned, c: cReturned }
+          );
+        } catch (err) {
+          errorReturned = err;
+        }
+
         // tslint:disable-next-line:no-unused-expression
         expect(errorReturned).to.exist;
       });
