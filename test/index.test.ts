@@ -653,6 +653,10 @@ describe('HipThrusTS', () => {
             c: testConstants.cReturned,
           };
 
+          const testOutputForSanitizers = {
+            c: testConstants.cReturned,
+          };
+
           return {
             left: {
               [stage]: leftProjector,
@@ -662,6 +666,7 @@ describe('HipThrusTS', () => {
             } as Record<TStage, typeof rightProjector>,
             testInput,
             testOutput,
+            testOutputForSanitizers,
           };
         }
 
@@ -675,6 +680,32 @@ describe('HipThrusTS', () => {
             lifecycleStage,
             fullyCoveredCaseTest(lifecycleStage).testInput,
             fullyCoveredCaseTest(lifecycleStage).testOutput,
+            true
+          );
+        });
+        it('sanitize params test', async () => {
+          const lifecycleStage = 'sanitizeParams';
+          await HTPipeTest(
+            HTPipe(
+              fullyCoveredCaseTest(lifecycleStage).left,
+              fullyCoveredCaseTest(lifecycleStage).right
+            ),
+            lifecycleStage,
+            fullyCoveredCaseTest(lifecycleStage).testInput,
+            fullyCoveredCaseTest(lifecycleStage).testOutputForSanitizers,
+            true
+          );
+        });
+        it('sanitize query params test', async () => {
+          const lifecycleStage = 'sanitizeQueryParams';
+          await HTPipeTest(
+            HTPipe(
+              fullyCoveredCaseTest(lifecycleStage).left,
+              fullyCoveredCaseTest(lifecycleStage).right
+            ),
+            lifecycleStage,
+            fullyCoveredCaseTest(lifecycleStage).testInput,
+            fullyCoveredCaseTest(lifecycleStage).testOutputForSanitizers,
             true
           );
         });
@@ -754,6 +785,32 @@ describe('HipThrusTS', () => {
 
         it('initPreContext test', async () => {
           const lifecycleStage = 'initPreContext';
+          await HTPipeTest(
+            HTPipe(
+              transformedTypeCaseTest(lifecycleStage).left,
+              transformedTypeCaseTest(lifecycleStage).right
+            ),
+            lifecycleStage,
+            transformedTypeCaseTest(lifecycleStage).testInput,
+            transformedTypeCaseTest(lifecycleStage).testOutput,
+            true
+          );
+        });
+        it('sanitizeParams test', async () => {
+          const lifecycleStage = 'sanitizeParams';
+          await HTPipeTest(
+            HTPipe(
+              transformedTypeCaseTest(lifecycleStage).left,
+              transformedTypeCaseTest(lifecycleStage).right
+            ),
+            lifecycleStage,
+            transformedTypeCaseTest(lifecycleStage).testInput,
+            transformedTypeCaseTest(lifecycleStage).testOutput,
+            true
+          );
+        });
+        it('sanitizeQueryParams test', async () => {
+          const lifecycleStage = 'sanitizeQueryParams';
           await HTPipeTest(
             HTPipe(
               transformedTypeCaseTest(lifecycleStage).left,
@@ -946,6 +1003,40 @@ describe('HipThrusTS', () => {
             true
           );
         });
+        it('sanitizeParams should give error in this case because of his filtration functionality test', () => {
+          async function expectErrorWithHTPipe() {
+            const lifecycleStage = 'sanitizeParams';
+            await HTPipeTest(
+              // @ts-expect-error
+              HTPipe(
+                notCoveredCaseTest(lifecycleStage).left,
+                notCoveredCaseTest(lifecycleStage).right
+              ),
+              lifecycleStage,
+              notCoveredCaseTest(lifecycleStage).testInput,
+              notCoveredCaseTest(lifecycleStage).testOutput,
+              // @ts-expect-error
+              true
+            );
+          }
+        });
+        it('sanitizeQueryParams should give error in this case because of his filtration functionality test', () => {
+          async function expectErrorWithHTPipe() {
+            const lifecycleStage = 'sanitizeQueryParams';
+            await HTPipeTest(
+              // @ts-expect-error
+              HTPipe(
+                notCoveredCaseTest(lifecycleStage).left,
+                notCoveredCaseTest(lifecycleStage).right
+              ),
+              lifecycleStage,
+              notCoveredCaseTest(lifecycleStage).testInput,
+              notCoveredCaseTest(lifecycleStage).testOutput,
+              // @ts-expect-error
+              true
+            );
+          }
+        });
         it('attachData sync', async () => {
           const lifecycleStage = 'attachData';
           await HTPipeTest(
@@ -1014,6 +1105,32 @@ describe('HipThrusTS', () => {
 
         it('initPreContext test', async () => {
           const lifecycleStage = 'initPreContext';
+          await HTPipeTest(
+            HTPipe(
+              leftOnlyCaseTest(lifecycleStage).left,
+              leftOnlyCaseTest(lifecycleStage).right
+            ),
+            lifecycleStage,
+            leftOnlyCaseTest(lifecycleStage).testInput,
+            leftOnlyCaseTest(lifecycleStage).testOutput,
+            true
+          );
+        });
+        it('sanitizeParams test', async () => {
+          const lifecycleStage = 'sanitizeParams';
+          await HTPipeTest(
+            HTPipe(
+              leftOnlyCaseTest(lifecycleStage).left,
+              leftOnlyCaseTest(lifecycleStage).right
+            ),
+            lifecycleStage,
+            leftOnlyCaseTest(lifecycleStage).testInput,
+            leftOnlyCaseTest(lifecycleStage).testOutput,
+            true
+          );
+        });
+        it('sanitizeQueryParams test', async () => {
+          const lifecycleStage = 'sanitizeQueryParams';
           await HTPipeTest(
             HTPipe(
               leftOnlyCaseTest(lifecycleStage).left,
@@ -1104,6 +1221,32 @@ describe('HipThrusTS', () => {
             true
           );
         });
+        it('sanitizeParams test', async () => {
+          const lifecycleStage = 'sanitizeParams';
+          await HTPipeTest(
+            HTPipe(
+              rightOnlyCaseTest(lifecycleStage).left,
+              rightOnlyCaseTest(lifecycleStage).right
+            ),
+            lifecycleStage,
+            rightOnlyCaseTest(lifecycleStage).testInput,
+            rightOnlyCaseTest(lifecycleStage).testOutput,
+            true
+          );
+        });
+        it('sanitizeQueryParams test', async () => {
+          const lifecycleStage = 'sanitizeQueryParams';
+          await HTPipeTest(
+            HTPipe(
+              rightOnlyCaseTest(lifecycleStage).left,
+              rightOnlyCaseTest(lifecycleStage).right
+            ),
+            lifecycleStage,
+            rightOnlyCaseTest(lifecycleStage).testInput,
+            rightOnlyCaseTest(lifecycleStage).testOutput,
+            true
+          );
+        });
         it('attachData sync', async () => {
           const lifecycleStage = 'attachData';
           await HTPipeTest(
@@ -1162,6 +1305,26 @@ describe('HipThrusTS', () => {
 
         it('initPreContext test', async () => {
           const lifecycleStage = 'initPreContext';
+          function expectErrorWithHTPipe() {
+            // @ts-expect-error
+            const pipedError = HTPipe(
+              errorCaseTest(lifecycleStage).left,
+              errorCaseTest(lifecycleStage).right
+            );
+          }
+        });
+        it('sanitizeParams test', async () => {
+          const lifecycleStage = 'sanitizeParams';
+          function expectErrorWithHTPipe() {
+            // @ts-expect-error
+            const pipedError = HTPipe(
+              errorCaseTest(lifecycleStage).left,
+              errorCaseTest(lifecycleStage).right
+            );
+          }
+        });
+        it('sanitizeQueryParams test', async () => {
+          const lifecycleStage = 'sanitizeQueryParams';
           function expectErrorWithHTPipe() {
             // @ts-expect-error
             const pipedError = HTPipe(
