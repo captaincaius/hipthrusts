@@ -1221,6 +1221,19 @@ describe('HipThrusTS', () => {
             true
           );
         });
+        it('sanitizeParams test', async () => {
+          const lifecycleStage = 'sanitizeParams';
+          await HTPipeTest(
+            HTPipe(
+              rightOnlyCaseTest(lifecycleStage).left,
+              rightOnlyCaseTest(lifecycleStage).right
+            ),
+            lifecycleStage,
+            rightOnlyCaseTest(lifecycleStage).testInput,
+            rightOnlyCaseTest(lifecycleStage).testOutput,
+            true
+          );
+        });
         it('sanitizeQueryParams test', async () => {
           const lifecycleStage = 'sanitizeQueryParams';
           await HTPipeTest(
